@@ -67,7 +67,7 @@ function render(y, x, y0, x0, mirrorY, mirrorX) {
 // Bresenham's algorithm, modified to work for all directions
 
 function renderLine(y0, x0, y1, x1) {
-    let reverse = false;
+    let swapYX = false;
     let mirrorY = false;
     let mirrorX = false;
 
@@ -92,7 +92,7 @@ function renderLine(y0, x0, y1, x1) {
         x0 = tempY0;
         y1 = x1;
         x1 = tempY1;
-        reverse = true;
+        swapYX = true;
     }
     const incrE = 2 * dy;
     const incrNE = 2 * (dy - dx);
@@ -101,7 +101,7 @@ function renderLine(y0, x0, y1, x1) {
     let y = y0;
 
     while(x <= x1) {
-        if (reverse) {
+        if (swapYX) {
             const val = render(x, y, x0, y0, mirrorY, mirrorX);
 
             if (val === "stop") return;
@@ -200,9 +200,12 @@ function processTurn() {
 
     // --------
 
-    area[make.pos[0]][make.pos[1]].innerHTML = level[make.pos[0]][make.pos[1]];
+    if (rendered[make.pos[0]][make.pos[1]]) area[make.pos[0]][make.pos[1]].innerHTML = level[make.pos[0]][make.pos[1]];
+    
     make.pos = make.target.slice();
-    area[make.pos[0]][make.pos[1]].innerHTML = "M";
+    
+    if (rendered[make.pos[0]][make.pos[1]]) area[make.pos[0]][make.pos[1]].innerHTML = "M";
+    
     make.calcTarget();
 
     if (pos[0] === make.pos[0] && pos[1] === make.pos[1]) {
