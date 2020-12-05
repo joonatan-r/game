@@ -1,0 +1,38 @@
+body {
+    font-family: sans-serif;
+    color: white;
+    background-color: black;
+}
+
+table {
+    height: 100%;
+    border: solid white 1px;
+    text-align: center;
+}
+
+td {
+    font-size: 25px;
+    width: 30px;
+    height: 30px;
+    border: solid black 1px;
+}
+
+p {
+    font-size: 2rem;
+}
+
+.wall.l {
+    border-left: solid white 1px;
+}
+
+.wall.r {
+    border-right: solid white 1px;
+}
+
+.wall.t {
+    border-top: solid white 1px;
+}
+
+.wall.b {
+    border-bottom: solid white 1px;
+}
