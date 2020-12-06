@@ -6,9 +6,15 @@ const status = document.getElementById("status");
 let pos = [10, 13];
 
 const make = {};
-make.pos = [1, 17];
-make.target = [2, 17];
-make.calcTarget = () => movingAIs.random(make);
+make.pos = [7, 17];
+make.target = [7, 17];
+make.calcTarget = () => {
+    if (rendered[make.pos[0]][make.pos[1]]) { // if player can see mob, mob can see player
+        movingAIs.towardsPos(make, pos)
+    } else {
+        movingAIs.random(make);
+    }
+};
 
 function processTurn() {
     for (let i = 0; i < level.length; i++) {

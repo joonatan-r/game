@@ -2,6 +2,9 @@ const SIZE_Y = 25;
 const SIZE_X = 40;
 const level = [];
 const edges = [];
+const area = [];
+const rendered = [];
+const table = document.getElementById("table");
 
 for (let i = 0; i < SIZE_Y; i++) {
     level.push([]);
@@ -20,11 +23,6 @@ for (let i = 0; i < SIZE_Y; i++) {
         }
     }
 }
-
-const table = document.getElementById("table");
-const area = [];
-const rendered = [];
-
 for (let i = 0; i < level.length; i++) {
     const tr = document.createElement("tr");
     table.appendChild(tr);
