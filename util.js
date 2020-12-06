@@ -77,6 +77,26 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function isNextTo(coord1, coord2) {
+    if (coordsEq([coord1[0], coord1[1] - 1], coord2)
+        || coordsEq([coord1[0], coord1[1] + 1], coord2)
+        || coordsEq([coord1[0] - 1, coord1[1]], coord2)
+        || coordsEq([coord1[0] + 1, coord1[1]], coord2)
+        || coordsEq([coord1[0] - 1, coord1[1] - 1], coord2)
+        || coordsEq([coord1[0] + 1, coord1[1] - 1], coord2)
+        || coordsEq([coord1[0] - 1, coord1[1] + 1], coord2)
+        || coordsEq([coord1[0] + 1, coord1[1] + 1], coord2)
+    ) {
+        return true;
+    }
+    return false;
+}
+
+function coordsEq(coord1, coord2) {
+    if (coord1[0] === coord2[0] && coord1[1] === coord2[1]) return true;
+    return false;
+}
+
 movingAIs = {
     random: mob => {
         let dir;
@@ -187,6 +207,10 @@ movingAIs = {
                 x = 2 * x0 - x;
             }
             mob.target = [y, x];
+        }
+        if (level[mob.target[0]][mob.target[1]] === "") {
+            // TODO go around walls, getCoordsNextToPos so that both next to mob and next to target?
+            // (what if that fails too?)
         }
     }
 };

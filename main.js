@@ -1,5 +1,5 @@
 // level, edges, area, rendered from level.js
-// renderLine, movingAIs from util.js
+// renderLine, isNextTo, movingAIs from util.js
 // all coords are given as (y,x)
 
 const status = document.getElementById("status");
@@ -25,23 +25,30 @@ function processTurn() {
             td.className = ""; // remove this to "remember" walls once seen
         }
     }
+    status.innerHTML = "";
+
     for (let coords of edges) {
         renderLine(pos[0], pos[1], coords[0], coords[1]);
     }
     area[pos[0]][pos[1]].innerHTML = "@";
 
-    if (rendered[make.pos[0]][make.pos[1]]) area[make.pos[0]][make.pos[1]].innerHTML = level[make.pos[0]][make.pos[1]];
-    
-    make.pos = make.target.slice();
-    
-    if (rendered[make.pos[0]][make.pos[1]]) area[make.pos[0]][make.pos[1]].innerHTML = "M";
-    
-    make.calcTarget();
-
-    if (pos[0] === make.pos[0] && pos[1] === make.pos[1]) {
+    if (isNextTo(pos, make.pos)) { // don't move, hit
         status.innerHTML = "Make hits you! You die...";
         document.removeEventListener("keydown", keypressListener);
+    } else if (!(pos[0] === make.target[0] && pos[1] === make.target[1]) && !(make.target[0] > level.length - 1 
+        || make.target[1] > level[0].length - 1 
+        || make.target[0] < 0 || make.target[1] < 0
+        || level[make.target[0]][make.target[1]] === "") // extra safeguard, later add other mobs too
+        ) {
+        if (rendered[make.pos[0]][make.pos[1]]) {
+            area[make.pos[0]][make.pos[1]].innerHTML = level[make.pos[0]][make.pos[1]];
+        }
+        make.pos = make.target.slice();
     }
+    if (rendered[make.pos[0]][make.pos[1]]) {
+        area[make.pos[0]][make.pos[1]].innerHTML = "M";
+    }
+    make.calcTarget();
 
     // add walls last to check where to put them by what tiles are rendered
 
