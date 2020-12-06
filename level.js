@@ -20,3 +20,26 @@ for (let i = 0; i < SIZE_Y; i++) {
         }
     }
 }
+
+const table = document.getElementById("table");
+const area = [];
+const rendered = [];
+
+for (let i = 0; i < level.length; i++) {
+    const tr = document.createElement("tr");
+    table.appendChild(tr);
+    area.push([]);
+  
+    for (let j = 0; j < level[0].length; j++) {
+        const td = document.createElement("td");
+        tr.appendChild(td);
+        area[i][j] = td;
+    }
+}
+for (let i = 0; i < level.length; i++) {
+    rendered.push([]);
+
+    for (let j = 0; j < level[0].length; j++) {
+        rendered[i][j] = false;
+    }
+}

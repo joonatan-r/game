@@ -33,16 +33,16 @@ function renderLine(y0, x0, y1, x1) {
     let d = 2 * dy - dx;
     let x = x0;
     let y = y0;
+    let val = "";
 
     while(x <= x1) {
         if (swapYX) {
-            const val = render(x, y, x0, y0, mirrorY, mirrorX);
-
-            if (val === "stop") return;
+            val = render(x, y, x0, y0, mirrorY, mirrorX);
         } else {
-            const val = render(y, x, y0, x0, mirrorY, mirrorX);
-
-            if (val === "stop") return;
+            val = render(y, x, y0, x0, mirrorY, mirrorX);
+        }
+        if (val === "stop") {
+            return;
         }
         if (d <= 0) {
             d += incrE;
@@ -76,3 +76,53 @@ function getRandomInt(min, max) {
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
+movingAIs = {
+    random: mob => {
+        let dir;
+        mob.target = mob.pos.slice();
+    
+        while (1) {
+            const prevTarget = mob.target.slice();
+            dir = getRandomInt(1, 8);
+    
+            switch (dir) {
+                case 1:
+                    mob.target[1]--;
+                    break;
+                case 2:
+                    mob.target[1]++;
+                    break;
+                case 3:
+                    mob.target[0]--;
+                    break;
+                case 4:
+                    mob.target[0]++;
+                    break;
+                case 5:
+                    mob.target[1]--;
+                    mob.target[0]--;
+                    break;
+                case 6:
+                    mob.target[1]--;
+                    mob.target[0]++;
+                    break;
+                case 7:
+                    mob.target[1]++;
+                    mob.target[0]--;
+                    break;
+                case 8:
+                    mob.target[1]++;
+                    mob.target[0]++;
+                    break;
+            }
+            if (mob.target[0] > level.length - 1 || mob.target[1] > level[0].length - 1 
+                || mob.target[0] < 0 || mob.target[1] < 0
+                || level[mob.target[0]][mob.target[1]] === "") {
+                    mob.target = prevTarget.slice();
+                    continue;
+            }
+            break;
+        }
+    }
+};

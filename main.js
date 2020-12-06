@@ -1,89 +1,14 @@
-// level, edges from level.js
-// renderLine, getRandomInt from util.js
-
+// level, edges, area, rendered from level.js
+// renderLine, movingAIs from util.js
 // all coords are given as (y,x)
 
-const table = document.getElementById("table");
 const status = document.getElementById("status");
-const area = [];
-const rendered = [];
 let pos = [10, 13];
-
-for (let i = 0; i < level.length; i++) {
-    const tr = document.createElement("tr");
-    table.appendChild(tr);
-    area.push([]);
-  
-    for (let j = 0; j < level[0].length; j++) {
-        const td = document.createElement("td");
-        tr.appendChild(td);
-        area[i][j] = td;
-    }
-}
-for (let i = 0; i < level.length; i++) {
-    rendered.push([]);
-
-    for (let j = 0; j < level[0].length; j++) {
-        rendered[i][j] = false;
-    }
-}
-
-// ----------
 
 const make = {};
 make.pos = [1, 17];
 make.target = [2, 17];
-make.calcTarget = () => {
-    let dir;
-    make.target = make.pos.slice();
-
-    while (1) {
-        const prevTarget = make.target.slice();
-        dir = getRandomInt(1, 9);
-
-        if (dir === 5) continue;
-
-        switch (dir) {
-            case 4:
-                make.target[1]--;
-                break;
-            case 6:
-                make.target[1]++;
-                break;
-            case 8:
-                make.target[0]--;
-                break;
-            case 2:
-                make.target[0]++;
-                break;
-            case 7:
-                make.target[1]--;
-                make.target[0]--;
-                break;
-            case 1:
-                make.target[1]--;
-                make.target[0]++;
-                break;
-            case 9:
-                make.target[1]++;
-                make.target[0]--;
-                break;
-            case 3:
-                make.target[1]++;
-                make.target[0]++;
-                break;
-        }
-        if (make.target[0] > level.length - 1 || make.target[1] > level[0].length - 1 
-            || make.target[0] < 0 || make.target[1] < 0
-            || level[make.target[0]][make.target[1]] === "") {
-                make.target = prevTarget.slice();
-                continue;
-        }
-        break;
-    }
-};
-
-// -----------
+make.calcTarget = () => movingAIs.random(make);
 
 function processTurn() {
     for (let i = 0; i < level.length; i++) {
@@ -99,8 +24,6 @@ function processTurn() {
     }
     area[pos[0]][pos[1]].innerHTML = "@";
 
-    // --------
-
     if (rendered[make.pos[0]][make.pos[1]]) area[make.pos[0]][make.pos[1]].innerHTML = level[make.pos[0]][make.pos[1]];
     
     make.pos = make.target.slice();
@@ -113,8 +36,6 @@ function processTurn() {
         status.innerHTML = "Make hits you! You die...";
         document.removeEventListener("keydown", keypressListener);
     }
-    
-    // --------
 
     // add walls last to check where to put them by what tiles are rendered
 
@@ -175,6 +96,8 @@ const keypressListener = e => {
             pos[1]++;
             pos[0]++;
             break;
+        default:
+            return;
     }
     if (pos[0] > level.length - 1 || pos[1] > level[0].length - 1 || pos[0] < 0 || pos[1] < 0
             || level[pos[0]][pos[1]] === "" 
