@@ -13,7 +13,9 @@ for (let i = 0; i < SIZE_Y; i++) {
         level[i].push([]);
 
         if ((i + j) % 7 === 0 && (i * j) % 3 === 0
-                || (i + j + 1) % 7 === 0 && (i * j + 1) % 3 === 0) {
+            || (i + j + 1) % 7 === 0 && (i * j + 1) % 3 === 0
+        ) {
+        // if (j === 15 && [2, 15].indexOf(i) === -1) {
             level[i][j] = "";
         } else {
             level[i][j] = "&#183"; // middle dot

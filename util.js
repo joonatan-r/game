@@ -226,13 +226,18 @@ movingAIs = {
             mob.target = [y, x];
         }
 
-        // try to go around walls, doesn't work if too long
-
         const drcs = getCoordsNextTo(mob.pos);
         const excluded = [];
         const drcQueue = [mob.target];
 
         if (level[mob.target[0]][mob.target[1]] === "") {
+            if (!mob.alreadyTried) mob.alreadyTried = [];
+
+            // better ability to go around walls when not backtracking 
+            // while blocked on consecutive turns
+            mob.alreadyTried.push(mob.pos);
+            excluded.push(...mob.alreadyTried);
+
             while (1) {
                 const currentDrc = drcQueue.shift();
                 const newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
@@ -248,6 +253,8 @@ movingAIs = {
                     }
                 }
             }
+        } else {
+            mob.alreadyTried = [];
         }
     }
 };
