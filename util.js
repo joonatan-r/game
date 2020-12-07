@@ -79,14 +79,14 @@ function getRandomInt(min, max) {
 
 function getCoordsNextTo(pos) {
     return [        
-        [pos[0], pos[1] - 1],
-        [pos[0], pos[1] + 1],
-        [pos[0] - 1, pos[1]],
-        [pos[0] + 1, pos[1]],
-        [pos[0] - 1, pos[1] - 1],
-        [pos[0] + 1, pos[1] - 1],
-        [pos[0] - 1, pos[1] + 1],
-        [pos[0] + 1, pos[1] + 1]
+        [pos[0], pos[1] - 1], // l
+        [pos[0] - 1, pos[1] - 1], // tl
+        [pos[0] - 1, pos[1]], // t
+        [pos[0] - 1, pos[1] + 1], // tr
+        [pos[0], pos[1] + 1], // r
+        [pos[0] + 1, pos[1] + 1], // br
+        [pos[0] + 1, pos[1]], // b
+        [pos[0] + 1, pos[1] - 1] // bl
     ];
 }
 
@@ -226,7 +226,7 @@ movingAIs = {
             mob.target = [y, x];
         }
 
-        // go around walls
+        // try to go around walls, doesn't work if too long
 
         const drcs = getCoordsNextTo(mob.pos);
         const excluded = [];
