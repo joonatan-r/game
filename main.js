@@ -4,8 +4,10 @@
 
 const status = document.getElementById("status");
 let pos = [10, 13];
-
+const mobs = [];
 const make = {};
+make.name = "Make";
+make.symbol = "M";
 make.pos = [7, 17];
 make.target = [7, 17];
 make.calcTarget = () => {
@@ -15,6 +17,20 @@ make.calcTarget = () => {
         movingAIs.random(make);
     }
 };
+const pekka = {};
+pekka.name = "Pekka";
+pekka.symbol = "P";
+pekka.pos = [7, 7];
+pekka.target = [7, 7];
+pekka.calcTarget = () => {
+    if (rendered[pekka.pos[0]][pekka.pos[1]]) {
+        movingAIs.towardsPos(pekka, pos)
+    } else {
+        movingAIs.random(pekka);
+    }
+};
+mobs.push(make);
+mobs.push(pekka);
 
 function processTurn() {
     for (let i = 0; i < level.length; i++) {
@@ -32,23 +48,38 @@ function processTurn() {
     }
     area[pos[0]][pos[1]].innerHTML = "@";
 
-    if (isNextTo(pos, make.pos)) { // don't move, hit
-        status.innerHTML = "Make hits you! You die...";
-        document.removeEventListener("keydown", keypressListener);
-    } else if (!(pos[0] === make.target[0] && pos[1] === make.target[1]) && !(make.target[0] > level.length - 1 
-        || make.target[1] > level[0].length - 1 
-        || make.target[0] < 0 || make.target[1] < 0
-        || level[make.target[0]][make.target[1]] === "") // extra safeguard, later add other mobs too
-        ) {
-        if (rendered[make.pos[0]][make.pos[1]]) {
-            area[make.pos[0]][make.pos[1]].innerHTML = level[make.pos[0]][make.pos[1]];
+    for (let mob of mobs) {
+        let mobInTheWay = false;
+
+        for (let otherMob of mobs) {
+            if (otherMob.name === mob.name) continue;
+            if (otherMob.pos[0] === mob.target[0] && otherMob.pos[1] === mob.target[1]) {
+                mobInTheWay = true;
+            }
         }
-        make.pos = make.target.slice();
+
+        if (isNextTo(pos, mob.pos)) { // don't move, hit
+            status.innerHTML = mob.name + " hits you! You die...";
+            document.removeEventListener("keydown", keypressListener);
+        } else if (!(pos[0] === mob.target[0] && pos[1] === mob.target[1]) 
+            && !mobInTheWay
+            && !(
+                mob.target[0] > level.length - 1 
+                || mob.target[1] > level[0].length - 1 
+                || mob.target[0] < 0 || mob.target[1] < 0
+                || level[mob.target[0]][mob.target[1]] === ""
+            )
+        ) {
+            if (rendered[mob.pos[0]][mob.pos[1]]) {
+                area[mob.pos[0]][mob.pos[1]].innerHTML = level[mob.pos[0]][mob.pos[1]];
+            }
+            mob.pos = mob.target.slice();
+        }
+        if (rendered[mob.pos[0]][mob.pos[1]]) {
+            area[mob.pos[0]][mob.pos[1]].innerHTML = mob.symbol;
+        }
+        mob.calcTarget();
     }
-    if (rendered[make.pos[0]][make.pos[1]]) {
-        area[make.pos[0]][make.pos[1]].innerHTML = "M";
-    }
-    make.calcTarget();
 
     // add walls last to check where to put them by what tiles are rendered
 
