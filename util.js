@@ -77,15 +77,32 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function isNextTo(coord1, coord2) {
+function getCoordsNextTo(pos) {
+    return [        
+        [pos[0], pos[1] - 1],
+        [pos[0], pos[1] + 1],
+        [pos[0] - 1, pos[1]],
+        [pos[0] + 1, pos[1]],
+        [pos[0] - 1, pos[1] - 1],
+        [pos[0] + 1, pos[1] - 1],
+        [pos[0] - 1, pos[1] + 1],
+        [pos[0] + 1, pos[1] + 1]
+    ];
+}
+
+function isNextTo(coord1, coord2, includeDiag) {
+    includeDiag = (typeof includeDiag !== "undefined") ? includeDiag : true;
+
     if (coordsEq([coord1[0], coord1[1] - 1], coord2)
         || coordsEq([coord1[0], coord1[1] + 1], coord2)
         || coordsEq([coord1[0] - 1, coord1[1]], coord2)
         || coordsEq([coord1[0] + 1, coord1[1]], coord2)
-        || coordsEq([coord1[0] - 1, coord1[1] - 1], coord2)
+        || includeDiag && (
+           coordsEq([coord1[0] - 1, coord1[1] - 1], coord2)
         || coordsEq([coord1[0] + 1, coord1[1] - 1], coord2)
         || coordsEq([coord1[0] - 1, coord1[1] + 1], coord2)
         || coordsEq([coord1[0] + 1, coord1[1] + 1], coord2)
+        )
     ) {
         return true;
     }
@@ -99,14 +116,14 @@ function coordsEq(coord1, coord2) {
 
 movingAIs = {
     random: mob => {
-        let dir;
+        let drc;
         mob.target = mob.pos.slice();
     
         while (1) {
             const prevTarget = mob.target.slice();
-            dir = getRandomInt(1, 8);
+            drc = getRandomInt(1, 8);
     
-            switch (dir) {
+            switch (drc) {
                 case 1:
                     mob.target[1]--;
                     break;
@@ -208,9 +225,45 @@ movingAIs = {
             }
             mob.target = [y, x];
         }
+
+        // go around walls
+
+        const drcs = getCoordsNextTo(mob.pos);
+        const excluded = [];
+        const drcQueue = [mob.target];
+
         if (level[mob.target[0]][mob.target[1]] === "") {
-            // TODO go around walls, getCoordsNextToPos so that both next to mob and next to target?
-            // (what if that fails too?)
+            while (1) {
+                const currentDrc = drcQueue.shift();
+                const newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
+
+                for (let d of newDrcs) {
+                    if (d.length === 0) continue;
+                    if (level[d[0]][d[1]] !== "") {
+                        mob.target = d;
+                        return;
+                    } else {
+                        drcQueue.push(d);
+                        excluded.push(currentDrc);
+                    }
+                }
+            }
         }
     }
 };
+
+function getSecondBestDirections(drcs, currentDrc, excluded) {
+    const retDrcs = [];
+
+    for (let d of drcs) {
+        let skip = false;
+
+        for (let coord of excluded) {
+            if (coordsEq(d, coord)) {
+                skip = true;
+            }
+        };
+        if (!skip && isNextTo(d, currentDrc, false)) retDrcs.push(d);
+    };
+    return retDrcs;
+}
