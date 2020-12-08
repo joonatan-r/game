@@ -4,7 +4,7 @@
 
 const status = document.getElementById("status");
 let pos = [10, 13];
-const mobs = [];
+let mobs = [];
 const make = {};
 make.name = "Make";
 make.symbol = "M";
@@ -140,6 +140,22 @@ const keypressListener = e => {
             pos[1]++;
             pos[0]++;
             break;
+        case "Enter":
+            if (level[pos[0]][pos[1]] === ">") {
+                const tps = levels[levels.currentLvl].travelPoints;
+
+                for (let lvl of Object.keys(tps)) {
+                    if (tps[lvl][0] === pos[0] && tps[lvl][1] === pos[1]) {
+                        const retObj = changeLvl(levels.currentLvl, lvl, mobs);
+                        level = retObj.level;
+                        pos = retObj.pos;
+                        mobs = retObj.mobs;
+                        levels.currentLvl = lvl;
+                        break;
+                    }
+                }
+            } 
+            break; // TODO takes extra turn & doesn't work if mob on exit?
         default:
             return;
     }
