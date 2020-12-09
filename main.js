@@ -1,4 +1,4 @@
-// level, edges, area, rendered from level.js
+// level, levels, edges, area, rendered from level.js
 // renderLine, isNextTo, movingAIs from util.js
 // all coords are given as (y,x)
 
@@ -148,20 +148,28 @@ const keypressListener = e => {
                     if (tps[lvl][0] === pos[0] && tps[lvl][1] === pos[1]) {
                         const retObj = changeLvl(levels.currentLvl, lvl, mobs);
                         level = retObj.level;
-                        pos = retObj.pos;
+                        pos = retObj.pos.slice();
                         mobs = retObj.mobs;
                         levels.currentLvl = lvl;
                         break;
                     }
                 }
-            } 
-            break; // TODO takes extra turn & doesn't work if mob on exit?
+            }
+            break;
         default:
             return;
     }
+    let overlapMob = false;
+
+    for (let mob of mobs) {
+        if (pos[0] === mob.pos[0] && pos[1] === mob.pos[1]) {
+            overlapMob = true;
+            break;
+        }
+    }
     if (pos[0] > level.length - 1 || pos[1] > level[0].length - 1 || pos[0] < 0 || pos[1] < 0
-            || level[pos[0]][pos[1]] === "" 
-            || (pos[0] === make.pos[0] && pos[1] === make.pos[1])) { // ---------
+        || level[pos[0]][pos[1]] === "" || overlapMob
+    ) {
         pos = prevPos.slice();
         return;
     }
