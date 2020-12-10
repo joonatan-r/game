@@ -74,7 +74,7 @@ function trySpawnMob() {
 }
 trySpawnMob.timer = 0;
 
-function processTurn() {
+function renderAll() {
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
             rendered[i][j] = false;
@@ -83,45 +83,16 @@ function processTurn() {
             td.className = ""; // remove this to "remember" walls once seen
         }
     }
-    status.innerHTML = "";
-
     for (let coords of edges) {
         renderLine(pos[0], pos[1], coords[0], coords[1]);
     }
     area[pos[0]][pos[1]].innerHTML = "@";
 
     for (let mob of mobs) {
-        let mobInTheWay = false;
-
-        for (let otherMob of mobs) {
-            if (otherMob.pos[0] === mob.target[0] && otherMob.pos[1] === mob.target[1]) {
-                mobInTheWay = true;
-            }
-        }
-
-        if (isNextTo(pos, mob.pos)) { // don't move, hit
-            status.innerHTML = mob.name + " hits you! You die...";
-            document.removeEventListener("keydown", keypressListener);
-        } else if (!(pos[0] === mob.target[0] && pos[1] === mob.target[1]) 
-            && !mobInTheWay
-            && !(
-                mob.target[0] > level.length - 1 
-                || mob.target[1] > level[0].length - 1 
-                || mob.target[0] < 0 || mob.target[1] < 0
-                || level[mob.target[0]][mob.target[1]] === ""
-            )
-        ) {
-            if (rendered[mob.pos[0]][mob.pos[1]]) {
-                area[mob.pos[0]][mob.pos[1]].innerHTML = level[mob.pos[0]][mob.pos[1]];
-            }
-            mob.pos = mob.target.slice();
-        }
         if (rendered[mob.pos[0]][mob.pos[1]]) {
             area[mob.pos[0]][mob.pos[1]].innerHTML = mob.symbol;
         }
-        mob.calcTarget();
     }
-    trySpawnMob();
 
     // add walls last to check where to put them by what tiles are rendered
 
@@ -148,6 +119,38 @@ function processTurn() {
             }
         }
     }
+}
+
+function processTurn() {
+    status.innerHTML = "";
+
+    for (let mob of mobs) {
+        let mobInTheWay = false;
+
+        for (let otherMob of mobs) {
+            if (otherMob.pos[0] === mob.target[0] && otherMob.pos[1] === mob.target[1]) {
+                mobInTheWay = true;
+            }
+        }
+
+        if (isNextTo(pos, mob.pos)) {
+            status.innerHTML = mob.name + " hits you! You die...";
+            document.removeEventListener("keydown", keypressListener);
+        } else if (!(pos[0] === mob.target[0] && pos[1] === mob.target[1]) 
+            && !mobInTheWay
+            && !(
+                mob.target[0] > level.length - 1 
+                || mob.target[1] > level[0].length - 1 
+                || mob.target[0] < 0 || mob.target[1] < 0
+                || level[mob.target[0]][mob.target[1]] === ""
+            )
+        ) {
+            mob.pos = mob.target.slice();
+        }
+        mob.calcTarget();
+    }
+    trySpawnMob();
+    renderAll();
 }
 
 const keypressListener = e => {
