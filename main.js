@@ -29,8 +29,50 @@ pekka.calcTarget = () => {
         movingAIs.random(pekka);
     }
 };
+const jorma = {};
+jorma.name = "Jorma";
+jorma.symbol = "J";
+jorma.pos = [7, 7];
+jorma.target = [7, 7];
+jorma.calcTarget = () => movingAIs.random(jorma);
 mobs.push(make);
 mobs.push(pekka);
+levels.test2.mobs.push(jorma);
+
+function trySpawnMob() {
+    let spawnPos = null;
+    let notRenderedNbr = 1;
+    trySpawnMob.timer++;
+
+    if (trySpawnMob.timer % 50 !== 0) return;
+
+    for (let i = 0; i < level.length; i++) {
+        for (let j = 0; j < level[0].length; j++) {
+            if (!rendered[i][j]) notRenderedNbr++;
+        }
+    }
+
+    for (let i = 0; i < level.length; i++) {
+        if (spawnPos) break;
+
+        for (let j = 0; j < level[0].length; j++) {
+            if (!rendered[i][j] && Math.random() < (1 / notRenderedNbr)) {
+                spawnPos = [i, j];
+                break;
+            }
+        }
+    }
+    if (!spawnPos) return;
+
+    const mob = {};
+    mob.name = "TestMob";
+    mob.symbol = "T";
+    mob.pos = spawnPos;
+    mob.target = spawnPos;
+    mob.calcTarget = () => movingAIs.random(mob);
+    mobs.push(mob);
+}
+trySpawnMob.timer = 0;
 
 function processTurn() {
     for (let i = 0; i < level.length; i++) {
@@ -52,7 +94,6 @@ function processTurn() {
         let mobInTheWay = false;
 
         for (let otherMob of mobs) {
-            if (otherMob.name === mob.name) continue;
             if (otherMob.pos[0] === mob.target[0] && otherMob.pos[1] === mob.target[1]) {
                 mobInTheWay = true;
             }
@@ -80,6 +121,7 @@ function processTurn() {
         }
         mob.calcTarget();
     }
+    trySpawnMob();
 
     // add walls last to check where to put them by what tiles are rendered
 
