@@ -6,7 +6,7 @@ const info = document.getElementById("info");
 const status = document.getElementById("status");
 const timeTracker = {};
 timeTracker.timer = 0;
-timeTracker.turnsUntilShoot = 70;
+timeTracker.turnsUntilShoot = 60;
 let pos = [10, 13];
 let mobs = [];
 const make = {};
@@ -24,8 +24,8 @@ make.calcTarget = () => {
 const pekka = {};
 pekka.name = "Pekka";
 pekka.symbol = "P";
-pekka.pos = [7, 7];
-pekka.target = [7, 7];
+pekka.pos = [4, 4];
+pekka.target = [4, 4];
 pekka.calcTarget = () => {
     if (rendered[pekka.pos[0]][pekka.pos[1]]) {
         movingAIs.towardsPos(pekka, pos)
@@ -40,14 +40,14 @@ jorma.pos = [7, 7];
 jorma.target = [7, 7];
 jorma.calcTarget = () => movingAIs.random(jorma);
 mobs.push(make);
-mobs.push(pekka);
 levels.test2.mobs.push(jorma);
+levels.test3.mobs.push(pekka);
 
 function trySpawnMob() {
     let spawnPos = null;
     let notRenderedNbr = 1;
 
-    if (timeTracker.timer % 50 !== 0) return;
+    if (timeTracker.timer % 20 !== 0) return;
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
@@ -72,7 +72,7 @@ function trySpawnMob() {
     mob.pos = spawnPos;
     mob.target = spawnPos;
 
-    if (r < 0.1) {
+    if (r < 0.2) {
         mob.name = "Make";
         mob.symbol = "M";
         mob.calcTarget = () => {
@@ -82,7 +82,7 @@ function trySpawnMob() {
                 movingAIs.random(mob);
             }
         };
-    } else if (r > 0.9) {
+    } else if (r > 0.8) {
         mob.name = "Pekka";
         mob.symbol = "P";
         mob.calcTarget = () => {
@@ -298,7 +298,7 @@ const keypressListener = e => {
             break;
         case "f":
             if (timeTracker.turnsUntilShoot === 0) {
-                timeTracker.turnsUntilShoot = 70;
+                timeTracker.turnsUntilShoot = 60;
                 document.removeEventListener("keydown", keypressListener);
                 status.innerHTML = "In what direction?";
                 document.addEventListener("keydown", shootListener);
