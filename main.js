@@ -2,7 +2,11 @@
 // renderLine, isNextTo, movingAIs from util.js
 // all coords are given as (y,x)
 
+const info = document.getElementById("info");
 const status = document.getElementById("status");
+const timeTracker = {};
+timeTracker.timer = 0;
+timeTracker.turnsUntilShoot = 70;
 let pos = [10, 13];
 let mobs = [];
 const make = {};
@@ -42,9 +46,8 @@ levels.test2.mobs.push(jorma);
 function trySpawnMob() {
     let spawnPos = null;
     let notRenderedNbr = 1;
-    trySpawnMob.timer++;
 
-    if (trySpawnMob.timer % 50 !== 0) return;
+    if (timeTracker.timer % 50 !== 0) return;
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
@@ -65,14 +68,13 @@ function trySpawnMob() {
     if (!spawnPos) return;
 
     const mob = {};
-    mob.name = "TestMob";
+    mob.name = "Teppo";
     mob.symbol = "T";
     mob.pos = spawnPos;
     mob.target = spawnPos;
     mob.calcTarget = () => movingAIs.random(mob);
     mobs.push(mob);
 }
-trySpawnMob.timer = 0;
 
 function renderAll() {
     for (let i = 0; i < level.length; i++) {
@@ -122,6 +124,11 @@ function renderAll() {
 }
 
 function processTurn() {
+    if (timeTracker.turnsUntilShoot > 0) {
+        info.innerHTML = timeTracker.turnsUntilShoot + " turns until you can shoot";
+    } else {
+        info.innerHTML = "You can shoot";
+    }
     status.innerHTML = "";
 
     for (let mob of mobs) {
@@ -151,8 +158,69 @@ function processTurn() {
     }
     trySpawnMob();
     renderAll();
+    timeTracker.timer++;
+    if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
 }
 
+async function shoot(drc) {
+    let bulletPos = pos.slice();
+    document.removeEventListener("keydown", shootListener);
+
+    while (level[bulletPos[0]] && level[bulletPos[0]][bulletPos[1]] 
+           && level[bulletPos[0]][bulletPos[1]] !== ""
+    ) {
+        const prevBulletPos = bulletPos.slice();
+
+        switch (drc) {
+            case "4":
+                bulletPos[1]--;
+                break;
+            case "6":
+                bulletPos[1]++;
+                break;
+            case "8":
+                bulletPos[0]--;
+                break;
+            case "2":
+                bulletPos[0]++;
+                break;
+            case "7":
+                bulletPos[1]--;
+                bulletPos[0]--;
+                break;
+            case "1":
+                bulletPos[1]--;
+                bulletPos[0]++;
+                break;
+            case "9":
+                bulletPos[1]++;
+                bulletPos[0]--;
+                break;
+            case "3":
+                bulletPos[1]++;
+                bulletPos[0]++;
+                break;
+        }
+        const prevSymbol = area[prevBulletPos[0]][prevBulletPos[1]].innerHTML;
+        area[prevBulletPos[0]][prevBulletPos[1]].innerHTML = "o";
+        await new Promise(r => setTimeout(r, 30));
+        area[prevBulletPos[0]][prevBulletPos[1]].innerHTML = prevSymbol;
+
+        for (let i = 0; i < mobs.length; i++) {
+            if (bulletPos[0] === mobs[i].pos[0] && bulletPos[1] === mobs[i].pos[1]) {
+                mobs.splice(i, 1);
+                document.addEventListener("keydown", keypressListener);
+                processTurn();
+                area[bulletPos[0]][bulletPos[1]].innerHTML = "x";
+                return;
+            }
+        }
+    }
+    document.addEventListener("keydown", keypressListener);
+    processTurn();
+}
+
+const shootListener = e => shoot(e.key);
 const keypressListener = e => {
     const prevPos = pos.slice();
 
@@ -201,6 +269,14 @@ const keypressListener = e => {
                 }
             }
             break;
+        case "f":
+            if (timeTracker.turnsUntilShoot === 0) {
+                timeTracker.turnsUntilShoot = 70;
+                document.removeEventListener("keydown", keypressListener);
+                status.innerHTML = "In what direction?";
+                document.addEventListener("keydown", shootListener);
+                return;
+            }
         default:
             return;
     }
