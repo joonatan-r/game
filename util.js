@@ -62,13 +62,12 @@ function render(y, x, y0, x0, mirrorY, mirrorX) {
     if (mirrorX) {
         x = 2 * x0 - x;
     }
+    if (rendered[y][x]) {
+        return level[y][x] === "" ? "stop" : "ok"; // wall blocks sight
+    }
     area[y][x].innerHTML = level[y][x];
     rendered[y][x] = true;
-
-    if (level[y][x] === "") { // wall blocks sight
-        return "stop";
-    }
-    return "ok";
+    return level[y][x] === "" ? "stop" : "ok";
 }
 
 function getRandomInt(min, max) {
