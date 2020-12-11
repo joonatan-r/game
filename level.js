@@ -1,6 +1,5 @@
 const SIZE_Y = 25;
 const SIZE_X = 40;
-let level = [];
 const edges = [];
 const area = [];
 const rendered = [];
@@ -14,9 +13,14 @@ const levels = {
     },
     test2: {
         mobs: [], 
-        travelPoints: { test1: [5, 4] }
+        travelPoints: { test1: [5, 4], test3: [8, 18] }
+    },
+    test3: {
+        mobs: [],
+        travelPoints: { test2: [8, 8] }
     }
 };
+let level = [];
 
 for (let i = 0; i < SIZE_Y; i++) {
     level.push([]);
@@ -27,7 +31,6 @@ for (let i = 0; i < SIZE_Y; i++) {
         if ((i + j) % 7 === 0 && (i * j) % 3 === 0
             || (i + j + 1) % 7 === 0 && (i * j + 1) % 3 === 0
         ) {
-        // if (j === 15 && [2, 15].indexOf(i) === -1) {
             level[i][j] = "";
         } else {
             level[i][j] = "&#183"; // middle dot
@@ -47,10 +50,7 @@ for (let i = 0; i < SIZE_Y; i++) {
     for (let j = 0; j < SIZE_X; j++) {
         level[i].push([]);
 
-        // if ((i + j) % 7 === 0 && (i * j) % 3 === 0
-        //     || (i + j + 1) % 7 === 0 && (i * j + 1) % 3 === 0
-        // ) {
-        if (j === 15 && [2, 15].indexOf(i) === -1) {
+        if ((j === 15 || j === 26) && [2, 15].indexOf(i) === -1) {
             level[i][j] = "";
         } else {
             level[i][j] = "&#183";
@@ -58,7 +58,27 @@ for (let i = 0; i < SIZE_Y; i++) {
     }
 }
 level[5][4] = ">";
+level[8][18] = ">";
 levels.test2.level = level;
+level = [];
+
+for (let i = 0; i < SIZE_Y; i++) {
+    level.push([]);
+  
+    for (let j = 0; j < SIZE_X; j++) {
+        level[i].push([]);
+
+        if ((i % 9 === 0 || j % 9 === 0) && [9, 15].indexOf(j) === -1 
+            && i !== 4 && j !== 21
+        ) {
+            level[i][j] = "";
+        } else {
+            level[i][j] = "&#183";
+        }
+    }
+}
+level[8][8] = ">";
+levels.test3.level = level;
 
 level = levels.test1.level;
 levels.currentLvl = "test1";

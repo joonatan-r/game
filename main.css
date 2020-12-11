@@ -19,6 +19,7 @@ td {
 
 p {
     font-size: 2rem;
+    white-space: pre-wrap;
 }
 
 .wall.l {

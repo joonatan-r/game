@@ -67,12 +67,36 @@ function trySpawnMob() {
     }
     if (!spawnPos) return;
 
+    const r = Math.random();
     const mob = {};
-    mob.name = "Teppo";
-    mob.symbol = "T";
     mob.pos = spawnPos;
     mob.target = spawnPos;
-    mob.calcTarget = () => movingAIs.random(mob);
+
+    if (r < 0.1) {
+        mob.name = "Make";
+        mob.symbol = "M";
+        mob.calcTarget = () => {
+            if (rendered[mob.pos[0]][mob.pos[1]]) {
+                movingAIs.towardsPos(mob, pos)
+            } else {
+                movingAIs.random(mob);
+            }
+        };
+    } else if (r > 0.9) {
+        mob.name = "Pekka";
+        mob.symbol = "P";
+        mob.calcTarget = () => {
+            if (rendered[mob.pos[0]][mob.pos[1]]) {
+                movingAIs.towardsPos(mob, pos)
+            } else {
+                movingAIs.random(mob);
+            }
+        };
+    } else {
+        mob.name = "Jorma";
+        mob.symbol = "J";
+        mob.calcTarget = () => movingAIs.random(mob);
+    }
     mobs.push(mob);
 }
 
@@ -129,6 +153,7 @@ function processTurn() {
     } else {
         info.innerHTML = "You can shoot";
     }
+    info.innerHTML += "\nTurn " + timeTracker.timer;
     status.innerHTML = "";
 
     for (let mob of mobs) {
@@ -156,8 +181,8 @@ function processTurn() {
         }
         mob.calcTarget();
     }
-    trySpawnMob();
     renderAll();
+    trySpawnMob();
     timeTracker.timer++;
     if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
 }
@@ -267,6 +292,8 @@ const keypressListener = e => {
                         break;
                     }
                 }
+            } else {
+                return;
             }
             break;
         case "f":
@@ -275,8 +302,8 @@ const keypressListener = e => {
                 document.removeEventListener("keydown", keypressListener);
                 status.innerHTML = "In what direction?";
                 document.addEventListener("keydown", shootListener);
-                return;
             }
+            return;
         default:
             return;
     }
