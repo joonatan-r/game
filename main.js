@@ -153,7 +153,7 @@ function processTurn() {
     } else {
         info.innerHTML = "You can shoot";
     }
-    info.innerHTML += "\nTurn " + timeTracker.timer;
+    info.innerHTML += "\nTurn " + timeTracker.timer + "\nLevel " + levels.currentLvl;
     status.innerHTML = "";
 
     for (let mob of mobs) {
