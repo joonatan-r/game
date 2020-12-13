@@ -6,7 +6,7 @@ const info = document.getElementById("info");
 const status = document.getElementById("status");
 const timeTracker = {};
 timeTracker.timer = 0;
-timeTracker.turnsUntilShoot = 60;
+timeTracker.turnsUntilShoot = 1;
 let pos = [10, 13];
 let mobs = [];
 const make = {};
@@ -186,20 +186,24 @@ async function shotEffect(shotPos) {
     area[shotPos[0]][shotPos[1]].innerHTML = "x";
     await new Promise(r => setTimeout(r, 300));
     area[shotPos[0]][shotPos[1]].innerHTML = prevSymbol;
-    const prevSymbols = [];
-    prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].innerHTML;
-    prevSymbols[1] = area[shotPos[0] - 1][shotPos[1] + 1].innerHTML;
-    prevSymbols[2] = area[shotPos[0] + 1][shotPos[1] + 1].innerHTML;
-    prevSymbols[3] = area[shotPos[0] + 1][shotPos[1] - 1].innerHTML;
-    area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = "\\";
-    area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = "/";
-    area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = "\\";
-    area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = "/";
+    const prevSymbols = [null, null, null, null];
+    area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1] 
+        && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].innerHTML);
+    area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] + 1] 
+        && (prevSymbols[1] = area[shotPos[0] - 1][shotPos[1] + 1].innerHTML);
+    area[shotPos[0] + 1] && area[shotPos[0] + 1][shotPos[1] + 1] 
+        && (prevSymbols[2] = area[shotPos[0] + 1][shotPos[1] + 1].innerHTML);
+    area[shotPos[0] + 1] && area[shotPos[0] + 1][shotPos[1] - 1] 
+        && (prevSymbols[3] = area[shotPos[0] + 1][shotPos[1] - 1].innerHTML);
+    prevSymbols[0] && (area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = "\\");
+    prevSymbols[1] && (area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = "/");
+    prevSymbols[2] && (area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = "\\");
+    prevSymbols[3] && (area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = "/");
     await new Promise(r => setTimeout(r, 300));
-    area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = prevSymbols[0];
-    area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = prevSymbols[1];
-    area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = prevSymbols[2];
-    area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = prevSymbols[3];
+    prevSymbols[0] && (area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = prevSymbols[0]);
+    prevSymbols[1] && (area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = prevSymbols[1]);
+    prevSymbols[2] && (area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = prevSymbols[2]);
+    prevSymbols[3] && (area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = prevSymbols[3]);
 }
 
 async function shoot(drc) {
