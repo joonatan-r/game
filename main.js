@@ -6,14 +6,13 @@ const info = document.getElementById("info");
 const status = document.getElementById("status");
 const timeTracker = {};
 timeTracker.timer = 0;
-timeTracker.turnsUntilShoot = 60;
+timeTracker.turnsUntilShoot = 2;
 let pos = [10, 13];
 let mobs = [];
 const make = {};
 make.name = "Make";
 make.symbol = "M";
 make.pos = [7, 17];
-make.target = [7, 17];
 make.calcTarget = () => {
     if (rendered[make.pos[0]][make.pos[1]]) { // if player can see mob, mob can see player
         movingAIs.towardsPos(make, pos)
@@ -25,7 +24,6 @@ const pekka = {};
 pekka.name = "Pekka";
 pekka.symbol = "P";
 pekka.pos = [4, 4];
-pekka.target = [4, 4];
 pekka.calcTarget = () => {
     if (rendered[pekka.pos[0]][pekka.pos[1]]) {
         movingAIs.towardsPos(pekka, pos)
@@ -37,7 +35,6 @@ const jorma = {};
 jorma.name = "Jorma";
 jorma.symbol = "J";
 jorma.pos = [7, 7];
-jorma.target = [7, 7];
 jorma.calcTarget = () => movingAIs.random(jorma);
 mobs.push(make);
 levels.test2.mobs.push(jorma);
@@ -54,7 +51,6 @@ function trySpawnMob() {
             if (!rendered[i][j]) notRenderedNbr++;
         }
     }
-
     for (let i = 0; i < level.length; i++) {
         if (spawnPos) break;
 
@@ -70,7 +66,6 @@ function trySpawnMob() {
     const r = Math.random();
     const mob = {};
     mob.pos = spawnPos;
-    mob.target = spawnPos;
 
     if (r < 0.2) {
         mob.name = "Make";
@@ -157,6 +152,7 @@ function processTurn() {
     status.innerHTML = "";
 
     for (let mob of mobs) {
+        mob.calcTarget();
         let mobInTheWay = false;
 
         for (let otherMob of mobs) {
@@ -164,7 +160,6 @@ function processTurn() {
                 mobInTheWay = true;
             }
         }
-
         if (isNextTo(pos, mob.pos)) {
             status.innerHTML = mob.name + " hits you! You die...";
             document.removeEventListener("keydown", keypressListener);
@@ -179,12 +174,32 @@ function processTurn() {
         ) {
             mob.pos = mob.target.slice();
         }
-        mob.calcTarget();
     }
     renderAll();
     trySpawnMob();
     timeTracker.timer++;
     if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
+}
+
+async function shotEffect(shotPos) {
+    const prevSymbol = area[shotPos[0]][shotPos[1]].innerHTML;
+    area[shotPos[0]][shotPos[1]].innerHTML = "x";
+    await new Promise(r => setTimeout(r, 300));
+    area[shotPos[0]][shotPos[1]].innerHTML = prevSymbol;
+    const prevSymbols = [];
+    prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].innerHTML;
+    prevSymbols[1] = area[shotPos[0] - 1][shotPos[1] + 1].innerHTML;
+    prevSymbols[2] = area[shotPos[0] + 1][shotPos[1] + 1].innerHTML;
+    prevSymbols[3] = area[shotPos[0] + 1][shotPos[1] - 1].innerHTML;
+    area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = "\\";
+    area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = "/";
+    area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = "\\";
+    area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = "/";
+    await new Promise(r => setTimeout(r, 300));
+    area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = prevSymbols[0];
+    area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = prevSymbols[1];
+    area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = prevSymbols[2];
+    area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = prevSymbols[3];
 }
 
 async function shoot(drc) {
@@ -225,6 +240,14 @@ async function shoot(drc) {
                 bulletPos[1]++;
                 bulletPos[0]++;
                 break;
+            case "Escape":
+                timeTracker.turnsUntilShoot = 0;
+                status.innerHTML = "";
+                document.addEventListener("keydown", keypressListener);
+                return;
+            default:
+                document.addEventListener("keydown", shootListener);
+                return;
         }
         const prevSymbol = area[prevBulletPos[0]][prevBulletPos[1]].innerHTML;
         area[prevBulletPos[0]][prevBulletPos[1]].innerHTML = "o";
@@ -236,7 +259,7 @@ async function shoot(drc) {
                 mobs.splice(i, 1);
                 document.addEventListener("keydown", keypressListener);
                 processTurn();
-                area[bulletPos[0]][bulletPos[1]].innerHTML = "x";
+                shotEffect(bulletPos);
                 return;
             }
         }
