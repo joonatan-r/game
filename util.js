@@ -243,6 +243,7 @@ movingAIs = {
 
                 for (let d of newDrcs) {
                     if (d.length === 0) continue;
+                    if (!level[d[0]] || typeof level[d[0]][d[1]] === "undefined") continue;
                     if (level[d[0]][d[1]] !== "") {
                         mob.target = d;
                         return;
