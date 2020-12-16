@@ -113,7 +113,18 @@ function coordsEq(coord1, coord2) {
     return false;
 }
 
-movingAIs = {
+const oppositeDrcs = {
+    "1": "9",
+    "2": "8",
+    "3": "7",
+    "4": "6",
+    "6": "4",
+    "7": "3",
+    "8": "2",
+    "9": "1",
+};
+
+const movingAIs = {
     random: mob => {
         let drc;
         mob.target = mob.pos.slice();

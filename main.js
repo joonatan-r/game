@@ -9,25 +9,82 @@ timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 1;
 let pos = [10, 13];
 let mobs = [];
-// const pekka = {};
-// pekka.name = "Pekka";
-// pekka.symbol = "P";
-// pekka.pos = [7, 17];
-// pekka.calcTarget = () => {
-//     if (rendered[pekka.pos[0]][pekka.pos[1]]) {
-        
-//         // TODO ai for shooting & moving to straight line from player:
-//         // if rendered, straight line from player to all drcs.
-//         // When doing line, for each pos calc distance to mob, and keep track of min.
-//         // Lines stop at walls (and if new pos moves farther from mob?).
-//         // When all done, mob moves towards the pos with min distance.
-        
-//         movingAIs.towardsPos(pekka, pos);
-//     } else {
-//         pekka.target = pekka.pos.slice();
-//     }
-// };
-// mobs.push(pekka);
+const pekka = {};
+pekka.name = "Pekka";
+pekka.symbol = "P";
+pekka.isShooter = true;
+pekka.pos = [7, 17];
+pekka.calcTarget = () => {
+    if (rendered[pekka.pos[0]][pekka.pos[1]]) {
+        let min = { pos: null, dist: null };
+        pekka.straightLineToPlayerDrc = null;
+
+        // find closest pos where straight line to player
+
+        for (let drc of "12346789") {
+            const lineDrawPos = pos.slice();
+            let distanceToMob = null;
+            let prevDistance = null;
+
+            while (1) {
+                switch (drc) {
+                    case "4":
+                        lineDrawPos[1]--;
+                        break;
+                    case "6":
+                        lineDrawPos[1]++;
+                        break;
+                    case "8":
+                        lineDrawPos[0]--;
+                        break;
+                    case "2":
+                        lineDrawPos[0]++;
+                        break;
+                    case "7":
+                        lineDrawPos[1]--;
+                        lineDrawPos[0]--;
+                        break;
+                    case "1":
+                        lineDrawPos[1]--;
+                        lineDrawPos[0]++;
+                        break;
+                    case "9":
+                        lineDrawPos[1]++;
+                        lineDrawPos[0]--;
+                        break;
+                    case "3":
+                        lineDrawPos[1]++;
+                        lineDrawPos[0]++;
+                        break;
+                }
+                // TODO is this ok that mob just "knows" all walls?
+                if (!level[lineDrawPos[0]] || !level[lineDrawPos[0]][lineDrawPos[1]]
+                    || level[lineDrawPos[0]][lineDrawPos[1]].innerHTML === "") break;
+                if (distanceToMob) prevDistance = distanceToMob;
+
+                // actually squared but doesn't matter
+                distanceToMob = (pekka.pos[0] - lineDrawPos[0])*(pekka.pos[0] - lineDrawPos[0]) + 
+                                    (pekka.pos[1] - lineDrawPos[1])*(pekka.pos[1] - lineDrawPos[1]);
+                
+                // moving farther, no point checking line to end
+                if (prevDistance && distanceToMob >= prevDistance) break;
+                if (distanceToMob === 0) pekka.straightLineToPlayerDrc = oppositeDrcs[drc]; 
+                if (!min.dist || distanceToMob < min.dist) {
+                    min.dist = distanceToMob;
+                    min.pos = lineDrawPos.slice();
+                }
+            }
+        }
+        if (min.pos && !coordsEq(pekka.pos, min.pos)) {
+            movingAIs.towardsPos(pekka, min.pos);
+        } else {
+            pekka.target = pekka.pos.slice();
+        }
+    } else {
+        pekka.target = pekka.pos.slice();
+    }
+};
+mobs.push(pekka);
 
 function trySpawnMob() {
     let spawnPos = null;
@@ -61,7 +118,7 @@ function trySpawnMob() {
         mob.symbol = "M";
         mob.calcTarget = () => {
             if (rendered[mob.pos[0]][mob.pos[1]]) { // if player can see mob, mob can see player
-                movingAIs.towardsPos(mob, pos)
+                movingAIs.towardsPos(mob, pos);
             } else {
                 movingAIs.random(mob);
             }
@@ -71,7 +128,7 @@ function trySpawnMob() {
         mob.symbol = "P";
         mob.calcTarget = () => {
             if (rendered[mob.pos[0]][mob.pos[1]]) {
-                movingAIs.towardsPos(mob, pos)
+                movingAIs.towardsPos(mob, pos);
             } else {
                 movingAIs.random(mob);
             }
@@ -152,6 +209,8 @@ function processTurn() {
         if (isNextTo(pos, mob.pos)) {
             status.innerHTML = mob.name + " hits you! You die...";
             document.removeEventListener("keydown", keypressListener);
+        } else if (mob.isShooter && mob.straightLineToPlayerDrc) {
+            shoot(mob.pos, mob.straightLineToPlayerDrc, true);
         } else if (!coordsEq(pos, mob.target) 
             && !mobInTheWay
             && !(
@@ -176,7 +235,7 @@ async function shotEffect(shotPos) {
     await new Promise(r => setTimeout(r, 300));
     area[shotPos[0]][shotPos[1]].innerHTML = prevSymbol;
     const prevSymbols = [null, null, null, null];
-    area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1] // check also fails if wall, because it's ""
+    area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1]
         && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].innerHTML);
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] + 1] 
         && (prevSymbols[1] = area[shotPos[0] - 1][shotPos[1] + 1].innerHTML);
@@ -184,6 +243,7 @@ async function shotEffect(shotPos) {
         && (prevSymbols[2] = area[shotPos[0] + 1][shotPos[1] + 1].innerHTML);
     area[shotPos[0] + 1] && area[shotPos[0] + 1][shotPos[1] - 1] 
         && (prevSymbols[3] = area[shotPos[0] + 1][shotPos[1] - 1].innerHTML);
+    // also doesn't show on walls because then symbol is "" which becomes false
     prevSymbols[0] && (area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = "\\");
     prevSymbols[1] && (area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = "/");
     prevSymbols[2] && (area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = "\\");
@@ -195,10 +255,10 @@ async function shotEffect(shotPos) {
     prevSymbols[3] && (area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = prevSymbols[3]);
 }
 
-async function shoot(fromPos, drc) {
+async function shoot(fromPos, drc, mobIsShooting) {
     let bulletPos = fromPos.slice();
     document.removeEventListener("keydown", shootListener);
-    // TODO if others can shoot too, might wanna remove keypressListener too
+    mobIsShooting && document.removeEventListener("keydown", keypressListener);
 
     while (level[bulletPos[0]] && level[bulletPos[0]][bulletPos[1]] 
            && level[bulletPos[0]][bulletPos[1]] !== ""
