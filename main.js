@@ -1,5 +1,5 @@
 // level, levels, edges, area, rendered from level.js
-// renderLine, isNextTo, movingAIs from util.js
+// renderLine, isNextTo, coordsEq, movingAIs from util.js
 // all coords are given as (y,x)
 
 const info = document.getElementById("info");
@@ -9,36 +9,25 @@ timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 1;
 let pos = [10, 13];
 let mobs = [];
-const make = {};
-make.name = "Make";
-make.symbol = "M";
-make.pos = [7, 17];
-make.calcTarget = () => {
-    if (rendered[make.pos[0]][make.pos[1]]) { // if player can see mob, mob can see player
-        movingAIs.towardsPos(make, pos)
-    } else {
-        movingAIs.random(make);
-    }
-};
-const pekka = {};
-pekka.name = "Pekka";
-pekka.symbol = "P";
-pekka.pos = [4, 4];
-pekka.calcTarget = () => {
-    if (rendered[pekka.pos[0]][pekka.pos[1]]) {
-        movingAIs.towardsPos(pekka, pos)
-    } else {
-        movingAIs.random(pekka);
-    }
-};
-const jorma = {};
-jorma.name = "Jorma";
-jorma.symbol = "J";
-jorma.pos = [7, 7];
-jorma.calcTarget = () => movingAIs.random(jorma);
-mobs.push(make);
-levels.test2.mobs.push(jorma);
-levels.test3.mobs.push(pekka);
+// const pekka = {};
+// pekka.name = "Pekka";
+// pekka.symbol = "P";
+// pekka.pos = [7, 17];
+// pekka.calcTarget = () => {
+//     if (rendered[pekka.pos[0]][pekka.pos[1]]) {
+        
+//         // TODO ai for shooting & moving to straight line from player:
+//         // if rendered, straight line from player to all drcs.
+//         // When doing line, for each pos calc distance to mob, and keep track of min.
+//         // Lines stop at walls (and if new pos moves farther from mob?).
+//         // When all done, mob moves towards the pos with min distance.
+        
+//         movingAIs.towardsPos(pekka, pos);
+//     } else {
+//         pekka.target = pekka.pos.slice();
+//     }
+// };
+// mobs.push(pekka);
 
 function trySpawnMob() {
     let spawnPos = null;
@@ -71,7 +60,7 @@ function trySpawnMob() {
         mob.name = "Make";
         mob.symbol = "M";
         mob.calcTarget = () => {
-            if (rendered[mob.pos[0]][mob.pos[1]]) {
+            if (rendered[mob.pos[0]][mob.pos[1]]) { // if player can see mob, mob can see player
                 movingAIs.towardsPos(mob, pos)
             } else {
                 movingAIs.random(mob);
@@ -156,14 +145,14 @@ function processTurn() {
         let mobInTheWay = false;
 
         for (let otherMob of mobs) {
-            if (otherMob.pos[0] === mob.target[0] && otherMob.pos[1] === mob.target[1]) {
+            if (coordsEq(otherMob.pos, mob.target)) {
                 mobInTheWay = true;
             }
         }
         if (isNextTo(pos, mob.pos)) {
             status.innerHTML = mob.name + " hits you! You die...";
             document.removeEventListener("keydown", keypressListener);
-        } else if (!(pos[0] === mob.target[0] && pos[1] === mob.target[1]) 
+        } else if (!coordsEq(pos, mob.target) 
             && !mobInTheWay
             && !(
                 mob.target[0] > level.length - 1 
@@ -187,7 +176,7 @@ async function shotEffect(shotPos) {
     await new Promise(r => setTimeout(r, 300));
     area[shotPos[0]][shotPos[1]].innerHTML = prevSymbol;
     const prevSymbols = [null, null, null, null];
-    area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1] 
+    area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1] // check also fails if wall, because it's ""
         && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].innerHTML);
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] + 1] 
         && (prevSymbols[1] = area[shotPos[0] - 1][shotPos[1] + 1].innerHTML);
@@ -206,9 +195,10 @@ async function shotEffect(shotPos) {
     prevSymbols[3] && (area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = prevSymbols[3]);
 }
 
-async function shoot(drc) {
-    let bulletPos = pos.slice();
+async function shoot(fromPos, drc) {
+    let bulletPos = fromPos.slice();
     document.removeEventListener("keydown", shootListener);
+    // TODO if others can shoot too, might wanna remove keypressListener too
 
     while (level[bulletPos[0]] && level[bulletPos[0]][bulletPos[1]] 
            && level[bulletPos[0]][bulletPos[1]] !== ""
@@ -258,8 +248,13 @@ async function shoot(drc) {
         await new Promise(r => setTimeout(r, 30));
         area[prevBulletPos[0]][prevBulletPos[1]].innerHTML = prevSymbol;
 
+        if (coordsEq(bulletPos, pos)) {
+            status.innerHTML = "A bullet hits you! You die...";
+            shotEffect(bulletPos);
+            return;
+        }
         for (let i = 0; i < mobs.length; i++) {
-            if (bulletPos[0] === mobs[i].pos[0] && bulletPos[1] === mobs[i].pos[1]) {
+            if (coordsEq(bulletPos, mobs[i].pos)) {
                 mobs.splice(i, 1);
                 document.addEventListener("keydown", keypressListener);
                 processTurn();
@@ -272,7 +267,7 @@ async function shoot(drc) {
     processTurn();
 }
 
-const shootListener = e => shoot(e.key);
+const shootListener = e => shoot(pos, e.key);
 const keypressListener = e => {
     const prevPos = pos.slice();
 
@@ -310,7 +305,7 @@ const keypressListener = e => {
                 const tps = levels[levels.currentLvl].travelPoints;
 
                 for (let lvl of Object.keys(tps)) {
-                    if (tps[lvl][0] === pos[0] && tps[lvl][1] === pos[1]) {
+                    if (coordsEq(tps[lvl], pos)) {
                         const retObj = changeLvl(levels.currentLvl, lvl, mobs);
                         level = retObj.level;
                         pos = retObj.pos.slice();
@@ -337,7 +332,7 @@ const keypressListener = e => {
     let overlapMob = false;
 
     for (let mob of mobs) {
-        if (pos[0] === mob.pos[0] && pos[1] === mob.pos[1]) {
+        if (coordsEq(pos, mob.pos)) {
             overlapMob = true;
             break;
         }
