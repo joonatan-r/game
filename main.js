@@ -9,82 +9,6 @@ timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 1;
 let pos = [10, 13];
 let mobs = [];
-const pekka = {};
-pekka.name = "Pekka";
-pekka.symbol = "P";
-pekka.isShooter = true;
-pekka.pos = [7, 17];
-pekka.calcTarget = () => {
-    if (rendered[pekka.pos[0]][pekka.pos[1]]) {
-        let min = { pos: null, dist: null };
-        pekka.straightLineToPlayerDrc = null;
-
-        // find closest pos where straight line to player
-
-        for (let drc of "12346789") {
-            const lineDrawPos = pos.slice();
-            let distanceToMob = null;
-            let prevDistance = null;
-
-            while (1) {
-                switch (drc) {
-                    case "4":
-                        lineDrawPos[1]--;
-                        break;
-                    case "6":
-                        lineDrawPos[1]++;
-                        break;
-                    case "8":
-                        lineDrawPos[0]--;
-                        break;
-                    case "2":
-                        lineDrawPos[0]++;
-                        break;
-                    case "7":
-                        lineDrawPos[1]--;
-                        lineDrawPos[0]--;
-                        break;
-                    case "1":
-                        lineDrawPos[1]--;
-                        lineDrawPos[0]++;
-                        break;
-                    case "9":
-                        lineDrawPos[1]++;
-                        lineDrawPos[0]--;
-                        break;
-                    case "3":
-                        lineDrawPos[1]++;
-                        lineDrawPos[0]++;
-                        break;
-                }
-                // TODO is this ok that mob just "knows" all walls?
-                if (!level[lineDrawPos[0]] || !level[lineDrawPos[0]][lineDrawPos[1]]
-                    || level[lineDrawPos[0]][lineDrawPos[1]].innerHTML === "") break;
-                if (distanceToMob) prevDistance = distanceToMob;
-
-                // actually squared but doesn't matter
-                distanceToMob = (pekka.pos[0] - lineDrawPos[0])*(pekka.pos[0] - lineDrawPos[0]) + 
-                                    (pekka.pos[1] - lineDrawPos[1])*(pekka.pos[1] - lineDrawPos[1]);
-                
-                // moving farther, no point checking line to end
-                if (prevDistance && distanceToMob >= prevDistance) break;
-                if (distanceToMob === 0) pekka.straightLineToPlayerDrc = oppositeDrcs[drc]; 
-                if (!min.dist || distanceToMob < min.dist) {
-                    min.dist = distanceToMob;
-                    min.pos = lineDrawPos.slice();
-                }
-            }
-        }
-        if (min.pos && !coordsEq(pekka.pos, min.pos)) {
-            movingAIs.towardsPos(pekka, min.pos);
-        } else {
-            pekka.target = pekka.pos.slice();
-        }
-    } else {
-        pekka.target = pekka.pos.slice();
-    }
-};
-mobs.push(pekka);
 
 function trySpawnMob() {
     let spawnPos = null;
@@ -94,14 +18,14 @@ function trySpawnMob() {
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
-            if (!rendered[i][j]) notRenderedNbr++;
+            if (!rendered[i][j] && level[i][j] !== "") notRenderedNbr++;
         }
     }
     for (let i = 0; i < level.length; i++) {
         if (spawnPos) break;
 
         for (let j = 0; j < level[0].length; j++) {
-            if (!rendered[i][j] && Math.random() < (1 / notRenderedNbr)) {
+            if (!rendered[i][j] && level[i][j] !== "" && Math.random() < (1 / notRenderedNbr)) {
                 spawnPos = [i, j];
                 break;
             }
@@ -126,11 +50,12 @@ function trySpawnMob() {
     } else if (r > 0.8) {
         mob.name = "Pekka";
         mob.symbol = "P";
+        mob.isShooter = true;
         mob.calcTarget = () => {
             if (rendered[mob.pos[0]][mob.pos[1]]) {
-                movingAIs.towardsPos(mob, pos);
+                movingAIs.towardsStraightLineFromPos(mob, pos);
             } else {
-                movingAIs.random(mob);
+                mob.target = mob.pos.slice();
             }
         };
     } else {
@@ -203,6 +128,7 @@ function processTurn() {
 
         for (let otherMob of mobs) {
             if (coordsEq(otherMob.pos, mob.target)) {
+                // this could be the mob itself, but then it won't be moving anyway
                 mobInTheWay = true;
             }
         }

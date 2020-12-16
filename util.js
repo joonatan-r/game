@@ -267,6 +267,72 @@ const movingAIs = {
         } else {
             mob.alreadyTried = [];
         }
+    },
+    towardsStraightLineFromPos: (mob, fromPos) => {
+        let min = { pos: null, dist: null };
+        mob.straightLineToPlayerDrc = null; // TODO improve
+
+        // find closest pos where straight line to player
+
+        for (let drc of "12346789") {
+            const lineDrawPos = fromPos.slice();
+            let distanceToMob = null;
+            let prevDistance = null;
+
+            while (1) {
+                switch (drc) {
+                    case "4":
+                        lineDrawPos[1]--;
+                        break;
+                    case "6":
+                        lineDrawPos[1]++;
+                        break;
+                    case "8":
+                        lineDrawPos[0]--;
+                        break;
+                    case "2":
+                        lineDrawPos[0]++;
+                        break;
+                    case "7":
+                        lineDrawPos[1]--;
+                        lineDrawPos[0]--;
+                        break;
+                    case "1":
+                        lineDrawPos[1]--;
+                        lineDrawPos[0]++;
+                        break;
+                    case "9":
+                        lineDrawPos[1]++;
+                        lineDrawPos[0]--;
+                        break;
+                    case "3":
+                        lineDrawPos[1]++;
+                        lineDrawPos[0]++;
+                        break;
+                }
+                // TODO is this ok that mob just "knows" all walls?
+                if (!level[lineDrawPos[0]] || !level[lineDrawPos[0]][lineDrawPos[1]]
+                    || level[lineDrawPos[0]][lineDrawPos[1]].innerHTML === "") break;
+                if (distanceToMob) prevDistance = distanceToMob;
+
+                // actually squared but doesn't matter
+                distanceToMob = (mob.pos[0] - lineDrawPos[0])*(mob.pos[0] - lineDrawPos[0]) + 
+                                    (mob.pos[1] - lineDrawPos[1])*(mob.pos[1] - lineDrawPos[1]);
+                
+                // moving farther, no point checking line to end
+                if (prevDistance && distanceToMob >= prevDistance) break;
+                if (distanceToMob === 0) mob.straightLineToPlayerDrc = oppositeDrcs[drc]; 
+                if (!min.dist || distanceToMob < min.dist) {
+                    min.dist = distanceToMob;
+                    min.pos = lineDrawPos.slice();
+                }
+            }
+        }
+        if (min.pos && !coordsEq(mob.pos, min.pos)) {
+            movingAIs.towardsPos(mob, min.pos);
+        } else {
+            mob.target = mob.pos.slice();
+        }
     }
 };
 
