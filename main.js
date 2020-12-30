@@ -134,6 +134,7 @@ function processTurn() {
         }
         if (isNextTo(pos, mob.pos)) {
             status.innerHTML = mob.name + " hits you! You die...";
+            // clearInterval(turnInterval);
             document.removeEventListener("keydown", keypressListener);
         } else if (mob.isShooter && mob.straightLineToPlayerDrc) {
             shoot(mob.pos, mob.straightLineToPlayerDrc, true);
@@ -236,6 +237,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
 
         if (coordsEq(bulletPos, pos)) {
             status.innerHTML = "A bullet hits you! You die...";
+            // clearInterval(turnInterval);
             shotEffect(bulletPos);
             return;
         }
@@ -331,6 +333,9 @@ const keypressListener = e => {
     }
     area[prevPos[0]][prevPos[1]].innerHTML = level[prevPos[0]][prevPos[1]];
     processTurn();
+    // renderAll();
 }
 document.addEventListener("keydown", keypressListener);
 processTurn();
+
+// const turnInterval = setInterval(() => processTurn(), 500);
