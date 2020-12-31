@@ -73,70 +73,28 @@ for (let c of levelData) {
         c = levelCharMap[c];
     }
     if (c === ">") travelCoords.push([yIdx, xIdx]);
-    level[yIdx].push([]);
     level[yIdx][xIdx] = c;
     xIdx++;
 }
-
-// for (let i = 0; i < SIZE_Y; i++) {
-//     level.push([]);
-  
-//     for (let j = 0; j < SIZE_X; j++) {
-//         level[i].push([]);
-
-//         if (((i + j) % 9 === 0 && (i * j) % 9 === 0)
-//             || (
-//                 ((i + j) % 29 === 0 || (i + j) % 30 === 0) && i % 7 !== 0
-//             )
-//         ) {
-//             level[i][j] = "";
-//         } else {
-//             level[i][j] = "&#183"; // middle dot
-//         }
-//     }
-// }
-// level[11][14] = ">";
-// levels.test1.level = level;
-// level = [];
-
-// for (let i = 0; i < SIZE_Y; i++) {
-//     level.push([]);
-  
-//     for (let j = 0; j < SIZE_X; j++) {
-//         level[i].push([]);
-
-//         if ((j === 15 || j === 26) && [2, 15].indexOf(i) === -1) {
-//             level[i][j] = "";
-//         } else {
-//             level[i][j] = "&#183";
-//         }
-//     }
-// }
-// level[5][4] = ">";
-// level[8][18] = ">";
-// levels.test2.level = level;
-// level = [];
-
-// for (let i = 0; i < SIZE_Y; i++) {
-//     level.push([]);
-  
-//     for (let j = 0; j < SIZE_X; j++) {
-//         level[i].push([]);
-
-//         if ((i % 9 === 0 || j % 9 === 0) && [9, 15].indexOf(j) === -1 
-//             && i !== 4 && j !== 21
-//         ) {
-//             level[i][j] = "";
-//         } else {
-//             level[i][j] = "&#183";
-//         }
-//     }
-// }
-// level[8][8] = ">";
-// levels.test3.level = level;
-
 levels.currentLvl = Object.keys(levels)[1];
 level = levels[levels.currentLvl].level;
+
+for (let i = 0; i < level.length; i++) {
+    const tr = document.createElement("tr");
+    table.appendChild(tr);
+    area.push([]);
+    rendered.push([]);
+  
+    for (let j = 0; j < level[0].length; j++) {
+        if (i === 0 || j === 0 || i === SIZE_Y - 1 || j === SIZE_X - 1) {
+            edges.push([i, j]);
+        }
+        rendered[i][j] = false;
+        const td = document.createElement("td");
+        tr.appendChild(td);
+        area[i][j] = td;
+    }
+}
 
 function changeLvl(fromLvl, toLvl, mobs) {
     levels[fromLvl].mobs = mobs;
@@ -146,30 +104,4 @@ function changeLvl(fromLvl, toLvl, mobs) {
         pos: levels[toLvl].travelPoints[fromLvl],
         mobs: levels[toLvl].mobs
     };
-}
-
-for (let i = 0; i < SIZE_Y; i++) {
-    for (let j = 0; j < SIZE_X; j++) {
-        if (i === 0 || j === 0 || i === SIZE_Y - 1 || j === SIZE_X - 1) {
-            edges.push([i, j]);
-        }
-    }
-}
-for (let i = 0; i < level.length; i++) {
-    const tr = document.createElement("tr");
-    table.appendChild(tr);
-    area.push([]);
-  
-    for (let j = 0; j < level[0].length; j++) {
-        const td = document.createElement("td");
-        tr.appendChild(td);
-        area[i][j] = td;
-    }
-}
-for (let i = 0; i < level.length; i++) {
-    rendered.push([]);
-
-    for (let j = 0; j < level[0].length; j++) {
-        rendered[i][j] = false;
-    }
 }

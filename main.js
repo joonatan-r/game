@@ -72,13 +72,17 @@ function renderAll() {
             rendered[i][j] = false;
             const td = area[i][j];
             td.innerHTML = "";
-            td.className = ""; // remove this to "remember" walls once seen
+            // remove this to "remember" walls once seen
+            // (won't work if something else, such as player's pos,
+            // uses className)
+            td.className = "";
         }
     }
     for (let coords of edges) {
         renderLine(pos[0], pos[1], coords[0], coords[1]);
     }
     area[pos[0]][pos[1]].innerHTML = "@";
+    area[pos[0]][pos[1]].className = "player";
 
     for (let mob of mobs) {
         if (rendered[mob.pos[0]][mob.pos[1]]) {
