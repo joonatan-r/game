@@ -8,21 +8,7 @@ const levelCharMap = {
     ".": "&#183",
     "w": ""
 };
-const levels = {
-    currentLvl: "",
-    // test1: {
-    //     mobs: [], 
-    //     travelPoints: { test2: [11, 14] }
-    // },
-    // test2: {
-    //     mobs: [], 
-    //     travelPoints: { test1: [5, 4], test3: [8, 18] }
-    // },
-    // test3: {
-    //     mobs: [],
-    //     travelPoints: { test2: [8, 8] }
-    // }
-};
+const levels = { currentLvl: "" };
 let level = [[]];
 let yIdx = 0;
 let xIdx = 0;
@@ -149,8 +135,8 @@ for (let c of levelData) {
 // level[8][8] = ">";
 // levels.test3.level = level;
 
-level = levels.test1.level;
-levels.currentLvl = "test1";
+levels.currentLvl = Object.keys(levels)[1];
+level = levels[levels.currentLvl].level;
 
 function changeLvl(fromLvl, toLvl, mobs) {
     levels[fromLvl].mobs = mobs;
