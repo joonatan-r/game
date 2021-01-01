@@ -72,7 +72,7 @@ for (let c of levelData) {
     if (Object.keys(levelCharMap).indexOf(c) !== -1) {
         c = levelCharMap[c];
     }
-    if (c === ">") travelCoords.push([yIdx, xIdx]);
+    if (c === ">" || c === "^") travelCoords.push([yIdx, xIdx]);
     level[yIdx][xIdx] = c;
     xIdx++;
 }

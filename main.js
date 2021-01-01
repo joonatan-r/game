@@ -117,6 +117,12 @@ function renderAll() {
     }
 }
 
+function gameOver(msg) {
+    status.innerHTML = msg;
+    // clearInterval(turnInterval);
+    document.removeEventListener("keydown", keypressListener);
+}
+
 function processTurn() {
     if (timeTracker.turnsUntilShoot > 0) {
         info.innerHTML = timeTracker.turnsUntilShoot + " turns until you can shoot";
@@ -137,9 +143,7 @@ function processTurn() {
             }
         }
         if (isNextTo(pos, mob.pos)) {
-            status.innerHTML = mob.name + " hits you! You die...";
-            // clearInterval(turnInterval);
-            document.removeEventListener("keydown", keypressListener);
+            gameOver(mob.name + " hits you! You die...");
         } else if (mob.isShooter && mob.straightLineToPlayerDrc) {
             shoot(mob.pos, mob.straightLineToPlayerDrc, true);
         } else if (!coordsEq(pos, mob.target) 
@@ -240,8 +244,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
         area[prevBulletPos[0]][prevBulletPos[1]].innerHTML = prevSymbol;
 
         if (coordsEq(bulletPos, pos)) {
-            status.innerHTML = "A bullet hits you! You die...";
-            // clearInterval(turnInterval);
+            gameOver("A bullet hits you! You die...");
             shotEffect(bulletPos);
             return;
         }
@@ -262,6 +265,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
 const shootListener = e => shoot(pos, e.key);
 const keypressListener = e => {
     const prevPos = pos.slice();
+    let changedLvl = false;
 
     switch (e.key) {
         case "4":
@@ -303,6 +307,8 @@ const keypressListener = e => {
                         pos = retObj.pos.slice();
                         mobs = retObj.mobs;
                         levels.currentLvl = lvl;
+                        // needed if mixing the types of lvl doors for the same two way
+                        changedLvl = true;
                         break;
                     }
                 }
@@ -336,6 +342,21 @@ const keypressListener = e => {
         return;
     }
     area[prevPos[0]][prevPos[1]].innerHTML = level[prevPos[0]][prevPos[1]];
+    
+    if (level[pos[0]][pos[1]] === "^" && !changedLvl) {
+        const tps = levels[levels.currentLvl].travelPoints;
+
+        for (let lvl of Object.keys(tps)) {
+            if (coordsEq(tps[lvl], pos)) {
+                const retObj = changeLvl(levels.currentLvl, lvl, mobs);
+                level = retObj.level;
+                pos = retObj.pos.slice();
+                mobs = retObj.mobs;
+                levels.currentLvl = lvl;
+                break;
+            }
+        }
+    }
     processTurn();
     // renderAll();
 }
