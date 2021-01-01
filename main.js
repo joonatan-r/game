@@ -1,9 +1,10 @@
 // level, levels, edges, area, rendered from level.js
-// renderLine, isNextTo, coordsEq, movingAIs from util.js
+// renderLine, isNextTo, coordsEq, movePosToDrc, movingAIs from util.js
 // all coords are given as (y,x)
 
 const info = document.getElementById("info");
 const status = document.getElementById("status");
+const talkElem = document.getElementById("talk");
 const timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 1;
@@ -11,10 +12,11 @@ let pos = [10, 13];
 let mobs = [];
 
 mobs.push({
-    name: "Testi",
+    name: "Ukko",
     symbol: "@",
     isHostile: false,
     pos: [5, 8],
+    talkLine: "Yo man",
     calcTarget: function() { movingAIs.random(this) }
 });
 
@@ -134,7 +136,7 @@ function gameOver(msg) {
     document.removeEventListener("keydown", keypressListener);
 }
 
-function processTurn() {
+function processTurn(keepTalkLine) {
     if (timeTracker.turnsUntilShoot > 0) {
         info.innerHTML = timeTracker.turnsUntilShoot + " turns until you can shoot";
     } else {
@@ -142,6 +144,7 @@ function processTurn() {
     }
     info.innerHTML += "\nTurn " + timeTracker.timer + "\nLevel " + levels.currentLvl;
     status.innerHTML = "";
+    !keepTalkLine && (talkElem.innerHTML = "");
 
     for (let mob of mobs) {
         mob.calcTarget();
@@ -212,32 +215,14 @@ async function shoot(fromPos, drc) {
 
         switch (drc) {
             case "4":
-                bulletPos[1]--;
-                break;
             case "6":
-                bulletPos[1]++;
-                break;
             case "8":
-                bulletPos[0]--;
-                break;
             case "2":
-                bulletPos[0]++;
-                break;
             case "7":
-                bulletPos[1]--;
-                bulletPos[0]--;
-                break;
             case "1":
-                bulletPos[1]--;
-                bulletPos[0]++;
-                break;
             case "9":
-                bulletPos[1]++;
-                bulletPos[0]--;
-                break;
             case "3":
-                bulletPos[1]++;
-                bulletPos[0]++;
+                movePosToDrc(bulletPos, drc);
                 break;
             case "Escape":
                 timeTracker.turnsUntilShoot = 0;
@@ -277,43 +262,34 @@ async function shoot(fromPos, drc) {
 }
 
 function talk(drc) {
+    let talkPos = pos.slice();
+
     switch (drc) {
         case "4":
-            // bulletPos[1]--;
-            break;
         case "6":
-            // bulletPos[1]++;
-            break;
         case "8":
-            // bulletPos[0]--;
-            break;
         case "2":
-            // bulletPos[0]++;
-            break;
         case "7":
-            // bulletPos[1]--;
-            // bulletPos[0]--;
-            break;
         case "1":
-            // bulletPos[1]--;
-            // bulletPos[0]++;
-            break;
         case "9":
-            // bulletPos[1]++;
-            // bulletPos[0]--;
-            break;
         case "3":
-            // bulletPos[1]++;
-            // bulletPos[0]++;
+            movePosToDrc(talkPos, drc);
             break;
-        case "Escape": // go to end of function
-            break;
+        case "Escape":
+            status.innerHTML = "";
+            keypressListener.actionType = null;
+            return;
         default:
             keypressListener.actionType = "talk";
             return;
     }
-    status.innerHTML = "";
+    for (let mob of mobs) {
+        if (coordsEq(talkPos, mob.pos) && mob.talkLine) {
+            talkElem.innerHTML = mob.name + ": " + mob.talkLine;
+        }
+    }
     keypressListener.actionType = null;
+    processTurn(true);
 }
 
 function action(key) {
@@ -322,32 +298,14 @@ function action(key) {
 
     switch (key) {
         case "4":
-            pos[1]--;
-            break;
         case "6":
-            pos[1]++;
-            break;
         case "8":
-            pos[0]--;
-            break;
         case "2":
-            pos[0]++;
-            break;
         case "7":
-            pos[1]--;
-            pos[0]--;
-            break;
         case "1":
-            pos[1]--;
-            pos[0]++;
-            break;
         case "9":
-            pos[1]++;
-            pos[0]--;
-            break;
         case "3":
-            pos[1]++;
-            pos[0]++;
+            movePosToDrc(pos, key);
             break;
         case "Enter":
             if (level[pos[0]][pos[1]] === ">") {

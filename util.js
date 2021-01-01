@@ -113,6 +113,39 @@ function coordsEq(coord1, coord2) {
     return false;
 }
 
+function movePosToDrc(posToMove, drc) {
+    switch (drc) {
+        case "4":
+            posToMove[1]--;
+            break;
+        case "6":
+            posToMove[1]++;
+            break;
+        case "8":
+            posToMove[0]--;
+            break;
+        case "2":
+            posToMove[0]++;
+            break;
+        case "7":
+            posToMove[1]--;
+            posToMove[0]--;
+            break;
+        case "1":
+            posToMove[1]--;
+            posToMove[0]++;
+            break;
+        case "9":
+            posToMove[1]++;
+            posToMove[0]--;
+            break;
+        case "3":
+            posToMove[1]++;
+            posToMove[0]++;
+            break;
+    }
+}
+
 const oppositeDrcs = {
     "1": "9",
     "2": "8",
@@ -132,37 +165,11 @@ const movingAIs = {
         while (1) {
             const prevTarget = mob.target.slice();
             drc = getRandomInt(1, 8);
-    
-            switch (drc) {
-                case 1:
-                    mob.target[1]--;
-                    break;
-                case 2:
-                    mob.target[1]++;
-                    break;
-                case 3:
-                    mob.target[0]--;
-                    break;
-                case 4:
-                    mob.target[0]++;
-                    break;
-                case 5:
-                    mob.target[1]--;
-                    mob.target[0]--;
-                    break;
-                case 6:
-                    mob.target[1]--;
-                    mob.target[0]++;
-                    break;
-                case 7:
-                    mob.target[1]++;
-                    mob.target[0]--;
-                    break;
-                case 8:
-                    mob.target[1]++;
-                    mob.target[0]++;
-                    break;
-            }
+
+            if (drc === 5) drc = 9;
+
+            movePosToDrc(mob.target, "" + drc);
+
             if (mob.target[0] > level.length - 1 || mob.target[1] > level[0].length - 1 
                 || mob.target[0] < 0 || mob.target[1] < 0
                 || level[mob.target[0]][mob.target[1]] === "") {
@@ -280,36 +287,8 @@ const movingAIs = {
             let prevDistance = null;
 
             while (1) {
-                switch (drc) {
-                    case "4":
-                        lineDrawPos[1]--;
-                        break;
-                    case "6":
-                        lineDrawPos[1]++;
-                        break;
-                    case "8":
-                        lineDrawPos[0]--;
-                        break;
-                    case "2":
-                        lineDrawPos[0]++;
-                        break;
-                    case "7":
-                        lineDrawPos[1]--;
-                        lineDrawPos[0]--;
-                        break;
-                    case "1":
-                        lineDrawPos[1]--;
-                        lineDrawPos[0]++;
-                        break;
-                    case "9":
-                        lineDrawPos[1]++;
-                        lineDrawPos[0]--;
-                        break;
-                    case "3":
-                        lineDrawPos[1]++;
-                        lineDrawPos[0]++;
-                        break;
-                }
+                movePosToDrc(lineDrawPos, drc);
+
                 // TODO is this ok that mob just "knows" all walls?
                 if (!level[lineDrawPos[0]] || !level[lineDrawPos[0]][lineDrawPos[1]]
                     || level[lineDrawPos[0]][lineDrawPos[1]].innerHTML === "") break;
