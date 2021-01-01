@@ -10,6 +10,14 @@ timeTracker.turnsUntilShoot = 1;
 let pos = [10, 13];
 let mobs = [];
 
+mobs.push({
+    name: "Testi",
+    symbol: "@",
+    isHostile: false,
+    pos: [5, 8],
+    calcTarget: function() { movingAIs.random(this) }
+});
+
 function trySpawnMob() {
     let spawnPos = null;
     let notRenderedNbr = 1;
@@ -40,6 +48,7 @@ function trySpawnMob() {
     if (r < 0.2) {
         mob.name = "Make";
         mob.symbol = "M";
+        mob.isHostile = true;
         mob.calcTarget = () => {
             if (rendered[mob.pos[0]][mob.pos[1]]) { // if player can see mob, mob can see player
                 movingAIs.towardsPos(mob, pos);
@@ -50,6 +59,7 @@ function trySpawnMob() {
     } else if (r > 0.8) {
         mob.name = "Pekka";
         mob.symbol = "P";
+        mob.isHostile = true;
         mob.isShooter = true;
         mob.calcTarget = () => {
             if (rendered[mob.pos[0]][mob.pos[1]]) {
@@ -61,6 +71,7 @@ function trySpawnMob() {
     } else {
         mob.name = "Jorma";
         mob.symbol = "J";
+        mob.isHostile = true;
         mob.calcTarget = () => movingAIs.random(mob);
     }
     mobs.push(mob);
@@ -142,10 +153,10 @@ function processTurn() {
                 mobInTheWay = true;
             }
         }
-        if (isNextTo(pos, mob.pos)) {
+        if (mob.isHostile && isNextTo(pos, mob.pos)) {
             gameOver(mob.name + " hits you! You die...");
-        } else if (mob.isShooter && mob.straightLineToPlayerDrc) {
-            shoot(mob.pos, mob.straightLineToPlayerDrc, true);
+        } else if (mob.isHostile && mob.isShooter && mob.straightLineToTargetDrc) {
+            shoot(mob.pos, mob.straightLineToTargetDrc);
         } else if (!coordsEq(pos, mob.target) 
             && !mobInTheWay
             && !(
@@ -190,10 +201,9 @@ async function shotEffect(shotPos) {
     prevSymbols[3] && (area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = prevSymbols[3]);
 }
 
-async function shoot(fromPos, drc, mobIsShooting) {
+async function shoot(fromPos, drc) {
     let bulletPos = fromPos.slice();
-    document.removeEventListener("keydown", shootListener);
-    mobIsShooting && document.removeEventListener("keydown", keypressListener);
+    document.removeEventListener("keydown", keypressListener);
 
     while (level[bulletPos[0]] && level[bulletPos[0]][bulletPos[1]] 
            && level[bulletPos[0]][bulletPos[1]] !== ""
@@ -233,9 +243,11 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 timeTracker.turnsUntilShoot = 0;
                 status.innerHTML = "";
                 document.addEventListener("keydown", keypressListener);
+                keypressListener.actionType = null;
                 return;
             default:
-                document.addEventListener("keydown", shootListener);
+                document.addEventListener("keydown", keypressListener);
+                keypressListener.actionType = "shoot";
                 return;
         }
         const prevSymbol = area[prevBulletPos[0]][prevBulletPos[1]].innerHTML;
@@ -252,6 +264,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
             if (coordsEq(bulletPos, mobs[i].pos)) {
                 mobs.splice(i, 1);
                 document.addEventListener("keydown", keypressListener);
+                keypressListener.actionType = null;
                 processTurn();
                 shotEffect(bulletPos);
                 return;
@@ -259,15 +272,55 @@ async function shoot(fromPos, drc, mobIsShooting) {
         }
     }
     document.addEventListener("keydown", keypressListener);
+    keypressListener.actionType = null;
     processTurn();
 }
 
-const shootListener = e => shoot(pos, e.key);
-const keypressListener = e => {
+function talk(drc) {
+    switch (drc) {
+        case "4":
+            // bulletPos[1]--;
+            break;
+        case "6":
+            // bulletPos[1]++;
+            break;
+        case "8":
+            // bulletPos[0]--;
+            break;
+        case "2":
+            // bulletPos[0]++;
+            break;
+        case "7":
+            // bulletPos[1]--;
+            // bulletPos[0]--;
+            break;
+        case "1":
+            // bulletPos[1]--;
+            // bulletPos[0]++;
+            break;
+        case "9":
+            // bulletPos[1]++;
+            // bulletPos[0]--;
+            break;
+        case "3":
+            // bulletPos[1]++;
+            // bulletPos[0]++;
+            break;
+        case "Escape": // go to end of function
+            break;
+        default:
+            keypressListener.actionType = "talk";
+            return;
+    }
+    status.innerHTML = "";
+    keypressListener.actionType = null;
+}
+
+function action(key) {
     const prevPos = pos.slice();
     let changedLvl = false;
 
-    switch (e.key) {
+    switch (key) {
         case "4":
             pos[1]--;
             break;
@@ -319,10 +372,13 @@ const keypressListener = e => {
         case "f":
             if (timeTracker.turnsUntilShoot === 0) {
                 timeTracker.turnsUntilShoot = 60;
-                document.removeEventListener("keydown", keypressListener);
                 status.innerHTML = "In what direction?";
-                document.addEventListener("keydown", shootListener);
+                keypressListener.actionType = "shoot";
             }
+            return;
+        case "t":
+            status.innerHTML = "In what direction?";
+            keypressListener.actionType = "talk";
             return;
         default:
             return;
@@ -360,6 +416,19 @@ const keypressListener = e => {
     processTurn();
     // renderAll();
 }
+
+const keypressListener = e => {
+    switch (keypressListener.actionType) {
+        case "shoot":
+            shoot(pos, e.key);
+            break;
+        case "talk":
+            talk(e.key);
+            break;
+        default:
+            action(e.key);
+    }
+};
 document.addEventListener("keydown", keypressListener);
 processTurn();
 

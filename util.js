@@ -270,9 +270,9 @@ const movingAIs = {
     },
     towardsStraightLineFromPos: (mob, fromPos) => {
         let min = { pos: null, dist: null };
-        mob.straightLineToPlayerDrc = null; // TODO improve
+        mob.straightLineToTargetDrc = null;
 
-        // find closest pos where straight line to player
+        // find closest pos where straight line to target
 
         for (let drc of "12346789") {
             const lineDrawPos = fromPos.slice();
@@ -321,7 +321,7 @@ const movingAIs = {
                 
                 // moving farther, no point checking line to end
                 if (prevDistance && distanceToMob >= prevDistance) break;
-                if (distanceToMob === 0) mob.straightLineToPlayerDrc = oppositeDrcs[drc]; 
+                if (distanceToMob === 0) mob.straightLineToTargetDrc = oppositeDrcs[drc]; 
                 if (!min.dist || distanceToMob < min.dist) {
                     min.dist = distanceToMob;
                     min.pos = lineDrawPos.slice();
