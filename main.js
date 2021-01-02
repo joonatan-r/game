@@ -11,7 +11,7 @@ timeTracker.turnsUntilShoot = 0;
 let pos = [10, 13];
 let mobs = [];
 
-levels["Ukko's_House"].mobs.push({
+levels["Ukko's House"].mobs.push({
     name: "Ukko",
     symbol: "@",
     isHostile: false,
@@ -313,15 +313,20 @@ function action(key) {
                 const tps = levels[levels.currentLvl].travelPoints;
 
                 for (let lvl of Object.keys(tps)) {
-                    if (coordsEq(tps[lvl], pos)) {
-                        const retObj = changeLvl(levels.currentLvl, lvl, mobs);
-                        level = retObj.level;
-                        pos = retObj.pos.slice();
-                        mobs = retObj.mobs;
-                        levels.currentLvl = lvl;
-                        // needed if mixing the types of lvl doors for the same two way
-                        changedLvl = true;
-                        break;
+                    let idx = 0;
+        
+                    for (let coords of tps[lvl]) {
+                        if (coordsEq(coords, pos)) {
+                            const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs);
+                            level = retObj.level;
+                            pos = retObj.pos.slice();
+                            mobs = retObj.mobs;
+                            levels.currentLvl = lvl;
+                            // needed if mixing the types of doors for the same passage
+                            changedLvl = true;
+                            break;
+                        }
+                        idx++;
                     }
                 }
             } else {
@@ -362,13 +367,18 @@ function action(key) {
         const tps = levels[levels.currentLvl].travelPoints;
 
         for (let lvl of Object.keys(tps)) {
-            if (coordsEq(tps[lvl], pos)) {
-                const retObj = changeLvl(levels.currentLvl, lvl, mobs);
-                level = retObj.level;
-                pos = retObj.pos.slice();
-                mobs = retObj.mobs;
-                levels.currentLvl = lvl;
-                break;
+            let idx = 0;
+
+            for (let coords of tps[lvl]) {
+                if (coordsEq(coords, pos)) {
+                    const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs);
+                    level = retObj.level;
+                    pos = retObj.pos.slice();
+                    mobs = retObj.mobs;
+                    levels.currentLvl = lvl;
+                    break;
+                }
+                idx++;
             }
         }
     }

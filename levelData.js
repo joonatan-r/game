@@ -1,9 +1,9 @@
 const levelData = `
 ;Village
-Ukko's_House
+Ukko's House
 Wilderness
 Wilderness
-Random_House
+Random House
 
 ....................................w...
 ...wwwww............................w...
@@ -31,7 +31,7 @@ Random_House
 ....................................w...
 ....................................w...;
 
-;Ukko's_House
+;Ukko's House
 Village
 
 ........................................
@@ -90,7 +90,7 @@ Village
 ..w.....................................
 ..w.....................................;
 
-;Random_House
+;Random House
 Village
 
 ........................................

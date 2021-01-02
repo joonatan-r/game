@@ -50,8 +50,11 @@ for (let c of levelData) {
             mobs: [], 
             travelPoints: {}
         };
+        // TODO currently if multiple passages between two lvls, they are always connected
+        // in the order they appear in the lvls
         for (let name of travelNames) {
-            levels[lvlName].travelPoints[name] = travelCoords[travelNames.indexOf(name)];
+            if (!levels[lvlName].travelPoints[name]) levels[lvlName].travelPoints[name] = [];
+            levels[lvlName].travelPoints[name].push(travelCoords.shift());
         }
         level = [[]];
         yIdx = 0;
@@ -97,12 +100,12 @@ for (let i = 0; i < level.length; i++) {
     }
 }
 
-function changeLvl(fromLvl, toLvl, mobs) {
+function changeLvl(fromLvl, toLvl, pointIdx, mobs) {
     levels[fromLvl].mobs = mobs;
 
     return {
         level: levels[toLvl].level,
-        pos: levels[toLvl].travelPoints[fromLvl],
+        pos: levels[toLvl].travelPoints[fromLvl][pointIdx],
         mobs: levels[toLvl].mobs
     };
 }
