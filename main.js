@@ -7,6 +7,7 @@ const status = document.getElementById("status");
 const timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
+let inventory = [];
 let pos = [10, 13];
 let mobs = [];
 let items = [];
@@ -16,13 +17,17 @@ levels["Ukko's House"].mobs.push({
     symbol: "@",
     isHostile: false,
     pos: [11, 13],
-    talk: () => "Yo man",
+    talk: () => "Yo man!",
     calcTarget: function() { movingAIs.random(this) }
 });
 levels["Wilderness"].items.push({
     name: "some money",
     symbol: "$",
     pos: [12, 27]
+}, {
+    name: "a weird object",
+    symbol: "*",
+    pos: [3, 8]
 });
 
 function trySpawnMob() {
@@ -306,7 +311,7 @@ function talk(drc) {
 
 function action(key) {
     const prevPos = pos.slice();
-    let changedLvl = false;
+    let moved = false;
     let keepStatus = false;
 
     switch (key) {
@@ -319,6 +324,7 @@ function action(key) {
         case "9":
         case "3":
             movePosToDrc(pos, key);
+            moved = true;
             break;
         case "Enter":
             if (level[pos[0]][pos[1]] === ">" || level[pos[0]][pos[1]] === "<") {
@@ -335,8 +341,6 @@ function action(key) {
                             mobs = retObj.mobs;
                             items = retObj.items;
                             levels.currentLvl = lvl;
-                            // needed if mixing the types of doors for the same passage
-                            changedLvl = true;
                             break;
                         }
                         idx++;
@@ -353,53 +357,78 @@ function action(key) {
                 keypressListener.actionType = "shoot";
             }
             return;
+        case "i":
+            let contents = "";
+            
+            for (let item of inventory) contents += item.name + ", ";
+
+            contents = contents.slice(0, -2);
+            if (contents.length !== 0) {
+                status.innerHTML = "Contents of your inventory:\n" + contents + ".";
+            } else {
+                status.innerHTML = "Your inventory is empty.";
+            }
+            return;
         case "t":
             status.innerHTML = "In what direction?";
             keypressListener.actionType = "talk";
             return;
+        case ",":
+            for (let i = 0; i < items.length; i++) {
+                if (coordsEq(pos, items[i].pos)) {
+                    const removed = items.splice(i, 1)[0];
+                    inventory.push(removed);
+                    status.innerHTML = "You pick up " + removed.name + ".";
+                    keepStatus = true;
+                    break;
+                }
+            }
+            break;
         default:
             return;
     }
-    let overlapMob = false;
-
-    for (let mob of mobs) {
-        if (coordsEq(pos, mob.pos)) {
-            overlapMob = true;
-            break;
-        }
-    }
-    if (pos[0] > level.length - 1 || pos[1] > level[0].length - 1 || pos[0] < 0 || pos[1] < 0
-        || level[pos[0]][pos[1]] === "" || overlapMob
-    ) {
-        pos = prevPos.slice();
-        return;
-    }
-    area[prevPos[0]][prevPos[1]].innerHTML = level[prevPos[0]][prevPos[1]];
+    if (moved) {
+        let overlapMob = false;
     
-    if (level[pos[0]][pos[1]] === "^" && !changedLvl) {
-        const tps = levels[levels.currentLvl].travelPoints;
-
-        for (let lvl of Object.keys(tps)) {
-            let idx = 0;
-
-            for (let coords of tps[lvl]) {
-                if (coordsEq(coords, pos)) {
-                    const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
-                    level = retObj.level;
-                    pos = retObj.pos.slice();
-                    mobs = retObj.mobs;
-                    items = retObj.items;
-                    levels.currentLvl = lvl;
-                    break;
-                }
-                idx++;
+        for (let mob of mobs) {
+            if (coordsEq(pos, mob.pos)) {
+                overlapMob = true;
+                break;
             }
         }
-    }
-    for (let item of items) {
-        if (coordsEq(pos, item.pos)) {
-            status.innerHTML = "There's " + item.name + " here!";
-            keepStatus = true;
+        if (pos[0] > level.length - 1 || pos[1] > level[0].length - 1 || pos[0] < 0 || pos[1] < 0
+            || level[pos[0]][pos[1]] === "" || overlapMob
+        ) {
+            pos = prevPos.slice();
+            return;
+        }
+        area[prevPos[0]][prevPos[1]].innerHTML = level[prevPos[0]][prevPos[1]];
+        
+        if (level[pos[0]][pos[1]] === "^") {
+            const tps = levels[levels.currentLvl].travelPoints;
+    
+            for (let lvl of Object.keys(tps)) {
+                let idx = 0;
+    
+                for (let coords of tps[lvl]) {
+                    if (coordsEq(coords, pos)) {
+                        const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
+                        level = retObj.level;
+                        pos = retObj.pos.slice();
+                        mobs = retObj.mobs;
+                        items = retObj.items;
+                        levels.currentLvl = lvl;
+                        break;
+                    }
+                    idx++;
+                }
+            }
+        }
+        for (let item of items) {
+            if (coordsEq(pos, item.pos)) {
+                status.innerHTML = "There's " + item.name + " here.";
+                keepStatus = true;
+            }
         }
     }
     processTurn(keepStatus);
