@@ -4,20 +4,25 @@
 
 const info = document.getElementById("info");
 const status = document.getElementById("status");
-const talkElem = document.getElementById("talk");
 const timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
 let pos = [10, 13];
 let mobs = [];
+let items = [];
 
 levels["Ukko's House"].mobs.push({
     name: "Ukko",
     symbol: "@",
     isHostile: false,
-    pos: [15, 13],
+    pos: [11, 13],
     talk: () => "Yo man",
     calcTarget: function() { movingAIs.random(this) }
+});
+levels["Wilderness"].items.push({
+    name: "some money",
+    symbol: "$",
+    pos: [12, 27]
 });
 
 function trySpawnMob() {
@@ -94,6 +99,11 @@ function renderAll() {
     for (let coords of edges) {
         renderLine(pos[0], pos[1], coords[0], coords[1]);
     }
+    for (let item of items) {
+        if (rendered[item.pos[0]][item.pos[1]]) {
+            area[item.pos[0]][item.pos[1]].innerHTML = item.symbol;
+        }
+    }
     area[pos[0]][pos[1]].innerHTML = "@";
     area[pos[0]][pos[1]].className = "player";
 
@@ -136,7 +146,7 @@ function gameOver(msg) {
     document.removeEventListener("keydown", keypressListener);
 }
 
-function processTurn(keepTalkLine) {
+function processTurn(keepStatus) {
     info.innerHTML = levels.currentLvl + "\nTurn " + timeTracker.timer + "\n";
 
     if (timeTracker.turnsUntilShoot > 0) {
@@ -144,8 +154,7 @@ function processTurn(keepTalkLine) {
     } else {
         info.innerHTML += "You can shoot";
     }
-    status.innerHTML = "";
-    !keepTalkLine && (talkElem.innerHTML = "");
+    !keepStatus && (status.innerHTML = "");
 
     for (let mob of mobs) {
         mob.calcTarget();
@@ -264,6 +273,7 @@ async function shoot(fromPos, drc) {
 
 function talk(drc) {
     let talkPos = pos.slice();
+    let keepLine = false;
 
     switch (drc) {
         case "4":
@@ -286,16 +296,18 @@ function talk(drc) {
     }
     for (let mob of mobs) {
         if (coordsEq(talkPos, mob.pos) && mob.talk) {
-            talkElem.innerHTML = mob.name + ": " + mob.talk();
+            status.innerHTML = mob.name + ": " + mob.talk();
+            keepLine = true;
         }
     }
     keypressListener.actionType = null;
-    processTurn(true);
+    processTurn(keepLine);
 }
 
 function action(key) {
     const prevPos = pos.slice();
     let changedLvl = false;
+    let keepStatus = false;
 
     switch (key) {
         case "4":
@@ -313,14 +325,15 @@ function action(key) {
                 const tps = levels[levels.currentLvl].travelPoints;
 
                 for (let lvl of Object.keys(tps)) {
-                    let idx = 0;
+                    let idx = 0; // for tracking which point in lvl to travel to if several
         
                     for (let coords of tps[lvl]) {
                         if (coordsEq(coords, pos)) {
-                            const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs);
+                            const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
                             level = retObj.level;
                             pos = retObj.pos.slice();
                             mobs = retObj.mobs;
+                            items = retObj.items;
                             levels.currentLvl = lvl;
                             // needed if mixing the types of doors for the same passage
                             changedLvl = true;
@@ -371,10 +384,11 @@ function action(key) {
 
             for (let coords of tps[lvl]) {
                 if (coordsEq(coords, pos)) {
-                    const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs);
+                    const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
                     level = retObj.level;
                     pos = retObj.pos.slice();
                     mobs = retObj.mobs;
+                    items = retObj.items;
                     levels.currentLvl = lvl;
                     break;
                 }
@@ -382,7 +396,13 @@ function action(key) {
             }
         }
     }
-    processTurn();
+    for (let item of items) {
+        if (coordsEq(pos, item.pos)) {
+            status.innerHTML = "There's " + item.name + " here!";
+            keepStatus = true;
+        }
+    }
+    processTurn(keepStatus);
     // renderAll();
 }
 

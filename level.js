@@ -47,7 +47,8 @@ for (let c of levelData) {
     if (c === ";" && parseStatus === "lvl") {
         levels[lvlName] = {
             level: level,
-            mobs: [], 
+            mobs: [],
+            items: [],
             travelPoints: {}
         };
         // TODO currently if multiple passages between two lvls, they are always connected
@@ -100,12 +101,14 @@ for (let i = 0; i < level.length; i++) {
     }
 }
 
-function changeLvl(fromLvl, toLvl, pointIdx, mobs) {
+function changeLvl(fromLvl, toLvl, pointIdx, mobs, items) {
     levels[fromLvl].mobs = mobs;
+    levels[fromLvl].items = items;
 
     return {
         level: levels[toLvl].level,
         pos: levels[toLvl].travelPoints[fromLvl][pointIdx],
-        mobs: levels[toLvl].mobs
+        mobs: levels[toLvl].mobs,
+        items: levels[toLvl].items
     };
 }
