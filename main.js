@@ -7,7 +7,7 @@ const status = document.getElementById("status");
 const talkElem = document.getElementById("talk");
 const timeTracker = {};
 timeTracker.timer = 0;
-timeTracker.turnsUntilShoot = 1;
+timeTracker.turnsUntilShoot = 0;
 let pos = [10, 13];
 let mobs = [];
 
@@ -137,12 +137,13 @@ function gameOver(msg) {
 }
 
 function processTurn(keepTalkLine) {
+    info.innerHTML = levels.currentLvl + "\nTurn " + timeTracker.timer + "\n";
+
     if (timeTracker.turnsUntilShoot > 0) {
-        info.innerHTML = timeTracker.turnsUntilShoot + " turns until you can shoot";
+        info.innerHTML += timeTracker.turnsUntilShoot + " turns until you can shoot";
     } else {
-        info.innerHTML = "You can shoot";
+        info.innerHTML += "You can shoot";
     }
-    info.innerHTML += "\nTurn " + timeTracker.timer + "\nLevel " + levels.currentLvl;
     status.innerHTML = "";
     !keepTalkLine && (talkElem.innerHTML = "");
 
@@ -308,7 +309,7 @@ function action(key) {
             movePosToDrc(pos, key);
             break;
         case "Enter":
-            if (level[pos[0]][pos[1]] === ">") {
+            if (level[pos[0]][pos[1]] === ">" || level[pos[0]][pos[1]] === "<") {
                 const tps = levels[levels.currentLvl].travelPoints;
 
                 for (let lvl of Object.keys(tps)) {

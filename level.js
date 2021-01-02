@@ -12,7 +12,7 @@ const levels = { currentLvl: "" };
 let level = [[]];
 let yIdx = 0;
 let xIdx = 0;
-let parseStatus = null;
+let parseStatus = "";
 let lvlName = "";
 let travelNames = [];
 let travelName = "";
@@ -29,14 +29,15 @@ for (let c of levelData) {
     }
     if (parseStatus === "travel") {
         if (c === "\n") {
-            travelNames.push(travelName);
-            travelName = "";
-            continue;
-        } else if (c === "/") {
-            parseStatus = "lvl";
-            continue;
+            if (travelName.length === 0) {
+                parseStatus = "lvl";
+            } else {
+                travelNames.push(travelName);
+                travelName = "";
+            }
+        } else {
+            travelName += c;
         }
-        travelName += c;
         continue;
     }
     if (c === "{") {
@@ -72,7 +73,7 @@ for (let c of levelData) {
     if (Object.keys(levelCharMap).indexOf(c) !== -1) {
         c = levelCharMap[c];
     }
-    if (c === ">" || c === "^") travelCoords.push([yIdx, xIdx]);
+    if (c === ">" || c === "<" || c === "^") travelCoords.push([yIdx, xIdx]);
     level[yIdx][xIdx] = c;
     xIdx++;
 }
