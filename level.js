@@ -40,11 +40,11 @@ for (let c of levelData) {
         }
         continue;
     }
-    if (c === "{") {
+    if (c === ";" && parseStatus !== "lvl") {
         parseStatus = "name";
         continue;
     }
-    if (c === "}") {
+    if (c === ";" && parseStatus === "lvl") {
         levels[lvlName] = {
             level: level,
             mobs: [], 

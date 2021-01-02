@@ -11,12 +11,12 @@ timeTracker.turnsUntilShoot = 0;
 let pos = [10, 13];
 let mobs = [];
 
-mobs.push({
+levels["Ukko's_House"].mobs.push({
     name: "Ukko",
     symbol: "@",
     isHostile: false,
-    pos: [5, 8],
-    talkLine: "Yo man",
+    pos: [15, 13],
+    talk: () => "Yo man",
     calcTarget: function() { movingAIs.random(this) }
 });
 
@@ -285,8 +285,8 @@ function talk(drc) {
             return;
     }
     for (let mob of mobs) {
-        if (coordsEq(talkPos, mob.pos) && mob.talkLine) {
-            talkElem.innerHTML = mob.name + ": " + mob.talkLine;
+        if (coordsEq(talkPos, mob.pos) && mob.talk) {
+            talkElem.innerHTML = mob.name + ": " + mob.talk();
         }
     }
     keypressListener.actionType = null;
