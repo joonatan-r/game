@@ -2,6 +2,10 @@
 // renderLine, isNextTo, coordsEq, movePosToDrc, movingAIs, removeByReference from util.js
 // all coords are given as (y,x)
 
+// TODO if not turn based, status stuff is pretty messed up
+const TURN_BASED = true;
+let turnInterval = null;
+
 const info = document.getElementById("info");
 const status = document.getElementById("status");
 const timeTracker = {};
@@ -151,8 +155,9 @@ function renderAll() {
 
 function gameOver(msg) {
     status.innerHTML = msg;
-    // clearInterval(turnInterval);
+    !TURN_BASED && clearInterval(turnInterval);
     document.removeEventListener("keydown", keypressListener);
+    customRenders.push({ symbol: level[pos[0]][pos[1]], pos: pos }); // erase player symbol
 }
 
 function processTurn(keepStatus) {
@@ -253,7 +258,7 @@ async function shotEffect(shotPos) {
 async function shoot(fromPos, drc, mobIsShooting) {
     let bulletPos = fromPos.slice();
     let obj;
-    document.removeEventListener("keydown", keypressListener);
+    TURN_BASED && document.removeEventListener("keydown", keypressListener);
     keypressListener.actionType = null;
 
     while (1) {
@@ -308,7 +313,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
             }
         }
         removeByReference(customRenders, obj);
-        renderAll();
+        TURN_BASED && renderAll();
     }
     document.addEventListener("keydown", keypressListener);
     keypressListener.actionType = null;
@@ -470,8 +475,11 @@ function action(key) {
             }
         }
     }
-    processTurn(keepStatus);
-    // renderAll();
+    if (TURN_BASED) {
+        processTurn(keepStatus);
+    } else {
+        renderAll();
+    }
 }
 
 const keypressListener = e => {
@@ -489,4 +497,4 @@ const keypressListener = e => {
 document.addEventListener("keydown", keypressListener);
 processTurn();
 
-// const turnInterval = setInterval(() => processTurn(), 500);
+!TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
