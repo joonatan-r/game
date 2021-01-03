@@ -1,5 +1,5 @@
 // level, levels, edges, area, rendered from level.js
-// renderLine, isNextTo, coordsEq, movePosToDrc, movingAIs from util.js
+// renderLine, isNextTo, coordsEq, movePosToDrc, movingAIs, removeByReference from util.js
 // all coords are given as (y,x)
 
 const info = document.getElementById("info");
@@ -11,6 +11,7 @@ let inventory = [];
 let pos = [10, 13];
 let mobs = [];
 let items = [];
+let customRenders = []; // for "animations" to not get erased
 
 levels["Ukko's House"].mobs.push({
     name: "Ukko",
@@ -34,6 +35,7 @@ function trySpawnMob() {
     let spawnPos = null;
     let notRenderedNbr = 1;
 
+    if (!levels[levels.currentLvl].spawnsHostiles) return;
     if (timeTracker.timer % 20 !== 0) return;
 
     for (let i = 0; i < level.length; i++) {
@@ -93,12 +95,11 @@ function renderAll() {
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
             rendered[i][j] = false;
-            const td = area[i][j];
-            td.innerHTML = "";
+            area[i][j].innerHTML = "";
             // remove this to "remember" walls once seen
             // (won't work if something else, such as player's pos,
             // uses className)
-            td.className = "";
+            area[i][j].className = "";
         }
     }
     for (let coords of edges) {
@@ -116,6 +117,9 @@ function renderAll() {
         if (rendered[mob.pos[0]][mob.pos[1]]) {
             area[mob.pos[0]][mob.pos[1]].innerHTML = mob.symbol;
         }
+    }
+    for (let obj of customRenders) {
+        area[obj.pos[0]][obj.pos[1]].innerHTML = obj.symbol;
     }
 
     // add walls last to check where to put them by what tiles are rendered
@@ -162,6 +166,10 @@ function processTurn(keepStatus) {
     !keepStatus && (status.innerHTML = "");
 
     for (let mob of mobs) {
+        if (mob.isHostile && isNextTo(pos, mob.pos)) {
+            gameOver(mob.name + " hits you! You die...");
+            break;
+        }
         mob.calcTarget();
         let mobInTheWay = false;
 
@@ -171,10 +179,8 @@ function processTurn(keepStatus) {
                 mobInTheWay = true;
             }
         }
-        if (mob.isHostile && isNextTo(pos, mob.pos)) {
-            gameOver(mob.name + " hits you! You die...");
-        } else if (mob.isHostile && mob.isShooter && mob.straightLineToTargetDrc) {
-            shoot(mob.pos, mob.straightLineToTargetDrc);
+        if (mob.isShooter && mob.straightLineToTargetDrc) {
+            shoot(mob.pos, mob.straightLineToTargetDrc, true);
         } else if (!coordsEq(pos, mob.target) 
             && !mobInTheWay
             && !(
@@ -195,10 +201,16 @@ function processTurn(keepStatus) {
 
 async function shotEffect(shotPos) {
     const prevSymbol = area[shotPos[0]][shotPos[1]].innerHTML;
-    area[shotPos[0]][shotPos[1]].innerHTML = "x";
-    await new Promise(r => setTimeout(r, 300));
-    area[shotPos[0]][shotPos[1]].innerHTML = prevSymbol;
     const prevSymbols = [null, null, null, null];
+    let obj, obj0, obj1, obj2, obj3;
+    area[shotPos[0]][shotPos[1]].innerHTML = "x";
+    obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
+    customRenders.push(obj);
+
+    await new Promise(r => setTimeout(r, 300));
+    
+    removeByReference(customRenders, obj);
+    area[shotPos[0]][shotPos[1]].innerHTML = prevSymbol;
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1]
         && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].innerHTML);
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] + 1] 
@@ -207,27 +219,44 @@ async function shotEffect(shotPos) {
         && (prevSymbols[2] = area[shotPos[0] + 1][shotPos[1] + 1].innerHTML);
     area[shotPos[0] + 1] && area[shotPos[0] + 1][shotPos[1] - 1] 
         && (prevSymbols[3] = area[shotPos[0] + 1][shotPos[1] - 1].innerHTML);
+    
     // also doesn't show on walls because then symbol is "" which becomes false
-    prevSymbols[0] && (area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = "\\");
-    prevSymbols[1] && (area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = "/");
-    prevSymbols[2] && (area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = "\\");
-    prevSymbols[3] && (area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = "/");
+    if (prevSymbols[0]) {
+        area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = "\\";
+        obj0 = { symbol: "\\", pos: [shotPos[0] - 1, shotPos[1] - 1] };
+        customRenders.push(obj0);
+    }
+    if (prevSymbols[1]) {
+        area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = "/";
+        obj1 = { symbol: "/", pos: [shotPos[0] - 1, shotPos[1] + 1] };
+        customRenders.push(obj1);
+    }
+    if (prevSymbols[2]) {
+        area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = "\\";
+        obj2 = { symbol: "\\", pos: [shotPos[0] + 1, shotPos[1] + 1] };
+        customRenders.push(obj2);
+    }
+    if (prevSymbols[3]) {
+        area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = "/";
+        obj3 = { symbol: "/", pos: [shotPos[0] + 1, shotPos[1] - 1] };
+        customRenders.push(obj3);
+    }
     await new Promise(r => setTimeout(r, 300));
-    prevSymbols[0] && (area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = prevSymbols[0]);
-    prevSymbols[1] && (area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = prevSymbols[1]);
-    prevSymbols[2] && (area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = prevSymbols[2]);
-    prevSymbols[3] && (area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = prevSymbols[3]);
+
+    prevSymbols[0] && removeByReference(customRenders, obj0);
+    prevSymbols[1] && removeByReference(customRenders, obj1);
+    prevSymbols[2] && removeByReference(customRenders, obj2);
+    prevSymbols[3] && removeByReference(customRenders, obj3);
+    renderAll();
 }
 
-async function shoot(fromPos, drc) {
+async function shoot(fromPos, drc, mobIsShooting) {
     let bulletPos = fromPos.slice();
+    let obj;
     document.removeEventListener("keydown", keypressListener);
+    keypressListener.actionType = null;
 
-    while (level[bulletPos[0]] && level[bulletPos[0]][bulletPos[1]] 
-           && level[bulletPos[0]][bulletPos[1]] !== ""
-    ) {
-        const prevBulletPos = bulletPos.slice();
-
+    while (1) {
         switch (drc) {
             case "4":
             case "6":
@@ -250,13 +279,20 @@ async function shoot(fromPos, drc) {
                 keypressListener.actionType = "shoot";
                 return;
         }
-        const prevSymbol = area[prevBulletPos[0]][prevBulletPos[1]].innerHTML;
-        area[prevBulletPos[0]][prevBulletPos[1]].innerHTML = "o";
-        await new Promise(r => setTimeout(r, 30));
-        area[prevBulletPos[0]][prevBulletPos[1]].innerHTML = prevSymbol;
+        if (!(level[bulletPos[0]] && level[bulletPos[0]][bulletPos[1]] 
+            && level[bulletPos[0]][bulletPos[1]] !== ""
+        )) {
+            break;
+        }
+        area[bulletPos[0]][bulletPos[1]].innerHTML = "o";
+        obj = { symbol: "o", pos: [bulletPos[0], bulletPos[1]] };
+        customRenders.push(obj);
 
+        await new Promise(r => setTimeout(r, 30));
+        
         if (coordsEq(bulletPos, pos)) {
             gameOver("A bullet hits you! You die...");
+            removeByReference(customRenders, obj);
             shotEffect(bulletPos);
             return;
         }
@@ -266,14 +302,17 @@ async function shoot(fromPos, drc) {
                 document.addEventListener("keydown", keypressListener);
                 keypressListener.actionType = null;
                 processTurn();
+                removeByReference(customRenders, obj);
                 shotEffect(bulletPos);
                 return;
             }
         }
+        removeByReference(customRenders, obj);
+        renderAll();
     }
     document.addEventListener("keydown", keypressListener);
     keypressListener.actionType = null;
-    processTurn();
+    !mobIsShooting && processTurn();
 }
 
 function talk(drc) {

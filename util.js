@@ -1,3 +1,5 @@
+// level, area, rendered from level.js
+
 // Bresenham's algorithm, modified to work for all directions
 
 function renderLine(y0, x0, y1, x1) {
@@ -74,6 +76,14 @@ function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function removeByReference(arr, obj) {
+    let index = arr.indexOf(obj);
+
+    if (index !== -1) {
+        arr.splice(index, 1);
+    }
 }
 
 function getCoordsNextTo(pos) {

@@ -81,6 +81,10 @@ for (let c of levelData) {
     level[yIdx][xIdx] = c;
     xIdx++;
 }
+levels["Village"].spawnsHostiles = false;
+levels["Wilderness"].spawnsHostiles = true;
+levels["Ukko's House"].spawnsHostiles = false;
+levels["Random House"].spawnsHostiles = false;
 levels.currentLvl = Object.keys(levels)[1];
 level = levels[levels.currentLvl].level;
 
