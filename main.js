@@ -40,7 +40,7 @@ function trySpawnMob() {
     let notRenderedNbr = 1;
 
     if (!levels[levels.currentLvl].spawnsHostiles) return;
-    if (timeTracker.timer % 20 !== 0) return;
+    if (timeTracker.timer % 10 !== 0) return;
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
@@ -93,6 +93,35 @@ function trySpawnMob() {
         mob.calcTarget = () => movingAIs.random(mob);
     }
     mobs.push(mob);
+}
+
+function renderPos(posToRender) {
+    if (!rendered[posToRender[0]][posToRender[1]]) {
+        area[posToRender[0]][posToRender[1]].innerHTML = "";
+        return;
+    }
+
+    area[posToRender[0]][posToRender[1]].innerHTML = level[posToRender[0]][posToRender[1]];
+
+    for (let item of items) {
+        if (coordsEq(item.pos, posToRender)) {
+            area[item.pos[0]][item.pos[1]].innerHTML = item.symbol;
+        }
+    }
+    if (coordsEq(pos, posToRender)) {
+        area[pos[0]][pos[1]].innerHTML = "@";
+        area[pos[0]][pos[1]].className = "player";
+    }
+    for (let mob of mobs) {
+        if (coordsEq(mob.pos, posToRender)) {
+            area[mob.pos[0]][mob.pos[1]].innerHTML = mob.symbol;
+        }
+    }
+    for (let obj of customRenders) {
+        if (coordsEq(obj.pos, posToRender)) {
+            area[obj.pos[0]][obj.pos[1]].innerHTML = obj.symbol;
+        }
+    }
 }
 
 function renderAll() {
@@ -262,6 +291,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
     keypressListener.actionType = null;
 
     while (1) {
+        renderPos(bulletPos);
+
         switch (drc) {
             case "4":
             case "6":
@@ -313,7 +344,6 @@ async function shoot(fromPos, drc, mobIsShooting) {
             }
         }
         removeByReference(customRenders, obj);
-        TURN_BASED && renderAll();
     }
     document.addEventListener("keydown", keypressListener);
     keypressListener.actionType = null;
@@ -396,7 +426,7 @@ function action(key) {
             break;
         case "f":
             if (timeTracker.turnsUntilShoot === 0) {
-                timeTracker.turnsUntilShoot = 60;
+                timeTracker.turnsUntilShoot = 10;
                 status.innerHTML = "In what direction?";
                 keypressListener.actionType = "shoot";
             }
