@@ -320,7 +320,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
         )) {
             break;
         }
-        area[bulletPos[0]][bulletPos[1]].innerHTML = "o";
+        if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].innerHTML = "o";
         obj = { symbol: "o", pos: [bulletPos[0], bulletPos[1]] };
         customRenders.push(obj);
 
