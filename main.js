@@ -18,6 +18,8 @@ let pos = [10, 13];
 let mobs = [];
 let items = [];
 let customRenders = []; // for "animations" to not get erased
+let interruptAutoMove = false;
+let blockClick = false;
 
 levels["Ukko's House"].mobs.push({
     name: "Ukko",
@@ -204,7 +206,8 @@ function renderAll() {
 function gameOver(msg) {
     status.innerHTML = msg;
     !TURN_BASED && clearInterval(turnInterval);
-    document.removeEventListener("keydown", keypressListener);
+    interruptAutoMove = true;
+    removeListeners();
     customRenders.push({ symbol: level[pos[0]][pos[1]], pos: pos }); // erase player symbol
 }
 
@@ -306,7 +309,8 @@ async function shotEffect(shotPos) {
 async function shoot(fromPos, drc, mobIsShooting) {
     let bulletPos = fromPos.slice();
     let obj;
-    TURN_BASED && document.removeEventListener("keydown", keypressListener);
+    TURN_BASED && (interruptAutoMove = true);
+    TURN_BASED && removeListeners();
     keypressListener.actionType = null;
 
     while (1) {
@@ -326,11 +330,11 @@ async function shoot(fromPos, drc, mobIsShooting) {
             case "Escape":
                 timeTracker.turnsUntilShoot = 0;
                 status.innerHTML = "";
-                document.addEventListener("keydown", keypressListener);
+                addListeners();
                 keypressListener.actionType = null;
                 return;
             default:
-                document.addEventListener("keydown", keypressListener);
+                addListeners();
                 keypressListener.actionType = "shoot";
                 return;
         }
@@ -354,17 +358,17 @@ async function shoot(fromPos, drc, mobIsShooting) {
         for (let i = 0; i < mobs.length; i++) {
             if (coordsEq(bulletPos, mobs[i].pos)) {
                 mobs.splice(i, 1);
-                document.addEventListener("keydown", keypressListener);
+                addListeners();
                 keypressListener.actionType = null;
-                processTurn();
                 removeByReference(customRenders, obj);
                 shotEffect(bulletPos);
+                !mobIsShooting && processTurn();
                 return;
             }
         }
         removeByReference(customRenders, obj);
     }
-    document.addEventListener("keydown", keypressListener);
+    addListeners();
     keypressListener.actionType = null;
     !mobIsShooting && processTurn();
 }
@@ -402,9 +406,58 @@ function talk(drc) {
     processTurn(keepLine);
 }
 
+function movePlayer(newPos) {
+    let overlapMob = false;
+
+    for (let mob of mobs) {
+        if (coordsEq(newPos, mob.pos)) {
+            overlapMob = true;
+            break;
+        }
+    }
+    if (newPos[0] > level.length - 1 || newPos[1] > level[0].length - 1 || newPos[0] < 0 || newPos[1] < 0
+        || level[newPos[0]][newPos[1]] === "" || overlapMob
+    ) {
+        return false;
+    }
+    pos = newPos;
+
+    if (level[pos[0]][pos[1]] === "^") {
+        const tps = levels[levels.currentLvl].travelPoints;
+
+        for (let lvl of Object.keys(tps)) {
+            let idx = 0;
+
+            for (let coords of tps[lvl]) {
+                if (coordsEq(coords, pos)) {
+                    const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
+                    level = retObj.level;
+                    pos = retObj.pos.slice();
+                    mobs = retObj.mobs;
+                    items = retObj.items;
+                    levels.currentLvl = lvl;
+                    break;
+                }
+                idx++;
+            }
+        }
+    }
+    for (let item of items) {
+        if (coordsEq(pos, item.pos)) {
+            status.innerHTML = "";
+
+            if (item.hidden) {
+                status.innerHTML += "You find an item! ";
+                item.hidden = false;
+            }
+            status.innerHTML += "There's " + item.name + " here.";
+            return true;
+        }
+    }
+    return false;
+}
+
 function action(key) {
-    const prevPos = pos.slice();
-    let moved = false;
     let keepStatus = false;
 
     switch (key) {
@@ -416,8 +469,9 @@ function action(key) {
         case "1":
         case "9":
         case "3":
-            movePosToDrc(pos, key);
-            moved = true;
+            const newPos = pos.slice();
+            movePosToDrc(newPos, key);
+            keepStatus = movePlayer(newPos);
             break;
         case "Enter":
             if (level[pos[0]][pos[1]] === ">" || level[pos[0]][pos[1]] === "<") {
@@ -480,56 +534,6 @@ function action(key) {
         default:
             return;
     }
-    if (moved) {
-        let overlapMob = false;
-    
-        for (let mob of mobs) {
-            if (coordsEq(pos, mob.pos)) {
-                overlapMob = true;
-                break;
-            }
-        }
-        if (pos[0] > level.length - 1 || pos[1] > level[0].length - 1 || pos[0] < 0 || pos[1] < 0
-            || level[pos[0]][pos[1]] === "" || overlapMob
-        ) {
-            pos = prevPos.slice();
-            return;
-        }
-        area[prevPos[0]][prevPos[1]].innerHTML = level[prevPos[0]][prevPos[1]];
-        
-        if (level[pos[0]][pos[1]] === "^") {
-            const tps = levels[levels.currentLvl].travelPoints;
-    
-            for (let lvl of Object.keys(tps)) {
-                let idx = 0;
-    
-                for (let coords of tps[lvl]) {
-                    if (coordsEq(coords, pos)) {
-                        const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
-                        level = retObj.level;
-                        pos = retObj.pos.slice();
-                        mobs = retObj.mobs;
-                        items = retObj.items;
-                        levels.currentLvl = lvl;
-                        break;
-                    }
-                    idx++;
-                }
-            }
-        }
-        for (let item of items) {
-            if (coordsEq(pos, item.pos)) {
-                status.innerHTML = "";
-
-                if (item.hidden) {
-                    status.innerHTML += "You find an item! ";
-                    item.hidden = false;
-                }
-                status.innerHTML += "There's " + item.name + " here.";
-                keepStatus = true;
-            }
-        }
-    }
     if (TURN_BASED) {
         processTurn(keepStatus);
     } else {
@@ -545,11 +549,57 @@ const keypressListener = e => {
         case "talk":
             talk(e.key);
             break;
+        case "autoMove":
+            if (e.key === "Escape") interruptAutoMove = true;
+            break;
         default:
             action(e.key);
     }
 };
-document.addEventListener("keydown", keypressListener);
+const clickListener = async e => {
+    if (blockClick || e.target.tagName !== "TD") return;
+    const coordsList = [];
+    const lvl = levels.currentLvl;
+    blockClick = true;
+    interruptAutoMove = false;
+    keypressListener.actionType = "autoMove";
+    bresenham(pos[0], pos[1], e.target.customProps.coords[0], e.target.customProps.coords[1], 
+            (y, x) => {
+                coordsList.push([y, x]);
+                return level[y][x] === "" ? "stop" : "ok";
+            }
+    );
+    coordsList.shift(); // first element is the player's start position
+    for (let coord of coordsList) {
+        if (interruptAutoMove || levels.currentLvl !== lvl) {
+            keypressListener.actionType = null;
+            blockClick = false;
+            return;
+        }
+        let keepStatus = movePlayer(coord);
+        
+        if (TURN_BASED) {
+            processTurn(keepStatus);
+        } else {
+            renderAll();
+        }
+        await new Promise(r => setTimeout(r, 50));
+    }
+    keypressListener.actionType = null;
+    blockClick = false;
+};
+
+function addListeners() {
+    document.addEventListener("keydown", keypressListener);
+    document.addEventListener("click", clickListener);
+}
+
+function removeListeners() {
+    document.removeEventListener("keydown", keypressListener);
+    document.removeEventListener("click", clickListener);
+}
+
+addListeners();
 processTurn();
 
 !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));

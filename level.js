@@ -102,6 +102,8 @@ for (let i = 0; i < level.length; i++) {
         const td = document.createElement("td");
         tr.appendChild(td);
         area[i][j] = td;
+        area[i][j].customProps = {};
+        area[i][j].customProps.coords = [i, j];
     }
 }
 
