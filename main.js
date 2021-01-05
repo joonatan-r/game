@@ -4,6 +4,7 @@
 
 // all coords are given as (y,x)
 
+const CLICK_AUTO_TRAVEL = false;
 // TODO if not turn based, status stuff is pretty messed up
 const TURN_BASED = true;
 let turnInterval = null;
@@ -617,14 +618,14 @@ const clickListener = e => {
         menu.style.display = "none";
         return;
     }
+    // get cursor position in relation to the player symbol and convert to drc
+    const rect = area[pos[0]][pos[1]].getBoundingClientRect();
+    const x = e.x - (rect.left + rect.width / 2);
+    const y = e.y - (rect.top + rect.height / 2);
+    const drc = pixelCoordsToDrc(y, x);
+
     switch (clickListener.actionType) {
         case "chooseDrc":
-            // get cursor position in relation to the player symbol and convert to drc
-            const rect = area[pos[0]][pos[1]].getBoundingClientRect();
-            const x = e.x - (rect.left + rect.width / 2);
-            const y = e.y - (rect.top + rect.height / 2);
-            const drc = pixelCoordsToDrc(y, x);
-            
             switch (keypressListener.actionType) {
                 case "shoot":
                     shoot(pos, drc);
@@ -635,13 +636,25 @@ const clickListener = e => {
             }
             break; 
         default:
-            if (e.target.tagName !== "TD") return;
-            autoTravel(e.target.customProps.coords);
+            if (CLICK_AUTO_TRAVEL) {
+                if (e.target.tagName !== "TD") return;
+                autoTravel(e.target.customProps.coords);
+            } else {
+                const newPos = pos.slice();
+                movePosToDrc(newPos, drc);
+                let keepStatus = movePlayer(newPos);
+                
+                if (TURN_BASED) {
+                    processTurn(keepStatus);
+                } else {
+                    renderAll();
+                }
+            }
     }
 };
 const menuListener = e => {
-    if (e.target.tagName !== "TD") return;
     e.preventDefault();
+    if (e.target.tagName !== "TD") return;
     menu.style.left = e.x + "px";
     menu.style.top = e.y + "px";
     menu.style.display = "block";
