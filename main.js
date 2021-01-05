@@ -32,6 +32,7 @@ levels["Wilderness"].items.push({
 }, {
     name: "a weird object",
     symbol: "*",
+    hidden: true,
     pos: [3, 8]
 });
 
@@ -104,7 +105,7 @@ function renderPos(posToRender) {
     area[posToRender[0]][posToRender[1]].innerHTML = level[posToRender[0]][posToRender[1]];
 
     for (let item of items) {
-        if (coordsEq(item.pos, posToRender)) {
+        if (coordsEq(item.pos, posToRender) && !item.hidden) {
             area[item.pos[0]][item.pos[1]].innerHTML = item.symbol;
         }
     }
@@ -139,7 +140,7 @@ function renderAll() {
         renderLine(pos[0], pos[1], coords[0], coords[1]);
     }
     for (let item of items) {
-        if (rendered[item.pos[0]][item.pos[1]]) {
+        if (rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
             area[item.pos[0]][item.pos[1]].innerHTML = item.symbol;
         }
     }
@@ -500,7 +501,13 @@ function action(key) {
         }
         for (let item of items) {
             if (coordsEq(pos, item.pos)) {
-                status.innerHTML = "There's " + item.name + " here.";
+                status.innerHTML = "";
+
+                if (item.hidden) {
+                    status.innerHTML += "You find an item! ";
+                    item.hidden = false;
+                }
+                status.innerHTML += "There's " + item.name + " here.";
                 keepStatus = true;
             }
         }

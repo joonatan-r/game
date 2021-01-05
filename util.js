@@ -35,15 +35,17 @@ function renderLine(y0, x0, y1, x1) {
     let d = 2 * dy - dx;
     let x = x0;
     let y = y0;
-    let val = "";
+    let y_temp, x_temp;
 
     while (x <= x1) {
         if (swapYX) {
-            val = render(x, y, x0, y0, mirrorY, mirrorX);
+            y_temp = mirrorY ? 2 * x0 - x : x;
+            x_temp = mirrorX ? 2 * y0 - y : y;
         } else {
-            val = render(y, x, y0, x0, mirrorY, mirrorX);
+            y_temp = mirrorY ? 2 * y0 - y : y;
+            x_temp = mirrorX ? 2 * x0 - x : x;
         }
-        if (val === "stop") {
+        if (render(y_temp, x_temp) === "stop") {
             return;
         }
         if (d <= 0) {
@@ -57,13 +59,7 @@ function renderLine(y0, x0, y1, x1) {
     }
 }
 
-function render(y, x, y0, x0, mirrorY, mirrorX) {
-    if (mirrorY) {
-        y = 2 * y0 - y;
-    }
-    if (mirrorX) {
-        x = 2 * x0 - x;
-    }
+function render(y, x) {
     if (rendered[y][x]) {
         return level[y][x] === "" ? "stop" : "ok"; // wall blocks sight
     }
