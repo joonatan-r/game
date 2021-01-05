@@ -125,7 +125,7 @@ const infoTable = {
     "^": "[^]: A doorway",
     "Player": "[@]: You, the player",
     "some money": "[$]: Some money",
-    "a strange object": "[?]: A strange object",
+    "a weird object": "[?]: A strange object",
     "Ukko": "[@]: Ukko, a peaceful human",
     "Make": "[M]: Make, a hostile human",
     "Pekka": "[P]: Pekka, a hostile human shooter",
