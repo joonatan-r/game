@@ -29,6 +29,21 @@ p {
     white-space: pre-wrap;
 }
 
+#clickMenu {
+    display: none;
+    position: absolute;
+    background-color: #333;
+}
+
+#clickMenu p {
+    padding: 10px;
+    margin: 0;
+}
+
+#clickMenu p:hover {
+    background-color: #777;
+}
+
 .player {
     border: 1px solid green;
 }

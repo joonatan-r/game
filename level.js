@@ -118,3 +118,16 @@ function changeLvl(fromLvl, toLvl, pointIdx, mobs, items) {
         items: levels[toLvl].items
     };
 }
+
+const infoTable = {
+    "": "[ ]: A wall",
+    "&#183": "[&#183]: The floor",
+    "^": "[^]: A doorway",
+    "Player": "[@]: You, the player",
+    "some money": "[$]: Some money",
+    "a strange object": "[?]: A strange object",
+    "Ukko": "[@]: Ukko, a peaceful human",
+    "Make": "[M]: Make, a hostile human",
+    "Pekka": "[P]: Pekka, a hostile human shooter",
+    "Jorma": "[J]: Jorma, a hostile human",
+};

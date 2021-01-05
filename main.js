@@ -1,6 +1,6 @@
-// level, levels, edges, area, rendered from level.js
+// level, levels, edges, area, rendered, infoTable from level.js
 // bresenham, isNextTo, getCoordsNextTo, coordsEq, 
-// movePosToDrc, movingAIs, removeByReference from util.js
+// movePosToDrc, movingAIs, removeByReference, pixelCoordsToDrc from util.js
 
 // all coords are given as (y,x)
 
@@ -10,6 +10,7 @@ let turnInterval = null;
 
 const info = document.getElementById("info");
 const status = document.getElementById("status");
+const menu = document.getElementById("clickMenu");
 const timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
@@ -19,7 +20,7 @@ let mobs = [];
 let items = [];
 let customRenders = []; // for "animations" to not get erased
 let interruptAutoMove = false;
-let blockClick = false;
+let blockAutoTravel = false;
 
 levels["Ukko's House"].mobs.push({
     name: "Ukko",
@@ -35,7 +36,7 @@ levels["Wilderness"].items.push({
     pos: [12, 27]
 }, {
     name: "a weird object",
-    symbol: "*",
+    symbol: "?",
     hidden: true,
     pos: [3, 8]
 });
@@ -107,19 +108,23 @@ function renderPos(posToRender) {
     }
 
     area[posToRender[0]][posToRender[1]].innerHTML = level[posToRender[0]][posToRender[1]];
+    area[posToRender[0]][posToRender[1]].customProps.infoKeys.unshift(level[posToRender[0]][posToRender[1]]);
 
     for (let item of items) {
         if (coordsEq(item.pos, posToRender) && !item.hidden) {
             area[item.pos[0]][item.pos[1]].innerHTML = item.symbol;
+            area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
         }
     }
     if (coordsEq(pos, posToRender)) {
         area[pos[0]][pos[1]].innerHTML = "@";
         area[pos[0]][pos[1]].className = "player";
+        area[pos[0]][pos[1]].customProps.infoKeys.unshift("Player");
     }
     for (let mob of mobs) {
         if (coordsEq(mob.pos, posToRender)) {
             area[mob.pos[0]][mob.pos[1]].innerHTML = mob.symbol;
+            area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
         }
     }
     for (let obj of customRenders) {
@@ -138,6 +143,7 @@ function renderAll() {
             // (won't work if something else, such as player's pos,
             // uses className)
             area[i][j].className = "";
+            area[i][j].customProps.infoKeys = [];
         }
     }
     for (let coords of edges) {
@@ -146,6 +152,7 @@ function renderAll() {
                 return level[y][x] === "" ? "stop" : "ok"; // wall blocks sight
             }
             area[y][x].innerHTML = level[y][x];
+            area[y][x].customProps.infoKeys.unshift(level[y][x]);
             rendered[y][x] = true;
             return level[y][x] === "" ? "stop" : "ok";
         });
@@ -153,14 +160,17 @@ function renderAll() {
     for (let item of items) {
         if (rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
             area[item.pos[0]][item.pos[1]].innerHTML = item.symbol;
+            area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
         }
     }
     area[pos[0]][pos[1]].innerHTML = "@";
     area[pos[0]][pos[1]].className = "player";
+    area[pos[0]][pos[1]].customProps.infoKeys.unshift("Player");
 
     for (let mob of mobs) {
         if (rendered[mob.pos[0]][mob.pos[1]]) {
             area[mob.pos[0]][mob.pos[1]].innerHTML = mob.symbol;
+            area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
         }
     }
     for (let obj of customRenders) {
@@ -312,6 +322,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
     TURN_BASED && (interruptAutoMove = true);
     TURN_BASED && removeListeners();
     keypressListener.actionType = null;
+    clickListener.actionType = null;
 
     while (1) {
         renderPos(bulletPos);
@@ -332,10 +343,12 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 status.innerHTML = "";
                 addListeners();
                 keypressListener.actionType = null;
+                clickListener.actionType = null;
                 return;
             default:
                 addListeners();
                 keypressListener.actionType = "shoot";
+                clickListener.actionType = "chooseDrc";
                 return;
         }
         if (!(level[bulletPos[0]] && level[bulletPos[0]][bulletPos[1]] 
@@ -360,6 +373,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 mobs.splice(i, 1);
                 addListeners();
                 keypressListener.actionType = null;
+                clickListener.actionType = null;
                 removeByReference(customRenders, obj);
                 shotEffect(bulletPos);
                 !mobIsShooting && processTurn();
@@ -370,6 +384,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
     }
     addListeners();
     keypressListener.actionType = null;
+    clickListener.actionType = null;
     !mobIsShooting && processTurn();
 }
 
@@ -391,9 +406,11 @@ function talk(drc) {
         case "Escape":
             status.innerHTML = "";
             keypressListener.actionType = null;
+            clickListener.actionType = null;
             return;
         default:
             keypressListener.actionType = "talk";
+            clickListener.actionType = "chooseDrc";
             return;
     }
     for (let mob of mobs) {
@@ -403,6 +420,7 @@ function talk(drc) {
         }
     }
     keypressListener.actionType = null;
+    clickListener.actionType = null;
     processTurn(keepLine);
 }
 
@@ -502,6 +520,7 @@ function action(key) {
                 timeTracker.turnsUntilShoot = 10;
                 status.innerHTML = "In what direction?";
                 keypressListener.actionType = "shoot";
+                clickListener.actionType = "chooseDrc";
             }
             return;
         case "i":
@@ -519,6 +538,7 @@ function action(key) {
         case "t":
             status.innerHTML = "In what direction?";
             keypressListener.actionType = "talk";
+            clickListener.actionType = "chooseDrc";
             return;
         case ",":
             for (let i = 0; i < items.length; i++) {
@@ -541,6 +561,42 @@ function action(key) {
     }
 }
 
+async function autoTravel(coords) {
+    if (blockAutoTravel) return;
+
+    const coordsList = [];
+    const lvl = levels.currentLvl;
+    blockAutoTravel = true;
+    interruptAutoMove = false;
+    keypressListener.actionType = "autoMove";
+    bresenham(pos[0], pos[1], coords[0], coords[1], 
+            (y, x) => {
+                coordsList.push([y, x]);
+                return level[y][x] === "" ? "stop" : "ok";
+            }
+    );
+    coordsList.shift(); // first element is the player's start position
+
+    for (let coord of coordsList) {
+        // new coord may not be next to player if e.g. a mob blocks the way
+        if (interruptAutoMove || levels.currentLvl !== lvl || !isNextTo(pos, coord)) {
+            keypressListener.actionType = null;
+            blockAutoTravel = false;
+            return;
+        }
+        let keepStatus = movePlayer(coord);
+        
+        if (TURN_BASED) {
+            processTurn(keepStatus);
+        } else {
+            renderAll();
+        }
+        await new Promise(r => setTimeout(r, 50));
+    }
+    keypressListener.actionType = null;
+    blockAutoTravel = false;
+}
+
 const keypressListener = e => {
     switch (keypressListener.actionType) {
         case "shoot":
@@ -556,47 +612,65 @@ const keypressListener = e => {
             action(e.key);
     }
 };
-const clickListener = async e => {
-    if (blockClick || e.target.tagName !== "TD") return;
-    const coordsList = [];
-    const lvl = levels.currentLvl;
-    blockClick = true;
-    interruptAutoMove = false;
-    keypressListener.actionType = "autoMove";
-    bresenham(pos[0], pos[1], e.target.customProps.coords[0], e.target.customProps.coords[1], 
-            (y, x) => {
-                coordsList.push([y, x]);
-                return level[y][x] === "" ? "stop" : "ok";
-            }
-    );
-    coordsList.shift(); // first element is the player's start position
-    for (let coord of coordsList) {
-        if (interruptAutoMove || levels.currentLvl !== lvl) {
-            keypressListener.actionType = null;
-            blockClick = false;
-            return;
-        }
-        let keepStatus = movePlayer(coord);
-        
-        if (TURN_BASED) {
-            processTurn(keepStatus);
-        } else {
-            renderAll();
-        }
-        await new Promise(r => setTimeout(r, 50));
+const clickListener = e => {
+    if (menu.style.display !== "none") {
+        menu.style.display = "none";
+        return;
     }
-    keypressListener.actionType = null;
-    blockClick = false;
+    switch (clickListener.actionType) {
+        case "chooseDrc":
+            // get cursor position in relation to the player symbol and convert to drc
+            const rect = area[pos[0]][pos[1]].getBoundingClientRect();
+            const x = e.x - (rect.left + rect.width / 2);
+            const y = e.y - (rect.top + rect.height / 2);
+            const drc = pixelCoordsToDrc(y, x);
+            
+            switch (keypressListener.actionType) {
+                case "shoot":
+                    shoot(pos, drc);
+                    break;
+                case "talk":
+                    talk(drc);
+                    break;
+            }
+            break; 
+        default:
+            if (e.target.tagName !== "TD") return;
+            autoTravel(e.target.customProps.coords);
+    }
+};
+const menuListener = e => {
+    if (e.target.tagName !== "TD") return;
+    e.preventDefault();
+    menu.style.left = e.x + "px";
+    menu.style.top = e.y + "px";
+    menu.style.display = "block";
+
+    const travelButton = document.getElementById("travelButton");
+    const showInfoButton = document.getElementById("showInfoButton");
+    travelButton.onclick = () => autoTravel(e.target.customProps.coords);
+    showInfoButton.onclick = () => {
+        status.innerHTML = "";
+
+        if (!e.target.customProps.infoKeys.length) {
+            status.innerHTML += "[ ]: An unseen area\n";
+        }
+        for (let key of e.target.customProps.infoKeys) {
+            status.innerHTML += infoTable[key] + "\n";
+        }
+    };
 };
 
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
     document.addEventListener("click", clickListener);
+    document.addEventListener("contextmenu", menuListener);
 }
 
 function removeListeners() {
     document.removeEventListener("keydown", keypressListener);
     document.removeEventListener("click", clickListener);
+    document.removeEventListener("contextmenu", menuListener);
 }
 
 addListeners();

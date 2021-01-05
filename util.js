@@ -73,6 +73,29 @@ function removeByReference(arr, obj) {
     }
 }
 
+function pixelCoordsToDrc(y, x) {
+    if (x === 0) {
+        if (y > 0) return "2"; // b
+        else return "8"; // t
+    } else {
+        let val = y/x;
+
+        if (val > -0.4142 && val < 0.4142) {
+            if (x > 0) return "6"; // r
+            else return "4"; // l
+        } else if (val > -2.4142 && val < -0.4142) {
+            if (x > 0) return "9"; // tr
+            else return "1"; // bl
+        } else if (val > 0.4142 && val < 2.4142) {
+            if (x > 0) return "3"; // br
+            else return "7"; // tl
+        } else {
+            if (y > 0) return "2"; // b
+            else return "8"; // t
+        }
+    }
+}
+
 function getCoordsNextTo(pos) {
     return [        
         [pos[0], pos[1] - 1], // l
