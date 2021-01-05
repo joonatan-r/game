@@ -1,8 +1,8 @@
-// level, area, rendered from level.js
+// level from level.js
 
 // Bresenham's algorithm, modified to work for all directions
 
-function renderLine(y0, x0, y1, x1) {
+function bresenham(y0, x0, y1, x1, callback) {
     let swapYX = false;
     let mirrorY = false;
     let mirrorX = false;
@@ -45,7 +45,7 @@ function renderLine(y0, x0, y1, x1) {
             y_temp = mirrorY ? 2 * y0 - y : y;
             x_temp = mirrorX ? 2 * x0 - x : x;
         }
-        if (render(y_temp, x_temp) === "stop") {
+        if (callback(y_temp, x_temp) === "stop") {
             return;
         }
         if (d <= 0) {
@@ -57,15 +57,6 @@ function renderLine(y0, x0, y1, x1) {
             y++;
         }
     }
-}
-
-function render(y, x) {
-    if (rendered[y][x]) {
-        return level[y][x] === "" ? "stop" : "ok"; // wall blocks sight
-    }
-    area[y][x].innerHTML = level[y][x];
-    rendered[y][x] = true;
-    return level[y][x] === "" ? "stop" : "ok";
 }
 
 function getRandomInt(min, max) {
@@ -186,69 +177,13 @@ const movingAIs = {
         }
     },
     towardsPos: (mob, targetPos) => {
-        let y0 = mob.pos[0];
-        let x0 = mob.pos[1];
-        let y1 = targetPos[0];
-        let x1 = targetPos[1];
-        let swapYX = false;
-        let mirrorY = false;
-        let mirrorX = false;
-
-        if (y0 > y1) {
-            y1 = 2 * y0 - y1;
-            mirrorY = true;
-        }
-        if (x0 > x1) {
-            x1 = 2 * x0 - x1;
-            mirrorX = true;
-        }
-        let dx = x1 - x0;
-        let dy = y1 - y0;
-
-        if (dy > dx) {
-            const tempDy = dy;
-            const tempY0 = y0;
-            const tempY1 = y1;
-            dy = dx;
-            dx = tempDy;
-            y0 = x0;
-            x0 = tempY0;
-            y1 = x1;
-            x1 = tempY1;
-            swapYX = true;
-        }
-        const incrE = 2 * dy;
-        const incrNE = 2 * (dy - dx);
-        let d = 2 * dy - dx;
-        let x = x0;
-        let y = y0;
-
-        if (d <= 0) {
-            d += incrE;
-            x++;
-        } else {
-            d += incrNE;
-            x++;
-            y++;
-        }
-        if (swapYX) {
-            if (mirrorY) {
-                x = 2 * x0 - x;
-            }
-            if (mirrorX) {
-                y = 2 * y0 - y;
-            }
-            mob.target = [x, y];
-        } else {
-            if (mirrorY) {
-                y = 2 * y0 - y;
-            }
-            if (mirrorX) {
-                x = 2 * x0 - x;
+        bresenham(mob.pos[0], mob.pos[1], targetPos[0], targetPos[1], (y, x) => {
+            if (coordsEq([y, x], mob.pos)) {
+                return "ok";
             }
             mob.target = [y, x];
-        }
-
+            return "stop";
+        });
         const drcs = getCoordsNextTo(mob.pos);
         const excluded = [];
         const drcQueue = [mob.target];

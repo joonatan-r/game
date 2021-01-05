@@ -1,5 +1,7 @@
 // level, levels, edges, area, rendered from level.js
-// renderLine, isNextTo, coordsEq, movePosToDrc, movingAIs, removeByReference from util.js
+// bresenham, isNextTo, getCoordsNextTo, coordsEq, 
+// movePosToDrc, movingAIs, removeByReference from util.js
+
 // all coords are given as (y,x)
 
 // TODO if not turn based, status stuff is pretty messed up
@@ -137,7 +139,14 @@ function renderAll() {
         }
     }
     for (let coords of edges) {
-        renderLine(pos[0], pos[1], coords[0], coords[1]);
+        bresenham(pos[0], pos[1], coords[0], coords[1], (y,x) => {
+            if (rendered[y][x]) {
+                return level[y][x] === "" ? "stop" : "ok"; // wall blocks sight
+            }
+            area[y][x].innerHTML = level[y][x];
+            rendered[y][x] = true;
+            return level[y][x] === "" ? "stop" : "ok";
+        });
     }
     for (let item of items) {
         if (rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
@@ -160,9 +169,18 @@ function renderAll() {
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
+            if (level[i][j] !== "") {
+                continue;
+            }
             const td = area[i][j];
+            let nextToRendered = false;
 
-            if (rendered[i][j] && level[i][j] === "") {
+            for (let coord of getCoordsNextTo([i, j])) {
+                if (rendered[coord[0]] && rendered[coord[0]][coord[1]]) {
+                    nextToRendered = true;
+                }
+            }
+            if (rendered[i][j] || nextToRendered) {
                 const classes = ["wall"];
     
                 if (i > 0 && j < level[0].length && rendered[i - 1][j] && level[i - 1][j] !== "") {
