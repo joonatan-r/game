@@ -20,7 +20,7 @@ let pos = [10, 13];
 let mobs = [];
 let items = [];
 let customRenders = []; // for "animations" to not get erased
-let interruptAutoMove = false;
+let interruptAutoTravel = false;
 let blockAutoTravel = false;
 
 levels["Ukko's House"].mobs.push({
@@ -28,20 +28,38 @@ levels["Ukko's House"].mobs.push({
     symbol: "@",
     isHostile: false,
     pos: [11, 13],
-    talk: () => "Yo man!",
+    talk: function(outputElement) {
+        outputElement.textContent = "[" + this.name + "]: Yo man!";
+        return true;
+    },
     calcTarget: function() { movingAIs.random(this) }
 });
 levels["Random House"].mobs.push({
     name: "Some guy",
     symbol: "@",
     isHostile: false,
+    state: 0,
     pos: [13, 18],
-    talk: function() {
-        showDialog("[" + this.name + "]: Hello there!\n\nYour answer:", 
-                ["General Kenobi!", "[Don't answer]"], 
-                idx => console.log(idx)
-        );
-        return false;
+    talk: function(outputElement) {
+        switch (this.state) {
+            case 0:
+                showDialog("[" + this.name + "]: Hello there!\n\nYour answer:", 
+                        ["Hi!", "General Kenobi!", "[Don't answer]"], 
+                        idx => {
+                            this.state = { 0: 1, 1: 2, 2: 0 }[idx];
+                            this.talk(outputElement);
+                        }
+                );
+                return false;
+            case 1:
+                outputElement.textContent = "[" + this.name + "]: So uncivilized!";
+                return true;
+            case 2:
+                outputElement.textContent = "[" + this.name + "]: You are strong and wise and I'm very proud of you!";
+                return true;
+            default:
+                return false;
+        }
     },
     calcTarget: function() { this.target = this.pos.slice(); }
 });
@@ -231,7 +249,7 @@ function renderAll() {
 function gameOver(msg) {
     status.textContent = msg;
     !TURN_BASED && clearInterval(turnInterval);
-    interruptAutoMove = true;
+    interruptAutoTravel = true;
     removeListeners();
     customRenders.push({ symbol: level[pos[0]][pos[1]], pos: pos }); // erase player symbol
 }
@@ -334,7 +352,7 @@ async function shotEffect(shotPos) {
 async function shoot(fromPos, drc, mobIsShooting) {
     let bulletPos = fromPos.slice();
     let obj;
-    TURN_BASED && (interruptAutoMove = true);
+    TURN_BASED && (interruptAutoTravel = true);
     TURN_BASED && removeListeners();
     keypressListener.actionType = null;
     clickListener.actionType = null;
@@ -405,7 +423,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
 
 function talk(drc) {
     let talkPos = pos.slice();
-    let keepLine = false;
+    let keepStatus = false;
 
     switch (drc) {
         case "4":
@@ -430,17 +448,12 @@ function talk(drc) {
     }
     for (let mob of mobs) {
         if (coordsEq(talkPos, mob.pos) && mob.talk) {
-            const line = mob.talk();
-
-            if (line) {
-                status.textContent = "[" + mob.name + "]: " + line;
-                keepLine = true;
-            }
+            keepStatus = (mob.talk && mob.talk(status));
         }
     }
     keypressListener.actionType = null;
     clickListener.actionType = null;
-    processTurn(keepLine);
+    processTurn(keepStatus);
 }
 
 function movePlayer(newPos) {
@@ -586,7 +599,7 @@ async function autoTravel(coords) {
     const coordsList = [];
     const lvl = levels.currentLvl;
     blockAutoTravel = true;
-    interruptAutoMove = false;
+    interruptAutoTravel = false;
     keypressListener.actionType = "autoMove";
     bresenham(pos[0], pos[1], coords[0], coords[1], 
             (y, x) => {
@@ -598,7 +611,7 @@ async function autoTravel(coords) {
 
     for (let coord of coordsList) {
         // new coord may not be next to player if e.g. a mob blocks the way
-        if (interruptAutoMove || levels.currentLvl !== lvl || !isNextTo(pos, coord)) {
+        if (interruptAutoTravel || levels.currentLvl !== lvl || !isNextTo(pos, coord)) {
             keypressListener.actionType = null;
             blockAutoTravel = false;
             return;
@@ -660,7 +673,7 @@ const keypressListener = e => {
             talk(e.key);
             break;
         case "autoMove":
-            if (e.key === "Escape") interruptAutoMove = true;
+            if (e.key === "Escape") interruptAutoTravel = true;
             break;
         default:
             action(e.key);
