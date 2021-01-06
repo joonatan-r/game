@@ -1,10 +1,9 @@
-// level, levels, edges, area, rendered, infoTable from level.js
+// table, level, levels, edges, area, rendered, infoTable from level.js
 // bresenham, isNextTo, getCoordsNextTo, coordsEq, 
 // movePosToDrc, movingAIs, removeByReference, pixelCoordsToDrc from util.js
 
 // all coords are given as (y,x)
 
-const CLICK_AUTO_TRAVEL = false;
 // TODO if not turn based, status stuff is pretty messed up
 const TURN_BASED = true;
 let turnInterval = null;
@@ -12,6 +11,7 @@ let turnInterval = null;
 const info = document.getElementById("info");
 const status = document.getElementById("status");
 const menu = document.getElementById("clickMenu");
+const dialog = document.getElementById("dialog");
 const timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
@@ -23,6 +23,31 @@ let customRenders = []; // for "animations" to not get erased
 let interruptAutoMove = false;
 let blockAutoTravel = false;
 
+function showDialog(text, choices, onSelect) {
+    removeListeners();
+    dialog.style.left = table.left;
+    dialog.style.top = table.top;
+    dialog.style.display = "block";
+    const p = document.createElement("p");
+    p.textContent = text;
+    dialog.appendChild(p);
+    let idx = 0;
+
+    for (let choice of choices) {
+        const c = document.createElement("p");
+        c.textContent = "[" + (idx + 1) + "]: " + choice;
+        dialog.appendChild(c);
+        c.onclick = e => {
+            e.stopPropagation();
+            onSelect(idx);
+            dialog.style.display = "none";
+            dialog.textContent = ""; // remove children
+            addListeners();
+        }
+        idx++;
+    }
+}
+
 levels["Ukko's House"].mobs.push({
     name: "Ukko",
     symbol: "@",
@@ -30,6 +55,17 @@ levels["Ukko's House"].mobs.push({
     pos: [11, 13],
     talk: () => "Yo man!",
     calcTarget: function() { movingAIs.random(this) }
+});
+levels["Random House"].mobs.push({
+    name: "Some guy",
+    symbol: "@",
+    isHostile: false,
+    pos: [13, 18],
+    talk: function() {
+        showDialog("[" + this.name + "]: Hello there!", ["General Kenobi!", "[Don't answer]"], idx => {});
+        return false;
+    },
+    calcTarget: function() { this.target = this.pos.slice(); }
 });
 levels["Wilderness"].items.push({
     name: "some money",
@@ -104,33 +140,33 @@ function trySpawnMob() {
 
 function renderPos(posToRender) {
     if (!rendered[posToRender[0]][posToRender[1]]) {
-        area[posToRender[0]][posToRender[1]].innerHTML = "";
+        area[posToRender[0]][posToRender[1]].textContent = "";
         return;
     }
 
-    area[posToRender[0]][posToRender[1]].innerHTML = level[posToRender[0]][posToRender[1]];
+    area[posToRender[0]][posToRender[1]].textContent = level[posToRender[0]][posToRender[1]];
     area[posToRender[0]][posToRender[1]].customProps.infoKeys.unshift(level[posToRender[0]][posToRender[1]]);
 
     for (let item of items) {
         if (coordsEq(item.pos, posToRender) && !item.hidden) {
-            area[item.pos[0]][item.pos[1]].innerHTML = item.symbol;
+            area[item.pos[0]][item.pos[1]].textContent = item.symbol;
             area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
         }
     }
     if (coordsEq(pos, posToRender)) {
-        area[pos[0]][pos[1]].innerHTML = "@";
+        area[pos[0]][pos[1]].textContent = "@";
         area[pos[0]][pos[1]].className = "player";
         area[pos[0]][pos[1]].customProps.infoKeys.unshift("Player");
     }
     for (let mob of mobs) {
         if (coordsEq(mob.pos, posToRender)) {
-            area[mob.pos[0]][mob.pos[1]].innerHTML = mob.symbol;
+            area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
             area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
         }
     }
     for (let obj of customRenders) {
         if (coordsEq(obj.pos, posToRender)) {
-            area[obj.pos[0]][obj.pos[1]].innerHTML = obj.symbol;
+            area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
         }
     }
 }
@@ -139,7 +175,7 @@ function renderAll() {
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
             rendered[i][j] = false;
-            area[i][j].innerHTML = "";
+            area[i][j].textContent = "";
             // remove this to "remember" walls once seen
             // (won't work if something else, such as player's pos,
             // uses className)
@@ -152,7 +188,7 @@ function renderAll() {
             if (rendered[y][x]) {
                 return level[y][x] === "" ? "stop" : "ok"; // wall blocks sight
             }
-            area[y][x].innerHTML = level[y][x];
+            area[y][x].textContent = level[y][x];
             area[y][x].customProps.infoKeys.unshift(level[y][x]);
             rendered[y][x] = true;
             return level[y][x] === "" ? "stop" : "ok";
@@ -160,22 +196,22 @@ function renderAll() {
     }
     for (let item of items) {
         if (rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
-            area[item.pos[0]][item.pos[1]].innerHTML = item.symbol;
+            area[item.pos[0]][item.pos[1]].textContent = item.symbol;
             area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
         }
     }
-    area[pos[0]][pos[1]].innerHTML = "@";
+    area[pos[0]][pos[1]].textContent = "@";
     area[pos[0]][pos[1]].className = "player";
     area[pos[0]][pos[1]].customProps.infoKeys.unshift("Player");
 
     for (let mob of mobs) {
         if (rendered[mob.pos[0]][mob.pos[1]]) {
-            area[mob.pos[0]][mob.pos[1]].innerHTML = mob.symbol;
+            area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
             area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
         }
     }
     for (let obj of customRenders) {
-        area[obj.pos[0]][obj.pos[1]].innerHTML = obj.symbol;
+        area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
     }
 
     // add walls last to check where to put them by what tiles are rendered
@@ -215,7 +251,7 @@ function renderAll() {
 }
 
 function gameOver(msg) {
-    status.innerHTML = msg;
+    status.textContent = msg;
     !TURN_BASED && clearInterval(turnInterval);
     interruptAutoMove = true;
     removeListeners();
@@ -223,14 +259,14 @@ function gameOver(msg) {
 }
 
 function processTurn(keepStatus) {
-    info.innerHTML = levels.currentLvl + "\nTurn " + timeTracker.timer + "\n";
+    info.textContent = levels.currentLvl + "\nTurn " + timeTracker.timer + "\n";
 
     if (timeTracker.turnsUntilShoot > 0) {
-        info.innerHTML += timeTracker.turnsUntilShoot + " turns until you can shoot";
+        info.textContent += timeTracker.turnsUntilShoot + " turns until you can shoot";
     } else {
-        info.innerHTML += "You can shoot";
+        info.textContent += "You can shoot";
     }
-    !keepStatus && (status.innerHTML = "");
+    !keepStatus && (status.textContent = "");
 
     for (let mob of mobs) {
         if (mob.isHostile && isNextTo(pos, mob.pos)) {
@@ -267,44 +303,44 @@ function processTurn(keepStatus) {
 }
 
 async function shotEffect(shotPos) {
-    const prevSymbol = area[shotPos[0]][shotPos[1]].innerHTML;
+    const prevSymbol = area[shotPos[0]][shotPos[1]].textContent;
     const prevSymbols = [null, null, null, null];
     let obj, obj0, obj1, obj2, obj3;
-    area[shotPos[0]][shotPos[1]].innerHTML = "x";
+    area[shotPos[0]][shotPos[1]].textContent = "x";
     obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
     customRenders.push(obj);
 
     await new Promise(r => setTimeout(r, 300));
     
     removeByReference(customRenders, obj);
-    area[shotPos[0]][shotPos[1]].innerHTML = prevSymbol;
+    area[shotPos[0]][shotPos[1]].textContent = prevSymbol;
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1]
-        && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].innerHTML);
+        && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].textContent);
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] + 1] 
-        && (prevSymbols[1] = area[shotPos[0] - 1][shotPos[1] + 1].innerHTML);
+        && (prevSymbols[1] = area[shotPos[0] - 1][shotPos[1] + 1].textContent);
     area[shotPos[0] + 1] && area[shotPos[0] + 1][shotPos[1] + 1] 
-        && (prevSymbols[2] = area[shotPos[0] + 1][shotPos[1] + 1].innerHTML);
+        && (prevSymbols[2] = area[shotPos[0] + 1][shotPos[1] + 1].textContent);
     area[shotPos[0] + 1] && area[shotPos[0] + 1][shotPos[1] - 1] 
-        && (prevSymbols[3] = area[shotPos[0] + 1][shotPos[1] - 1].innerHTML);
+        && (prevSymbols[3] = area[shotPos[0] + 1][shotPos[1] - 1].textContent);
     
     // also doesn't show on walls because then symbol is "" which becomes false
     if (prevSymbols[0]) {
-        area[shotPos[0] - 1][shotPos[1] - 1].innerHTML = "\\";
+        area[shotPos[0] - 1][shotPos[1] - 1].textContent = "\\";
         obj0 = { symbol: "\\", pos: [shotPos[0] - 1, shotPos[1] - 1] };
         customRenders.push(obj0);
     }
     if (prevSymbols[1]) {
-        area[shotPos[0] - 1][shotPos[1] + 1].innerHTML = "/";
+        area[shotPos[0] - 1][shotPos[1] + 1].textContent = "/";
         obj1 = { symbol: "/", pos: [shotPos[0] - 1, shotPos[1] + 1] };
         customRenders.push(obj1);
     }
     if (prevSymbols[2]) {
-        area[shotPos[0] + 1][shotPos[1] + 1].innerHTML = "\\";
+        area[shotPos[0] + 1][shotPos[1] + 1].textContent = "\\";
         obj2 = { symbol: "\\", pos: [shotPos[0] + 1, shotPos[1] + 1] };
         customRenders.push(obj2);
     }
     if (prevSymbols[3]) {
-        area[shotPos[0] + 1][shotPos[1] - 1].innerHTML = "/";
+        area[shotPos[0] + 1][shotPos[1] - 1].textContent = "/";
         obj3 = { symbol: "/", pos: [shotPos[0] + 1, shotPos[1] - 1] };
         customRenders.push(obj3);
     }
@@ -341,7 +377,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 break;
             case "Escape":
                 timeTracker.turnsUntilShoot = 0;
-                status.innerHTML = "";
+                status.textContent = "";
                 addListeners();
                 keypressListener.actionType = null;
                 clickListener.actionType = null;
@@ -357,7 +393,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
         )) {
             break;
         }
-        if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].innerHTML = "o";
+        if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].textContent = "o";
         obj = { symbol: "o", pos: [bulletPos[0], bulletPos[1]] };
         customRenders.push(obj);
 
@@ -405,7 +441,7 @@ function talk(drc) {
             movePosToDrc(talkPos, drc);
             break;
         case "Escape":
-            status.innerHTML = "";
+            status.textContent = "";
             keypressListener.actionType = null;
             clickListener.actionType = null;
             return;
@@ -416,8 +452,12 @@ function talk(drc) {
     }
     for (let mob of mobs) {
         if (coordsEq(talkPos, mob.pos) && mob.talk) {
-            status.innerHTML = mob.name + ": " + mob.talk();
-            keepLine = true;
+            const line = mob.talk();
+
+            if (line) {
+                status.textContent = "[" + mob.name + "]: " + line;
+                keepLine = true;
+            }
         }
     }
     keypressListener.actionType = null;
@@ -463,13 +503,13 @@ function movePlayer(newPos) {
     }
     for (let item of items) {
         if (coordsEq(pos, item.pos)) {
-            status.innerHTML = "";
+            status.textContent = "";
 
             if (item.hidden) {
-                status.innerHTML += "You find an item! ";
+                status.textContent += "You find an item! ";
                 item.hidden = false;
             }
-            status.innerHTML += "There's " + item.name + " here.";
+            status.textContent += "There's " + item.name + " here.";
             return true;
         }
     }
@@ -519,7 +559,7 @@ function action(key) {
         case "f":
             if (timeTracker.turnsUntilShoot === 0) {
                 timeTracker.turnsUntilShoot = 10;
-                status.innerHTML = "In what direction?";
+                status.textContent = "In what direction?";
                 keypressListener.actionType = "shoot";
                 clickListener.actionType = "chooseDrc";
             }
@@ -531,13 +571,13 @@ function action(key) {
 
             contents = contents.slice(0, -2);
             if (contents.length !== 0) {
-                status.innerHTML = "Contents of your inventory:\n" + contents + ".";
+                status.textContent = "Contents of your inventory:\n" + contents + ".";
             } else {
-                status.innerHTML = "Your inventory is empty.";
+                status.textContent = "Your inventory is empty.";
             }
             return;
         case "t":
-            status.innerHTML = "In what direction?";
+            status.textContent = "In what direction?";
             keypressListener.actionType = "talk";
             clickListener.actionType = "chooseDrc";
             return;
@@ -546,7 +586,7 @@ function action(key) {
                 if (coordsEq(pos, items[i].pos)) {
                     const removed = items.splice(i, 1)[0];
                     inventory.push(removed);
-                    status.innerHTML = "You pick up " + removed.name + ".";
+                    status.textContent = "You pick up " + removed.name + ".";
                     keepStatus = true;
                     break;
                 }
@@ -614,7 +654,7 @@ const keypressListener = e => {
     }
 };
 const clickListener = e => {
-    if (menu.style.display !== "none") {
+    if (menu.style.display !== "none" && menu.style.display.length !== 0) {
         menu.style.display = "none";
         return;
     }
@@ -634,9 +674,9 @@ const clickListener = e => {
                     talk(drc);
                     break;
             }
-            break; 
+            break;
         default:
-            if (CLICK_AUTO_TRAVEL) {
+            if (e.ctrlKey) {
                 if (e.target.tagName !== "TD") return;
                 autoTravel(e.target.customProps.coords);
             } else {
@@ -663,13 +703,13 @@ const menuListener = e => {
     const showInfoButton = document.getElementById("showInfoButton");
     travelButton.onclick = () => autoTravel(e.target.customProps.coords);
     showInfoButton.onclick = () => {
-        status.innerHTML = "";
+        status.textContent = "";
 
         if (!e.target.customProps.infoKeys.length) {
-            status.innerHTML += "[ ]: An unseen area\n";
+            status.textContent += "[ ]: An unseen area\n";
         }
         for (let key of e.target.customProps.infoKeys) {
-            status.innerHTML += infoTable[key] + "\n";
+            status.textContent += infoTable[key] + "\n";
         }
     };
 };

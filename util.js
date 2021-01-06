@@ -2,7 +2,7 @@
 
 // Bresenham's algorithm, modified to work for all directions
 
-function bresenham(y0, x0, y1, x1, callback) {
+function bresenham(y0, x0, y1, x1, onNewPos) {
     let swapYX = false;
     let mirrorY = false;
     let mirrorX = false;
@@ -45,7 +45,7 @@ function bresenham(y0, x0, y1, x1, callback) {
             y_temp = mirrorY ? 2 * y0 - y : y;
             x_temp = mirrorX ? 2 * x0 - x : x;
         }
-        if (callback(y_temp, x_temp) === "stop") {
+        if (onNewPos(y_temp, x_temp) === "stop") {
             return;
         }
         if (d <= 0) {
@@ -255,7 +255,7 @@ const movingAIs = {
 
                 // TODO is this ok that mob just "knows" all walls?
                 if (!level[lineDrawPos[0]] || !level[lineDrawPos[0]][lineDrawPos[1]]
-                    || level[lineDrawPos[0]][lineDrawPos[1]].innerHTML === "") break;
+                    || level[lineDrawPos[0]][lineDrawPos[1]] === "") break;
                 if (distanceToMob) prevDistance = distanceToMob;
 
                 // actually squared but doesn't matter
