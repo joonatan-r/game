@@ -1,12 +1,13 @@
-// table, level, levels, edges, area, rendered, infoTable from level.js
-// bresenham, isNextTo, getCoordsNextTo, coordsEq, 
-// movePosToDrc, movingAIs, removeByReference, pixelCoordsToDrc from util.js
+// table, level, levels, area, rendered, infoTable from level.js
+// bresenham, isNextTo, coordsEq, movePosToDrc, movingAIs, 
+// removeByReference, pixelCoordsToDrc from util.js
 
 // all coords are given as (y,x)
 
 // TODO if not turn based, status stuff is pretty messed up
 const TURN_BASED = true;
 let turnInterval = null;
+!TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
 
 const info = document.getElementById("info");
 const status = document.getElementById("status");
@@ -134,118 +135,6 @@ function trySpawnMob() {
     mobs.push(mob);
 }
 
-function renderPos(posToRender) {
-    if (!rendered[posToRender[0]][posToRender[1]]) {
-        area[posToRender[0]][posToRender[1]].textContent = "";
-        return;
-    }
-
-    area[posToRender[0]][posToRender[1]].textContent = level[posToRender[0]][posToRender[1]];
-    area[posToRender[0]][posToRender[1]].customProps.infoKeys.unshift(level[posToRender[0]][posToRender[1]]);
-
-    for (let item of items) {
-        if (coordsEq(item.pos, posToRender) && !item.hidden) {
-            area[item.pos[0]][item.pos[1]].textContent = item.symbol;
-            area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
-        }
-    }
-    if (coordsEq(pos, posToRender)) {
-        area[pos[0]][pos[1]].textContent = "@";
-        area[pos[0]][pos[1]].className = "player";
-        area[pos[0]][pos[1]].customProps.infoKeys.unshift("Player");
-    }
-    for (let mob of mobs) {
-        if (coordsEq(mob.pos, posToRender)) {
-            area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
-            area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
-        }
-    }
-    for (let obj of customRenders) {
-        if (coordsEq(obj.pos, posToRender)) {
-            area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
-        }
-    }
-}
-
-function renderAll() {
-    for (let i = 0; i < level.length; i++) {
-        for (let j = 0; j < level[0].length; j++) {
-            rendered[i][j] = false;
-            area[i][j].textContent = "";
-            // remove this to "remember" walls once seen
-            // (won't work if something else, such as player's pos,
-            // uses className)
-            area[i][j].className = "";
-            area[i][j].customProps.infoKeys = [];
-        }
-    }
-    for (let coords of edges) {
-        bresenham(pos[0], pos[1], coords[0], coords[1], (y,x) => {
-            if (rendered[y][x]) {
-                return level[y][x] === "" ? "stop" : "ok"; // wall blocks sight
-            }
-            area[y][x].textContent = level[y][x];
-            area[y][x].customProps.infoKeys.unshift(level[y][x]);
-            rendered[y][x] = true;
-            return level[y][x] === "" ? "stop" : "ok";
-        });
-    }
-    for (let item of items) {
-        if (rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
-            area[item.pos[0]][item.pos[1]].textContent = item.symbol;
-            area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
-        }
-    }
-    area[pos[0]][pos[1]].textContent = "@";
-    area[pos[0]][pos[1]].className = "player";
-    area[pos[0]][pos[1]].customProps.infoKeys.unshift("Player");
-
-    for (let mob of mobs) {
-        if (rendered[mob.pos[0]][mob.pos[1]]) {
-            area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
-            area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
-        }
-    }
-    for (let obj of customRenders) {
-        area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
-    }
-
-    // add walls last to check where to put them by what tiles are rendered
-
-    for (let i = 0; i < level.length; i++) {
-        for (let j = 0; j < level[0].length; j++) {
-            if (level[i][j] !== "") {
-                continue;
-            }
-            const td = area[i][j];
-            let nextToRendered = false;
-
-            for (let coord of getCoordsNextTo([i, j])) {
-                if (rendered[coord[0]] && rendered[coord[0]][coord[1]]) {
-                    nextToRendered = true;
-                }
-            }
-            if (rendered[i][j] || nextToRendered) {
-                const classes = ["wall"];
-    
-                if (i > 0 && j < level[0].length && rendered[i - 1][j] && level[i - 1][j] !== "") {
-                    classes.push("t");
-                }
-                if (i + 1 < level.length && j < level[0].length && rendered[i + 1][j] && level[i + 1][j] !== "") {
-                    classes.push("b");
-                }
-                if (i < level.length && j > 0 && rendered[i][j - 1] && level[i][j - 1] !== "") {
-                    classes.push("l");
-                }
-                if (i < level.length && j + 1 < level[0].length && rendered[i][j + 1] && level[i][j + 1] !== "") {
-                    classes.push("r");
-                }
-                td.classList.add(...classes);
-            }
-        }
-    }
-}
-
 function gameOver(msg) {
     status.textContent = msg;
     !TURN_BASED && clearInterval(turnInterval);
@@ -292,61 +181,10 @@ function processTurn(keepStatus) {
             mob.pos = mob.target.slice();
         }
     }
-    renderAll();
+    renderAll(pos, items, mobs, customRenders);
     trySpawnMob();
     timeTracker.timer++;
     if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
-}
-
-async function shotEffect(shotPos) {
-    const prevSymbol = area[shotPos[0]][shotPos[1]].textContent;
-    const prevSymbols = [null, null, null, null];
-    let obj, obj0, obj1, obj2, obj3;
-    area[shotPos[0]][shotPos[1]].textContent = "x";
-    obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
-    customRenders.push(obj);
-
-    await new Promise(r => setTimeout(r, 300));
-    
-    removeByReference(customRenders, obj);
-    area[shotPos[0]][shotPos[1]].textContent = prevSymbol;
-    area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1]
-        && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].textContent);
-    area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] + 1] 
-        && (prevSymbols[1] = area[shotPos[0] - 1][shotPos[1] + 1].textContent);
-    area[shotPos[0] + 1] && area[shotPos[0] + 1][shotPos[1] + 1] 
-        && (prevSymbols[2] = area[shotPos[0] + 1][shotPos[1] + 1].textContent);
-    area[shotPos[0] + 1] && area[shotPos[0] + 1][shotPos[1] - 1] 
-        && (prevSymbols[3] = area[shotPos[0] + 1][shotPos[1] - 1].textContent);
-    
-    // also doesn't show on walls because then symbol is "" which becomes false
-    if (prevSymbols[0]) {
-        area[shotPos[0] - 1][shotPos[1] - 1].textContent = "\\";
-        obj0 = { symbol: "\\", pos: [shotPos[0] - 1, shotPos[1] - 1] };
-        customRenders.push(obj0);
-    }
-    if (prevSymbols[1]) {
-        area[shotPos[0] - 1][shotPos[1] + 1].textContent = "/";
-        obj1 = { symbol: "/", pos: [shotPos[0] - 1, shotPos[1] + 1] };
-        customRenders.push(obj1);
-    }
-    if (prevSymbols[2]) {
-        area[shotPos[0] + 1][shotPos[1] + 1].textContent = "\\";
-        obj2 = { symbol: "\\", pos: [shotPos[0] + 1, shotPos[1] + 1] };
-        customRenders.push(obj2);
-    }
-    if (prevSymbols[3]) {
-        area[shotPos[0] + 1][shotPos[1] - 1].textContent = "/";
-        obj3 = { symbol: "/", pos: [shotPos[0] + 1, shotPos[1] - 1] };
-        customRenders.push(obj3);
-    }
-    await new Promise(r => setTimeout(r, 300));
-
-    prevSymbols[0] && removeByReference(customRenders, obj0);
-    prevSymbols[1] && removeByReference(customRenders, obj1);
-    prevSymbols[2] && removeByReference(customRenders, obj2);
-    prevSymbols[3] && removeByReference(customRenders, obj3);
-    renderAll();
 }
 
 async function shoot(fromPos, drc, mobIsShooting) {
@@ -358,7 +196,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
     clickListener.actionType = null;
 
     while (1) {
-        renderPos(bulletPos);
+        renderPos(bulletPos, pos, items, mobs, customRenders);
 
         switch (drc) {
             case "4":
@@ -398,7 +236,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
         if (coordsEq(bulletPos, pos)) {
             gameOver("A bullet hits you! You die...");
             removeByReference(customRenders, obj);
-            shotEffect(bulletPos);
+            shotEffect(bulletPos, pos, items, mobs, customRenders);
             return;
         }
         for (let i = 0; i < mobs.length; i++) {
@@ -408,7 +246,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 keypressListener.actionType = null;
                 clickListener.actionType = null;
                 removeByReference(customRenders, obj);
-                shotEffect(bulletPos);
+                shotEffect(bulletPos, pos, items, mobs, customRenders);
                 !mobIsShooting && processTurn();
                 return;
             }
@@ -589,7 +427,7 @@ function action(key) {
     if (TURN_BASED) {
         processTurn(keepStatus);
     } else {
-        renderAll();
+        renderAll(pos, items, mobs, customRenders);
     }
 }
 
@@ -621,7 +459,7 @@ async function autoTravel(coords) {
         if (TURN_BASED) {
             processTurn(keepStatus);
         } else {
-            renderAll();
+            renderAll(pos, items, mobs, customRenders);
         }
         await new Promise(r => setTimeout(r, 50));
     }
@@ -631,6 +469,13 @@ async function autoTravel(coords) {
 
 function showDialog(text, choices, onSelect) {
     removeListeners();
+    dialogKeyListener = e => {
+        let pressedNumber = Number(e.key);
+        if (isNaN(pressedNumber) || pressedNumber > choices.length) return;
+        onSelect(pressedNumber - 1);
+        hideDialog();
+    };
+    document.addEventListener("keydown", dialogKeyListener);
     dialog.style.left = table.left;
     dialog.style.top = table.top;
     dialog.style.display = "block";
@@ -656,6 +501,7 @@ function showDialog(text, choices, onSelect) {
 
 function hideDialog() {
     dialog.style.display = "none";
+    document.removeEventListener("keydown", dialogKeyListener);
     addListeners();
 
     while (dialog.firstChild) {
@@ -713,7 +559,7 @@ const clickListener = e => {
                 if (TURN_BASED) {
                     processTurn(keepStatus);
                 } else {
-                    renderAll();
+                    renderAll(pos, items, mobs, customRenders);
                 }
             }
     }
@@ -739,6 +585,7 @@ const menuListener = e => {
         }
     };
 };
+let dialogKeyListener;
 
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
@@ -754,5 +601,3 @@ function removeListeners() {
 
 addListeners();
 processTurn();
-
-!TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
