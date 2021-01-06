@@ -41,7 +41,7 @@ p {
     margin: 0;
 }
 
-#clickMenu p:hover, #dialog p:hover {
+#clickMenu p:hover, #dialog p:not(#dialogText):hover {
     background-color: #777;
 }
 

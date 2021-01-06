@@ -23,31 +23,6 @@ let customRenders = []; // for "animations" to not get erased
 let interruptAutoMove = false;
 let blockAutoTravel = false;
 
-function showDialog(text, choices, onSelect) {
-    removeListeners();
-    dialog.style.left = table.left;
-    dialog.style.top = table.top;
-    dialog.style.display = "block";
-    const p = document.createElement("p");
-    p.textContent = text;
-    dialog.appendChild(p);
-    let idx = 0;
-
-    for (let choice of choices) {
-        const c = document.createElement("p");
-        c.textContent = "[" + (idx + 1) + "]: " + choice;
-        dialog.appendChild(c);
-        c.onclick = e => {
-            e.stopPropagation();
-            onSelect(idx);
-            dialog.style.display = "none";
-            dialog.textContent = ""; // remove children
-            addListeners();
-        }
-        idx++;
-    }
-}
-
 levels["Ukko's House"].mobs.push({
     name: "Ukko",
     symbol: "@",
@@ -62,7 +37,10 @@ levels["Random House"].mobs.push({
     isHostile: false,
     pos: [13, 18],
     talk: function() {
-        showDialog("[" + this.name + "]: Hello there!", ["General Kenobi!", "[Don't answer]"], idx => {});
+        showDialog("[" + this.name + "]: Hello there!\n\nYour answer:", 
+                ["General Kenobi!", "[Don't answer]"], 
+                idx => console.log(idx)
+        );
         return false;
     },
     calcTarget: function() { this.target = this.pos.slice(); }
@@ -637,6 +615,41 @@ async function autoTravel(coords) {
     keypressListener.actionType = null;
     blockAutoTravel = false;
 }
+
+function showDialog(text, choices, onSelect) {
+    removeListeners();
+    dialog.style.left = table.left;
+    dialog.style.top = table.top;
+    dialog.style.display = "block";
+    const p = document.createElement("p");
+    p.setAttribute("id", "dialogText");
+    p.textContent = text;
+    dialog.appendChild(p);
+    let idx = 0;
+
+    for (let choice of choices) {
+        const choiceIdx = idx;
+        const c = document.createElement("p");
+        c.textContent = "[" + (idx + 1) + "]: " + choice;
+        dialog.appendChild(c);
+        c.onclick = e => {
+            e.stopPropagation();
+            onSelect(choiceIdx);
+            hideDialog();
+        }
+        idx++;
+    }
+}
+
+function hideDialog() {
+    dialog.style.display = "none";
+    addListeners();
+
+    while (dialog.firstChild) {
+        dialog.firstChild.onclick = null; // just to be safe
+        dialog.removeChild(dialog.firstChild);
+    }
+};
 
 const keypressListener = e => {
     switch (keypressListener.actionType) {
