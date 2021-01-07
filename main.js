@@ -1,6 +1,6 @@
 // level, levels, area, rendered, infoTable from level.js
-// bresenham, isNextTo, coordsEq, movePosToDrc, movingAIs, 
-// removeByReference, pixelCoordsToDrc from util.js
+// bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
+// movingAIs, Ukko, Some_Guy, createMobOfType Make, Pekka, Jorma from mobs.js
 
 // all coords are given as (y,x)
 
@@ -16,67 +16,17 @@ const dialog = document.getElementById("dialog");
 const timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
-let inventory = [];
-let pos = [10, 13];
+const player = {};
+player.inventory = [];
+player.pos = [10, 13];
 let mobs = [];
 let items = [];
 let customRenders = []; // for "animations" to not get erased
 let interruptAutoTravel = false;
 let blockAutoTravel = false;
 
-levels["Ukko's House"].mobs.push({
-    name: "Ukko",
-    symbol: "@",
-    isHostile: false,
-    state: 9001,
-    pos: [11, 13],
-    talk: function(outputElement) {
-
-        if (this.state > 9000) {
-            showDialog("[" + this.name + "]: Hi! I have over 9 options.\n\nYour answer:", 
-                    ["option 1", "option 2", "option 3", "option 4", "option 5", "option 6", "option 7", "option 8", "option 9", "option 10", "option 11",
-                     "option 12", "option 13", "option 14", "option 15", "option 16", "option 17", "option 18", "option 19", "option 20"], 
-                    idx => {
-                        outputElement.textContent = "You selected option " + (idx+1) + ".";
-                    }
-            );
-            return false;
-        }
-
-        outputElement.textContent = "[" + this.name + "]: Yo man!";
-        return true;
-    },
-    calcTarget: function() { movingAIs.random(this) }
-});
-levels["Random House"].mobs.push({
-    name: "Some guy",
-    symbol: "@",
-    isHostile: false,
-    state: 0,
-    pos: [13, 18],
-    talk: function(outputElement) {
-        switch (this.state) {
-            case 0:
-                showDialog("[" + this.name + "]: Hello there!\n\nYour answer:", 
-                        ["Hi!", "General Kenobi!", "[Don't answer]"], 
-                        idx => {
-                            this.state = { 0: 1, 1: 2, 2: 0 }[idx];
-                            if (this.state !== 0) this.talk(outputElement);
-                        }
-                );
-                return false;
-            case 1:
-                outputElement.textContent = "[" + this.name + "]: So uncivilized!";
-                return true;
-            case 2:
-                outputElement.textContent = "[" + this.name + "]: You are strong and wise and I'm very proud of you!";
-                return true;
-            default:
-                return false;
-        }
-    },
-    calcTarget: function() { this.target = this.pos.slice(); }
-});
+levels["Ukko's House"].mobs.push(Ukko);
+levels["Random House"].mobs.push(Some_Guy);
 levels["Wilderness"].items.push({
     name: "some money",
     symbol: "$",
@@ -113,38 +63,18 @@ function trySpawnMob() {
     if (!spawnPos) return;
 
     const r = Math.random();
-    const mob = {};
-    mob.pos = spawnPos;
+    let mob;
 
     if (r < 0.2) {
-        mob.name = "Make";
-        mob.symbol = "M";
-        mob.isHostile = true;
-        mob.calcTarget = () => {
-            if (rendered[mob.pos[0]][mob.pos[1]]) { // if player can see mob, mob can see player
-                movingAIs.towardsPos(mob, pos);
-            } else {
-                movingAIs.random(mob);
-            }
-        };
+        mob = createMobOfType(Make);
+        mob.huntingTarget = player;
     } else if (r > 0.8) {
-        mob.name = "Pekka";
-        mob.symbol = "P";
-        mob.isHostile = true;
-        mob.isShooter = true;
-        mob.calcTarget = () => {
-            if (rendered[mob.pos[0]][mob.pos[1]]) {
-                movingAIs.towardsStraightLineFromPos(mob, pos);
-            } else {
-                mob.target = mob.pos.slice();
-            }
-        };
+        mob = createMobOfType(Pekka);
+        mob.huntingTarget = player;
     } else {
-        mob.name = "Jorma";
-        mob.symbol = "J";
-        mob.isHostile = true;
-        mob.calcTarget = () => movingAIs.random(mob);
+        mob = createMobOfType(Jorma);
     }
+    mob.pos = spawnPos;
     mobs.push(mob);
 }
 
@@ -153,7 +83,7 @@ function gameOver(msg) {
     !TURN_BASED && clearInterval(turnInterval);
     interruptAutoTravel = true;
     removeListeners();
-    customRenders.push({ symbol: level[pos[0]][pos[1]], pos: pos }); // erase player symbol
+    customRenders.push({ symbol: level[player.pos[0]][player.pos[1]], pos: player.pos }); // erase player symbol
 }
 
 function processTurn(keepStatus) {
@@ -167,7 +97,7 @@ function processTurn(keepStatus) {
     !keepStatus && (status.textContent = "");
 
     for (let mob of mobs) {
-        if (mob.isHostile && isNextTo(pos, mob.pos)) {
+        if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
             gameOver(mob.name + " hits you! You die...");
             break;
         }
@@ -182,7 +112,7 @@ function processTurn(keepStatus) {
         }
         if (mob.isShooter && mob.straightLineToTargetDrc) {
             shoot(mob.pos, mob.straightLineToTargetDrc, true);
-        } else if (!coordsEq(pos, mob.target) 
+        } else if (!coordsEq(player.pos, mob.target) 
             && !mobInTheWay
             && !(
                 mob.target[0] > level.length - 1 
@@ -194,7 +124,7 @@ function processTurn(keepStatus) {
             mob.pos = mob.target.slice();
         }
     }
-    renderAll(pos, items, mobs, customRenders);
+    renderAll(player.pos, items, mobs, customRenders);
     trySpawnMob();
     timeTracker.timer++;
     if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
@@ -209,7 +139,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
     clickListener.actionType = null;
 
     while (1) {
-        renderPos(bulletPos, pos, items, mobs, customRenders);
+        renderPos(bulletPos, player.pos, items, mobs, customRenders);
 
         switch (drc) {
             case "4":
@@ -246,10 +176,10 @@ async function shoot(fromPos, drc, mobIsShooting) {
 
         await new Promise(r => setTimeout(r, 30));
         
-        if (coordsEq(bulletPos, pos)) {
+        if (coordsEq(bulletPos, player.pos)) {
             gameOver("A bullet hits you! You die...");
             removeByReference(customRenders, obj);
-            shotEffect(bulletPos, pos, items, mobs, customRenders);
+            shotEffect(bulletPos, player.pos, items, mobs, customRenders);
             return;
         }
         for (let i = 0; i < mobs.length; i++) {
@@ -259,7 +189,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 keypressListener.actionType = null;
                 clickListener.actionType = null;
                 removeByReference(customRenders, obj);
-                shotEffect(bulletPos, pos, items, mobs, customRenders);
+                shotEffect(bulletPos, player.pos, items, mobs, customRenders);
                 !mobIsShooting && processTurn();
                 return;
             }
@@ -273,7 +203,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
 }
 
 function talk(drc) {
-    let talkPos = pos.slice();
+    let talkPos = player.pos.slice();
     let keepStatus = false;
 
     switch (drc) {
@@ -299,7 +229,7 @@ function talk(drc) {
     }
     for (let mob of mobs) {
         if (coordsEq(talkPos, mob.pos) && mob.talk) {
-            keepStatus = mob.talk(status);
+            keepStatus = mob.talk(showDialog, status);
         }
     }
     keypressListener.actionType = null;
@@ -321,19 +251,19 @@ function movePlayer(newPos) {
     ) {
         return false;
     }
-    pos = newPos;
+    player.pos = newPos;
 
-    if (level[pos[0]][pos[1]] === "^") {
+    if (level[player.pos[0]][player.pos[1]] === "^") {
         const tps = levels[levels.currentLvl].travelPoints;
 
         for (let lvl of Object.keys(tps)) {
             let idx = 0;
 
             for (let coords of tps[lvl]) {
-                if (coordsEq(coords, pos)) {
+                if (coordsEq(coords, player.pos)) {
                     const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
                     level = retObj.level;
-                    pos = retObj.pos.slice();
+                    player.pos = retObj.pos.slice();
                     mobs = retObj.mobs;
                     items = retObj.items;
                     levels.currentLvl = lvl;
@@ -344,7 +274,7 @@ function movePlayer(newPos) {
         }
     }
     for (let item of items) {
-        if (coordsEq(pos, item.pos)) {
+        if (coordsEq(player.pos, item.pos)) {
             status.textContent = "";
 
             if (item.hidden) {
@@ -370,22 +300,22 @@ function action(key) {
         case "1":
         case "9":
         case "3":
-            const newPos = pos.slice();
+            const newPos = player.pos.slice();
             movePosToDrc(newPos, key);
             keepStatus = movePlayer(newPos);
             break;
         case "Enter":
-            if (level[pos[0]][pos[1]] === ">" || level[pos[0]][pos[1]] === "<") {
+            if (level[player.pos[0]][player.pos[1]] === ">" || level[player.pos[0]][player.pos[1]] === "<") {
                 const tps = levels[levels.currentLvl].travelPoints;
 
                 for (let lvl of Object.keys(tps)) {
                     let idx = 0; // for tracking which point in lvl to travel to if several
         
                     for (let coords of tps[lvl]) {
-                        if (coordsEq(coords, pos)) {
+                        if (coordsEq(coords, player.pos)) {
                             const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
                             level = retObj.level;
-                            pos = retObj.pos.slice();
+                            player.pos = retObj.pos.slice();
                             mobs = retObj.mobs;
                             items = retObj.items;
                             levels.currentLvl = lvl;
@@ -409,7 +339,7 @@ function action(key) {
         case "i":
             let contents = "";
             
-            for (let item of inventory) contents += item.name + ", ";
+            for (let item of player.inventory) contents += item.name + ", ";
 
             contents = contents.slice(0, -2);
             if (contents.length !== 0) {
@@ -425,9 +355,9 @@ function action(key) {
             return;
         case ",":
             for (let i = 0; i < items.length; i++) {
-                if (coordsEq(pos, items[i].pos)) {
+                if (coordsEq(player.pos, items[i].pos)) {
                     const removed = items.splice(i, 1)[0];
-                    inventory.push(removed);
+                    player.inventory.push(removed);
                     status.textContent = "You pick up " + removed.name + ".";
                     keepStatus = true;
                     break;
@@ -440,7 +370,7 @@ function action(key) {
     if (TURN_BASED) {
         processTurn(keepStatus);
     } else {
-        renderAll(pos, items, mobs, customRenders);
+        renderAll(player.pos, items, mobs, customRenders);
     }
 }
 
@@ -452,7 +382,7 @@ async function autoTravel(coords) {
     blockAutoTravel = true;
     interruptAutoTravel = false;
     keypressListener.actionType = "autoMove";
-    bresenham(pos[0], pos[1], coords[0], coords[1], 
+    bresenham(player.pos[0], player.pos[1], coords[0], coords[1], 
             (y, x) => {
                 coordsList.push([y, x]);
                 return level[y][x] === "" ? "stop" : "ok";
@@ -462,7 +392,7 @@ async function autoTravel(coords) {
 
     for (let coord of coordsList) {
         // new coord may not be next to player if e.g. a mob blocks the way
-        if (interruptAutoTravel || levels.currentLvl !== lvl || !isNextTo(pos, coord)) {
+        if (interruptAutoTravel || levels.currentLvl !== lvl || !isNextTo(player.pos, coord)) {
             keypressListener.actionType = null;
             blockAutoTravel = false;
             return;
@@ -472,7 +402,7 @@ async function autoTravel(coords) {
         if (TURN_BASED) {
             processTurn(keepStatus);
         } else {
-            renderAll(pos, items, mobs, customRenders);
+            renderAll(player.pos, items, mobs, customRenders);
         }
         await new Promise(r => setTimeout(r, 50));
     }
@@ -578,7 +508,7 @@ function hideDialog() {
 const keypressListener = e => {
     switch (keypressListener.actionType) {
         case "shoot":
-            shoot(pos, e.key);
+            shoot(player.pos, e.key);
             break;
         case "talk":
             talk(e.key);
@@ -596,7 +526,7 @@ const clickListener = e => {
         return;
     }
     // get cursor position in relation to the player symbol and convert to drc
-    const rect = area[pos[0]][pos[1]].getBoundingClientRect();
+    const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
     const x = e.x - (rect.left + rect.width / 2);
     const y = e.y - (rect.top + rect.height / 2);
     const drc = pixelCoordsToDrc(y, x);
@@ -605,7 +535,7 @@ const clickListener = e => {
         case "chooseDrc":
             switch (keypressListener.actionType) {
                 case "shoot":
-                    shoot(pos, drc);
+                    shoot(player.pos, drc);
                     break;
                 case "talk":
                     talk(drc);
@@ -617,14 +547,14 @@ const clickListener = e => {
                 if (e.target.tagName !== "TD") return;
                 autoTravel(e.target.customProps.coords);
             } else {
-                const newPos = pos.slice();
+                const newPos = player.pos.slice();
                 movePosToDrc(newPos, drc);
                 let keepStatus = movePlayer(newPos);
                 
                 if (TURN_BASED) {
                     processTurn(keepStatus);
                 } else {
-                    renderAll(pos, items, mobs, customRenders);
+                    renderAll(player.pos, items, mobs, customRenders);
                 }
             }
     }
