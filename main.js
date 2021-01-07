@@ -1,4 +1,4 @@
-// table, level, levels, area, rendered, infoTable from level.js
+// level, levels, area, rendered, infoTable from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, movingAIs, 
 // removeByReference, pixelCoordsToDrc from util.js
 
@@ -28,8 +28,21 @@ levels["Ukko's House"].mobs.push({
     name: "Ukko",
     symbol: "@",
     isHostile: false,
+    state: 9001,
     pos: [11, 13],
     talk: function(outputElement) {
+
+        if (this.state > 9000) {
+            showDialog("[" + this.name + "]: Hi! I have over 9 options.\n\nYour answer:", 
+                    ["option 1", "option 2", "option 3", "option 4", "option 5", "option 6", "option 7", "option 8", "option 9", "option 10", "option 11",
+                     "option 12", "option 13", "option 14", "option 15", "option 16", "option 17", "option 18", "option 19", "option 20"], 
+                    idx => {
+                        outputElement.textContent = "You selected option " + (idx+1) + ".";
+                    }
+            );
+            return false;
+        }
+
         outputElement.textContent = "[" + this.name + "]: Yo man!";
         return true;
     },
@@ -48,7 +61,7 @@ levels["Random House"].mobs.push({
                         ["Hi!", "General Kenobi!", "[Don't answer]"], 
                         idx => {
                             this.state = { 0: 1, 1: 2, 2: 0 }[idx];
-                            this.talk(outputElement);
+                            if (this.state !== 0) this.talk(outputElement);
                         }
                 );
                 return false;
@@ -286,7 +299,7 @@ function talk(drc) {
     }
     for (let mob of mobs) {
         if (coordsEq(talkPos, mob.pos) && mob.talk) {
-            keepStatus = (mob.talk && mob.talk(status));
+            keepStatus = mob.talk(status);
         }
     }
     keypressListener.actionType = null;
@@ -468,35 +481,87 @@ async function autoTravel(coords) {
 }
 
 function showDialog(text, choices, onSelect) {
+    let choiceGroupIdx = null;
     removeListeners();
+
+    if (choices.length > 9) {
+        const choicesCopy = choices.slice();
+        let currIdx = 0;
+        choiceGroupIdx = 0;
+        choices = [];
+
+        while (choicesCopy.length) {
+            choices.push([]);
+
+            for (let i = 0; i < 8 && choicesCopy.length; i++) {
+                choices[currIdx].push(choicesCopy.shift());
+            }
+            if (choicesCopy.length) {
+                choices[currIdx].push("[Show more]");
+            } else {
+                choices[currIdx].push("[Back to start]");
+            }
+            currIdx++;
+        }
+    }
+    let choiceGroup = choiceGroupIdx !== null ? choices[choiceGroupIdx] : choices;
+
+    const repopulateDialog = noGroupUpdate => {
+        if (!noGroupUpdate) {
+            choiceGroupIdx = choiceGroupIdx < choices.length - 1 ? choiceGroupIdx + 1 : 0;
+            choiceGroup = choices[choiceGroupIdx];
+        }
+        let idx = 0;
+    
+        while (dialog.children.length > 1) { // remove all but the first text element
+            dialog.firstChild.onclick = null; // just to be safe
+            dialog.removeChild(dialog.lastChild);
+        }
+        for (let choice of choiceGroup) {
+            const choiceIdx = idx;
+            const c = document.createElement("p");
+            c.textContent = "[" + (idx + 1) + "]: " + choice;
+            dialog.appendChild(c);
+            c.onclick = e => {
+                e.stopPropagation();
+    
+                if (choiceGroupIdx !== null && choiceIdx === choiceGroup.length - 1) {
+                    repopulateDialog();
+                } else {
+                    let optionNumber = choiceIdx;
+
+                    if (choiceGroupIdx !== null) {
+                        optionNumber += 8 * choiceGroupIdx;
+                    }
+                    hideDialog();
+                    onSelect(optionNumber);
+                }
+            }
+            idx++;
+        }
+    }
     dialogKeyListener = e => {
         let pressedNumber = Number(e.key);
-        if (isNaN(pressedNumber) || pressedNumber > choices.length) return;
-        onSelect(pressedNumber - 1);
-        hideDialog();
+        if (isNaN(pressedNumber) || pressedNumber > choiceGroup.length) return;
+        if (choiceGroupIdx !== null && pressedNumber === choiceGroup.length) {
+            repopulateDialog();
+        } else {
+            let optionNumber = pressedNumber - 1;
+
+            if (choiceGroupIdx !== null) {
+                optionNumber += 8 * choiceGroupIdx;
+            }
+            hideDialog();
+            onSelect(optionNumber);
+        }
     };
     document.addEventListener("keydown", dialogKeyListener);
-    dialog.style.left = table.left;
-    dialog.style.top = table.top;
     dialog.style.display = "block";
     const p = document.createElement("p");
     p.setAttribute("id", "dialogText");
     p.textContent = text;
     dialog.appendChild(p);
-    let idx = 0;
-
-    for (let choice of choices) {
-        const choiceIdx = idx;
-        const c = document.createElement("p");
-        c.textContent = "[" + (idx + 1) + "]: " + choice;
-        dialog.appendChild(c);
-        c.onclick = e => {
-            e.stopPropagation();
-            onSelect(choiceIdx);
-            hideDialog();
-        }
-        idx++;
-    }
+    repopulateDialog(true);
 }
 
 function hideDialog() {
