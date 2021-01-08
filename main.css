@@ -45,6 +45,10 @@ p {
     background-color: #777;
 }
 
+.mem {
+    color: gray;
+}
+
 .player {
     border: 1px solid green;
 }

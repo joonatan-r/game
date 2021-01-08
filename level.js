@@ -3,6 +3,7 @@ const SIZE_X = 40;
 const edges = [];
 const area = [];
 const rendered = [];
+let memorized = [];
 const table = document.getElementById("table");
 const levelCharMap = {
     ".": "\u00B7",
@@ -49,6 +50,8 @@ for (let c of levelData) {
             level: level,
             mobs: [],
             items: [],
+            memorized: [],
+            spawnsHostiles: false,
             travelPoints: {}
         };
         // TODO currently if multiple passages between two lvls, they are always connected
@@ -81,10 +84,7 @@ for (let c of levelData) {
     level[yIdx][xIdx] = c;
     xIdx++;
 }
-levels["Village"].spawnsHostiles = false;
 levels["Wilderness"].spawnsHostiles = true;
-levels["Ukko's House"].spawnsHostiles = false;
-levels["Random House"].spawnsHostiles = false;
 levels.currentLvl = Object.keys(levels)[1];
 level = levels[levels.currentLvl].level;
 
@@ -93,12 +93,14 @@ for (let i = 0; i < level.length; i++) {
     table.appendChild(tr);
     area.push([]);
     rendered.push([]);
+    memorized.push([]);
   
     for (let j = 0; j < level[0].length; j++) {
         if (i === 0 || j === 0 || i === SIZE_Y - 1 || j === SIZE_X - 1) {
             edges.push([i, j]);
         }
         rendered[i][j] = false;
+        memorized[i][j] = false;
         const td = document.createElement("td");
         tr.appendChild(td);
         area[i][j] = td;
@@ -106,16 +108,32 @@ for (let i = 0; i < level.length; i++) {
         area[i][j].customProps.coords = [i, j];
     }
 }
+for (let lvl of Object.keys(levels)) {
+    if (lvl === "currentLvl") continue;
 
-function changeLvl(fromLvl, toLvl, pointIdx, mobs, items) {
+    let tempMem = [];
+
+    for (let i = 0; i < level.length; i++) {
+        tempMem.push([]);
+
+        for (let j = 0; j < level[0].length; j++) {
+            tempMem[i][j] = false;
+        }
+    }
+    levels[lvl].memorized = tempMem;
+}
+
+function changeLvl(fromLvl, toLvl, pointIdx, mobs, items, memorized) {
     levels[fromLvl].mobs = mobs;
     levels[fromLvl].items = items;
+    levels[fromLvl].memorized = memorized;
 
     return {
         level: levels[toLvl].level,
         pos: levels[toLvl].travelPoints[fromLvl][pointIdx],
         mobs: levels[toLvl].mobs,
-        items: levels[toLvl].items
+        items: levels[toLvl].items,
+        memorized: levels[toLvl].memorized
     };
 }
 

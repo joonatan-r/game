@@ -1,9 +1,18 @@
-// level, area, rendered, edges from level.js
+// level, area, rendered, memorized, edges from level.js
 // coordsEq, getCoordsNextTo, removeByReference from util.js
 
+const SHOW_MEMORIZED = true;
+const GRAY_MEMORIZED = true;
+
 function renderPos(posToRender, playerPos, items, mobs, customRenders) {
-    if (!rendered[posToRender[0]][posToRender[1]]) {
+    if (!rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
         area[posToRender[0]][posToRender[1]].textContent = "";
+        return;
+    } else if (rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
+        memorized[posToRender[0]][posToRender[1]] = true;
+    } else if (!rendered[posToRender[0]][posToRender[1]] && SHOW_MEMORIZED && memorized[posToRender[0]][posToRender[1]]) {
+        area[posToRender[0]][posToRender[1]].textContent = level[posToRender[0]][posToRender[1]];
+        GRAY_MEMORIZED && (area[posToRender[0]][posToRender[1]].className = "mem");
         return;
     }
     area[posToRender[0]][posToRender[1]].textContent = level[posToRender[0]][posToRender[1]];
@@ -38,9 +47,6 @@ function renderAll(playerPos, items, mobs, customRenders) {
         for (let j = 0; j < level[0].length; j++) {
             rendered[i][j] = false;
             area[i][j].textContent = "";
-            // remove this to "remember" walls once seen
-            // (won't work if something else, such as player's pos,
-            // uses className)
             area[i][j].className = "";
             area[i][j].customProps.infoKeys = [];
         }
@@ -55,6 +61,16 @@ function renderAll(playerPos, items, mobs, customRenders) {
             rendered[y][x] = true;
             return level[y][x] === "" ? "stop" : "ok";
         });
+    }
+    for (let i = 0; i < level.length; i++) {
+        for (let j = 0; j < level[0].length; j++) {
+            if (rendered[i][j] && !memorized[i][j]) {
+                memorized[i][j] = true;
+            } else if (!rendered[i][j] && SHOW_MEMORIZED && memorized[i][j]) {
+                area[i][j].textContent = level[i][j];
+                GRAY_MEMORIZED && (area[i][j].className = "mem");
+            }
+        }
     }
     for (let item of items) {
         if (rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
@@ -83,30 +99,33 @@ function renderAll(playerPos, items, mobs, customRenders) {
             if (level[i][j] !== "") {
                 continue;
             }
-            let nextToRendered = false;
+            const classes = ["wall"];
 
-            for (let coord of getCoordsNextTo([i, j])) {
-                if (rendered[coord[0]] && rendered[coord[0]][coord[1]]) {
-                    nextToRendered = true;
-                }
+            if (i > 0 && j < level[0].length 
+                && (rendered[i - 1][j] || (SHOW_MEMORIZED && memorized[i - 1][j]))
+                && level[i - 1][j] !== ""
+            ) {
+                classes.push("t");
             }
-            if (rendered[i][j] || nextToRendered) {
-                const classes = ["wall"];
-    
-                if (i > 0 && j < level[0].length && rendered[i - 1][j] && level[i - 1][j] !== "") {
-                    classes.push("t");
-                }
-                if (i + 1 < level.length && j < level[0].length && rendered[i + 1][j] && level[i + 1][j] !== "") {
-                    classes.push("b");
-                }
-                if (i < level.length && j > 0 && rendered[i][j - 1] && level[i][j - 1] !== "") {
-                    classes.push("l");
-                }
-                if (i < level.length && j + 1 < level[0].length && rendered[i][j + 1] && level[i][j + 1] !== "") {
-                    classes.push("r");
-                }
-                area[i][j].classList.add(...classes);
+            if (i + 1 < level.length && j < level[0].length 
+                && (rendered[i + 1][j] || (SHOW_MEMORIZED && memorized[i + 1][j]))
+                && level[i + 1][j] !== ""
+            ) {
+                classes.push("b");
             }
+            if (i < level.length && j > 0 
+                && (rendered[i][j - 1] || (SHOW_MEMORIZED && memorized[i][j - 1]))
+                && level[i][j - 1] !== ""
+            ) {
+                classes.push("l");
+            }
+            if (i < level.length && j + 1 < level[0].length 
+                && (rendered[i][j + 1] || (SHOW_MEMORIZED && memorized[i][j + 1]))
+                && level[i][j + 1] !== ""
+            ) {
+                classes.push("r");
+            }
+            area[i][j].classList.add(...classes);
         }
     }
 }

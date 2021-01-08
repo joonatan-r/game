@@ -1,6 +1,6 @@
-// level, levels, area, rendered, infoTable from level.js
+// level, levels, area, rendered, memorized, infoTable from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
-// movingAIs, Ukko, Some_Guy, createMobOfType Make, Pekka, Jorma from mobs.js
+// movingAIs, Ukko, Some_Guy, createMobOfType, Make, Pekka, Jorma from mobs.js
 
 // all coords are given as (y,x)
 
@@ -261,11 +261,12 @@ function movePlayer(newPos) {
 
             for (let coords of tps[lvl]) {
                 if (coordsEq(coords, player.pos)) {
-                    const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
+                    const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items, memorized);
                     level = retObj.level;
                     player.pos = retObj.pos.slice();
                     mobs = retObj.mobs;
                     items = retObj.items;
+                    memorized = retObj.memorized;
                     levels.currentLvl = lvl;
                     break;
                 }
@@ -313,11 +314,12 @@ function action(key) {
         
                     for (let coords of tps[lvl]) {
                         if (coordsEq(coords, player.pos)) {
-                            const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items);
+                            const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items, memorized);
                             level = retObj.level;
                             player.pos = retObj.pos.slice();
                             mobs = retObj.mobs;
                             items = retObj.items;
+                            memorized = retObj.memorized;
                             levels.currentLvl = lvl;
                             break;
                         }
