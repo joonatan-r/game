@@ -179,9 +179,9 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 clickListener.actionType = "chooseDrc";
                 return;
         }
-        if (!(level[bulletPos[0]] && level[bulletPos[0]][bulletPos[1]] 
-            && level[bulletPos[0]][bulletPos[1]] !== ""
-        )) {
+        if (!level[bulletPos[0]] || !level[bulletPos[0]][bulletPos[1]] 
+            || level[bulletPos[0]][bulletPos[1]] === ""
+        ) {
             break;
         }
         if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].textContent = "o";

@@ -142,6 +142,7 @@ function changeLvl(fromLvl, toLvl, pointIdx, mobs, items, memorized) {
 
 const infoTable = {
     "": "[ ]: A wall",
+    " ": "[ ]: A wall",
     "\u00B7": "[\u00B7]: The floor",
     "^": "[^]: A doorway",
     "Player": "[@]: You, the player",
@@ -149,6 +150,7 @@ const infoTable = {
     "a weird object": "[?]: A strange object",
     "Ukko": "[@]: Ukko, a peaceful human",
     "Some guy": "[@]: Some guy, a peaceful human",
+    "Shady guy": "[@]: Shady guy, a peaceful human",
     "Make": "[M]: Make, a hostile human",
     "Pekka": "[P]: Pekka, a hostile human shooter",
     "Jorma": "[J]: Jorma, a hostile human",

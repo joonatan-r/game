@@ -57,12 +57,12 @@ function renderAll(playerPos, items, mobs, customRenders) {
     for (let coords of edges) {
         bresenham(playerPos[0], playerPos[1], coords[0], coords[1], (y,x) => {
             if (rendered[y][x]) {
-                return level[y][x] === "" ? "stop" : "ok"; // wall blocks sight
+                return level[y][x] === "" || level[y][x] === " " ? "stop" : "ok"; // wall blocks sight
             }
             area[y][x].textContent = level[y][x];
             area[y][x].customProps.infoKeys.unshift(level[y][x]);
             rendered[y][x] = true;
-            return level[y][x] === "" ? "stop" : "ok";
+            return level[y][x] === "" || level[y][x] === " " ? "stop" : "ok";
         });
     }
     for (let i = 0; i < level.length; i++) {
@@ -99,32 +99,32 @@ function renderAll(playerPos, items, mobs, customRenders) {
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
-            if (level[i][j] !== "") {
+            if (level[i][j] !== "" && level[i][j] !== " ") {
                 continue;
             }
             const classes = ["wall"];
 
             if (i > 0 && j < level[0].length 
                 && (rendered[i - 1][j] || (SHOW_MEMORIZED && memorized[i - 1][j]))
-                && level[i - 1][j] !== ""
+                && (level[i - 1][j] !== "" && level[i - 1][j] !== " ")
             ) {
                 classes.push("t");
             }
             if (i + 1 < level.length && j < level[0].length 
                 && (rendered[i + 1][j] || (SHOW_MEMORIZED && memorized[i + 1][j]))
-                && level[i + 1][j] !== ""
+                && (level[i + 1][j] !== "" && level[i + 1][j]!== " ")
             ) {
                 classes.push("b");
             }
             if (i < level.length && j > 0 
                 && (rendered[i][j - 1] || (SHOW_MEMORIZED && memorized[i][j - 1]))
-                && level[i][j - 1] !== ""
+                && (level[i][j - 1] !== "" && level[i][j - 1] !== " ")
             ) {
                 classes.push("l");
             }
             if (i < level.length && j + 1 < level[0].length 
                 && (rendered[i][j + 1] || (SHOW_MEMORIZED && memorized[i][j + 1]))
-                && level[i][j + 1] !== ""
+                && (level[i][j + 1] !== "" && level[i][j + 1] !== " ")
             ) {
                 classes.push("r");
             }

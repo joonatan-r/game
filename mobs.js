@@ -135,7 +135,8 @@ const movingAIs = {
 
             if (mob.target[0] > level.length - 1 || mob.target[1] > level[0].length - 1 
                 || mob.target[0] < 0 || mob.target[1] < 0
-                || level[mob.target[0]][mob.target[1]] === "") {
+                || level[mob.target[0]][mob.target[1]] === ""
+            ) {
                     mob.target = prevTarget.slice();
                     continue;
             }
