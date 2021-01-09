@@ -176,10 +176,21 @@ async function shotEffect(shotPos, playerPos, items, mobs, customRenders) {
         customRenders.push(obj3);
     }
     await new Promise(r => setTimeout(r, 300));
-
-    prevSymbols[0] && removeByReference(customRenders, obj0);
-    prevSymbols[1] && removeByReference(customRenders, obj1);
-    prevSymbols[2] && removeByReference(customRenders, obj2);
-    prevSymbols[3] && removeByReference(customRenders, obj3);
-    renderAll(playerPos, items, mobs, customRenders);
+    
+    if (prevSymbols[0]) {
+        removeByReference(customRenders, obj0);
+        renderPos([shotPos[0] - 1, shotPos[1] - 1], playerPos, items, mobs, customRenders);
+    }
+    if (prevSymbols[1]) {
+        removeByReference(customRenders, obj1);
+        renderPos([shotPos[0] - 1, shotPos[1] + 1], playerPos, items, mobs, customRenders);
+    }
+    if (prevSymbols[2]) {
+        removeByReference(customRenders, obj2);
+        renderPos([shotPos[0] + 1, shotPos[1] + 1], playerPos, items, mobs, customRenders);
+    }
+    if (prevSymbols[3]) {
+        removeByReference(customRenders, obj3);
+        renderPos([shotPos[0] + 1, shotPos[1] - 1], playerPos, items, mobs, customRenders);
+    }
 }

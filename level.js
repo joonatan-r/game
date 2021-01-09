@@ -1,4 +1,4 @@
-// "global" variables:
+// "global" variables
 
 const area = [];
 const rendered = [];
@@ -21,8 +21,12 @@ let lvlName = "";
 let travelNames = [];
 let travelName = "";
 let travelCoords = [];
+let escaped = false;
 
 for (let c of levelData) {
+    if (parseStatus === "" && c !== "\n") {
+        parseStatus = "name";
+    }
     if (parseStatus === "name") {
         if (c === "\n") {
             parseStatus = "travel";
@@ -44,11 +48,14 @@ for (let c of levelData) {
         }
         continue;
     }
-    if (c === ";" && parseStatus !== "lvl") {
-        parseStatus = "name";
+    if (parseStatus !== "lvl") {
         continue;
     }
-    if (c === ";" && parseStatus === "lvl") {
+    if (!escaped && c === "e") {
+        escaped = true;
+        continue;
+    }
+    if (!escaped && c === ";") {
         levels[lvlName] = {
             level: level,
             mobs: [],
@@ -73,19 +80,19 @@ for (let c of levelData) {
         travelCoords = [];
         continue;
     }
-    if (parseStatus === "") continue;
-    if (c === "\n") {
+    if (!escaped && c === "\n") {
         level.push([]);
         xIdx = 0;
         yIdx++;
         continue;
     }
-    if (Object.keys(levelCharMap).indexOf(c) !== -1) {
+    if (!escaped && Object.keys(levelCharMap).indexOf(c) !== -1) {
         c = levelCharMap[c];
     }
     if (c === ">" || c === "<" || c === "^") travelCoords.push([yIdx, xIdx]);
     level[yIdx][xIdx] = c;
     xIdx++;
+    escaped = false;
 }
 levels["Wilderness"].spawnsHostiles = true;
 levels.currentLvl = Object.keys(levels)[1];

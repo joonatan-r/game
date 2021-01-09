@@ -1,5 +1,9 @@
+// "w" is mapped to "", which means wall, "." is mapped to middle dot
+// all characters' special meaning can be escaped using preceding "e"
+// (except the "doorway" characters)
+
 const levelData = `
-;Village
+Village
 Ukko's House
 Wilderness
 Wilderness
@@ -31,7 +35,7 @@ Random House
 ....................................w...
 ....................................w...;
 
-;Ukko's House
+Ukko's House
 Village
 
 ........................................
@@ -60,7 +64,7 @@ Village
 ........................................
 ........................................;
 
-;Wilderness
+Wilderness
 Village
 Village
 
@@ -90,7 +94,7 @@ Village
 ..w.....................................
 ..w.....................................;
 
-;Random House
+Random House
 Village
 
 ........................................

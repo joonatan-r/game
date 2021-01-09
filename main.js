@@ -193,6 +193,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
         if (coordsEq(bulletPos, player.pos)) {
             gameOver("A bullet hits you! You die...");
             removeByReference(customRenders, obj);
+            renderPos(bulletPos, player.pos, items, mobs, customRenders);
             shotEffect(bulletPos, player.pos, items, mobs, customRenders);
             return;
         }
@@ -203,6 +204,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 keypressListener.actionType = null;
                 clickListener.actionType = null;
                 removeByReference(customRenders, obj);
+                renderPos(bulletPos, player.pos, items, mobs, customRenders);
                 shotEffect(bulletPos, player.pos, items, mobs, customRenders);
                 !mobIsShooting && processTurn();
                 return;
