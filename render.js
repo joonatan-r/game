@@ -7,6 +7,15 @@
 const SHOW_MEMORIZED = true;
 const GRAY_MEMORIZED = true;
 
+const areaCache = [];
+
+for (let i = 0; i < level.length; i++) {
+    areaCache.push([]);
+    for (let j = 0; j < level[0].length; j++) {
+        areaCache[i][j] = "";
+    }
+}
+
 function renderPos(posToRender, playerPos, items, mobs, customRenders) {
     if (!rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
         area[posToRender[0]][posToRender[1]].textContent = "";
@@ -49,7 +58,7 @@ function renderAll(playerPos, items, mobs, customRenders) {
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
             rendered[i][j] = false;
-            area[i][j].textContent = "";
+            areaCache[i][j] = area[i][j].textContent;
             area[i][j].className = "";
             area[i][j].customProps.infoKeys = [];
         }
@@ -59,7 +68,8 @@ function renderAll(playerPos, items, mobs, customRenders) {
             if (rendered[y][x]) {
                 return level[y][x] === "" || level[y][x] === " " ? "stop" : "ok"; // wall blocks sight
             }
-            area[y][x].textContent = level[y][x];
+            if (level[y][x] !== areaCache[y][x]) area[y][x].textContent = level[y][x];
+
             area[y][x].customProps.infoKeys.unshift(level[y][x]);
             rendered[y][x] = true;
             return level[y][x] === "" || level[y][x] === " " ? "stop" : "ok";
@@ -72,6 +82,8 @@ function renderAll(playerPos, items, mobs, customRenders) {
             } else if (!rendered[i][j] && SHOW_MEMORIZED && memorized[i][j]) {
                 area[i][j].textContent = level[i][j];
                 GRAY_MEMORIZED && (area[i][j].className = "mem");
+            } else if (!rendered[i][j]) {
+                area[i][j].textContent = "";
             }
         }
     }
