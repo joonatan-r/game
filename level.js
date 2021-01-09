@@ -1,16 +1,19 @@
-const SIZE_Y = 25;
-const SIZE_X = 40;
-const edges = [];
+// "global" variables:
+
 const area = [];
 const rendered = [];
+const edges = [];
 let memorized = [];
+const levels = { currentLvl: "" };
+let level = [[]];
+
+// end "global" variables
+
 const table = document.getElementById("table");
 const levelCharMap = {
     ".": "\u00B7",
     "w": ""
 };
-const levels = { currentLvl: "" };
-let level = [[]];
 let yIdx = 0;
 let xIdx = 0;
 let parseStatus = "";
@@ -54,7 +57,7 @@ for (let c of levelData) {
             spawnsHostiles: false,
             travelPoints: {}
         };
-        // TODO currently if multiple passages between two lvls, they are always connected
+        // NOTE: currently if multiple passages between two lvls, they are always connected
         // in the order they appear in the lvls
         for (let name of travelNames) {
             if (!levels[lvlName].travelPoints[name]) levels[lvlName].travelPoints[name] = [];
@@ -96,7 +99,7 @@ for (let i = 0; i < level.length; i++) {
     memorized.push([]);
   
     for (let j = 0; j < level[0].length; j++) {
-        if (i === 0 || j === 0 || i === SIZE_Y - 1 || j === SIZE_X - 1) {
+        if (i === 0 || j === 0 || i === level.length - 1 || j === level[0].length - 1) {
             edges.push([i, j]);
         }
         rendered[i][j] = false;

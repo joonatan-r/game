@@ -1,6 +1,6 @@
 // level, levels, area, rendered, memorized, infoTable from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
-// movingAIs, Ukko, Some_Guy, createMobOfType, Make, Pekka, Jorma from mobs.js
+// movingAIs, Ukko, Some_Guy, Shady_Guy, createMobOfType, Make, Pekka, Jorma from mobs.js
 
 // all coords are given as (y,x)
 
@@ -25,6 +25,20 @@ let customRenders = []; // for "animations" to not get erased
 let interruptAutoTravel = false;
 let blockAutoTravel = false;
 
+const story = {
+    "Shady guy": {
+        1: () => {
+            items.push({
+                name: "some money",
+                symbol: "$",
+                hidden: true,
+                pos: [0, 4]
+            });
+        }
+    }
+};
+
+mobs.push(Shady_Guy);
 levels["Ukko's House"].mobs.push(Ukko);
 levels["Random House"].mobs.push(Some_Guy);
 levels["Wilderness"].items.push({
@@ -229,7 +243,12 @@ function talk(drc) {
     }
     for (let mob of mobs) {
         if (coordsEq(talkPos, mob.pos) && mob.talk) {
+            let mobState = mob.state;
             keepStatus = mob.talk(showDialog, status);
+
+            if (mobState !== mob.state && story[mob.name] && story[mob.name][mob.state]) {
+                story[mob.name][mob.state]();
+            }
         }
     }
     keypressListener.actionType = null;
@@ -415,6 +434,10 @@ async function autoTravel(coords) {
 function showDialog(text, choices, onSelect) {
     let choiceGroupIdx = null;
     removeListeners();
+
+    // if there are over 9 possible choices, divide them into groups of 8 (last one being probably
+    // shorter) and add an option 9 to go to the next "choice group" (last one has the option to go
+    // back to start), this way number keys 1-9 can be still be used to select a choice
 
     if (choices.length > 9) {
         const choicesCopy = choices.slice();

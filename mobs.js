@@ -13,6 +13,28 @@ function createMobOfType(mobType) {
     };
 }
 
+const Shady_Guy = {
+    name: "Shady guy",
+    symbol: "@",
+    isHostile: false,
+    state: 0,
+    pos: [23, 30],
+    talk: function(showDialog, outputElement) {
+        switch (this.state) {
+            case 0:
+                outputElement.textContent = "[" + this.name + "]: Hey man, I heard there's some money hidden behind Ukko's house!";
+                this.state = 1;
+                return true;
+            case 1:
+                outputElement.textContent = "[" + this.name + "]: Did you check the place?";
+                return true;
+            default:
+                return false;
+        }
+
+    },
+    calcTarget: function() { movingAIs.static(this) }
+};
 const Ukko = {
     name: "Ukko",
     symbol: "@",
@@ -56,7 +78,7 @@ const Some_Guy = {
                 outputElement.textContent = "[" + this.name + "]: So uncivilized!";
                 return true;
             case 2:
-                outputElement.textContent = "[" + this.name + "]: You are strong and wise and I'm very proud of you!";
+                outputElement.textContent = "[" + this.name + "]: You are strong and wise, and I'm very proud of you!";
                 return true;
             default:
                 return false;
@@ -95,7 +117,6 @@ const Jorma = {
     isHostile: true,
     calcTarget: function() { movingAIs.random(this) }
 };
-
 const movingAIs = {
     static: mob => {
         mob.target = mob.pos.slice();
@@ -175,7 +196,6 @@ const movingAIs = {
             while (1) {
                 movePosToDrc(lineDrawPos, drc);
 
-                // TODO is this ok that mob just "knows" all walls?
                 if (!level[lineDrawPos[0]] || !level[lineDrawPos[0]][lineDrawPos[1]]
                     || level[lineDrawPos[0]][lineDrawPos[1]] === "") break;
                 if (distanceToMob) prevDistance = distanceToMob;

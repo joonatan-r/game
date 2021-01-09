@@ -1,6 +1,9 @@
 // level, area, rendered, memorized, edges from level.js
 // coordsEq, getCoordsNextTo, removeByReference from util.js
 
+// NOTE: with current implementation, if a memorized level tile is changed, 
+// it would be seen even if it's not rendered
+
 const SHOW_MEMORIZED = true;
 const GRAY_MEMORIZED = true;
 
