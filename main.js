@@ -356,7 +356,7 @@ function action(key) {
             }
             return;
         case "h":
-            if (msgHistory.length) showDialog("Message history:", msgHistory, ()=>{});
+            if (msgHistory.length) showDialog("Message history:", msgHistory, ()=>{}, true);
             return;
         case "i":
             let contents = "";
@@ -431,7 +431,7 @@ async function autoTravel(coords) {
     blockAutoTravel = false;
 }
 
-function showDialog(text, choices, onSelect) {
+function showDialog(text, choices, onSelect, allowEsc) {
     let choiceGroupIdx = null;
     removeListeners();
 
@@ -496,8 +496,15 @@ function showDialog(text, choices, onSelect) {
         }
     }
     dialogKeyListener = e => {
+        if (allowEsc && e.key === "Escape") {
+            hideDialog();
+            return;
+        }
         let pressedNumber = Number(e.key);
-        if (isNaN(pressedNumber) || pressedNumber > choiceGroup.length) return;
+
+        if (isNaN(pressedNumber) || pressedNumber > choiceGroup.length || pressedNumber <= 0) {
+            return;
+        }
         if (choiceGroupIdx !== null && pressedNumber === choiceGroup.length) {
             repopulateDialog();
         } else {
@@ -532,8 +539,10 @@ function hideDialog() {
 
 function showMsg(msg) {
     status.textContent = msg;
-    if (!msg) return;
-    msgHistory.unshift("\"" + msg + "\"");
+    if (!msg) return; // empty string / null
+    msg = "\t" + msg.trim();
+    msg = msg.replaceAll("\n", "\n\t"); // more readable in history
+    msgHistory.unshift(msg);
 }
 
 const keypressListener = e => {
