@@ -356,7 +356,7 @@ function action(key) {
             }
             return;
         case "h":
-            if (msgHistory.length) showDialog("Message history:", msgHistory, ()=>{}, true);
+            if (msgHistory.length) showDialog("Message history:", msgHistory, ()=>{}, true, true);
             return;
         case "i":
             let contents = "";
@@ -431,9 +431,10 @@ async function autoTravel(coords) {
     blockAutoTravel = false;
 }
 
-function showDialog(text, choices, onSelect, allowEsc) {
+function showDialog(text, choices, onSelect, allowEsc, skipLog) {
     let choiceGroupIdx = null;
     removeListeners();
+    !skipLog && msgHistory.unshift(("\t" + text.trim()).replaceAll("\n", "\n\t"));
 
     // if there are over 9 possible choices, divide them into groups of 8 (last one being probably
     // shorter) and add an option 9 to go to the next "choice group" (last one has the option to go
@@ -484,6 +485,7 @@ function showDialog(text, choices, onSelect, allowEsc) {
                     repopulateDialog();
                 } else {
                     let optionNumber = choiceIdx;
+                    !skipLog && msgHistory.unshift("\t[You chose: \"" + choiceGroup[optionNumber] + "\"]");
 
                     if (choiceGroupIdx !== null) {
                         optionNumber += 8 * choiceGroupIdx;
@@ -509,6 +511,7 @@ function showDialog(text, choices, onSelect, allowEsc) {
             repopulateDialog();
         } else {
             let optionNumber = pressedNumber - 1;
+            !skipLog && msgHistory.unshift("\t[You chose: \"" + choiceGroup[optionNumber] + "\"]");
 
             if (choiceGroupIdx !== null) {
                 optionNumber += 8 * choiceGroupIdx;
@@ -540,8 +543,7 @@ function hideDialog() {
 function showMsg(msg) {
     status.textContent = msg;
     if (!msg) return; // empty string / null
-    msg = "\t" + msg.trim();
-    msg = msg.replaceAll("\n", "\n\t"); // more readable in history
+    msg = ("\t" + msg.trim()).replaceAll("\n", "\n\t"); // more readable in history
     msgHistory.unshift(msg);
 }
 
