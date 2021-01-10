@@ -19,17 +19,15 @@ const Shady_Guy = {
     isHostile: false,
     state: 0,
     pos: [23, 30],
-    talk: function(showDialog, outputElement) {
+    talk: function(showDialog, showMsg) {
         switch (this.state) {
             case 0:
-                outputElement.textContent = "[" + this.name + "]: Hey man, I heard there's some money hidden behind Ukko's house!";
+                showMsg("[" + this.name + "]: Hey man, I heard there's some money hidden behind Ukko's house!");
                 this.state = 1;
-                return true;
+                break;
             case 1:
-                outputElement.textContent = "[" + this.name + "]: Did you check the place?";
-                return true;
-            default:
-                return false;
+                showMsg("[" + this.name + "]: Did you check the place?");
+                break;
         }
 
     },
@@ -41,19 +39,16 @@ const Ukko = {
     isHostile: false,
     state: 9001,
     pos: [11, 13],
-    talk: function(showDialog, outputElement) {
+    talk: function(showDialog, showMsg) {
         if (this.state > 9000) {
             showDialog("[" + this.name + "]: Hi! I have over 9 options.\n\nYour answer:", 
                     ["option 1", "option 2", "option 3", "option 4", "option 5", "option 6", "option 7", "option 8", "option 9", "option 10", "option 11",
                      "option 12", "option 13", "option 14", "option 15", "option 16", "option 17", "option 18", "option 19", "option 20"], 
-                    idx => {
-                        outputElement.textContent = "You selected option " + (idx+1) + ".";
-                    }
+                    idx => showMsg("You selected option " + (idx+1) + ".")
             );
-            return false;
+            return;
         }
-        outputElement.textContent = "[" + this.name + "]: Yo man!";
-        return true;
+        showMsg("[" + this.name + "]: Yo man!");
     },
     calcTarget: function() { movingAIs.random(this) }
 };
@@ -63,25 +58,23 @@ const Some_Guy = {
     isHostile: false,
     state: 0,
     pos: [13, 18],
-    talk: function(showDialog, outputElement) {
+    talk: function(showDialog, showMsg) {
         switch (this.state) {
             case 0:
                 showDialog("[" + this.name + "]: Hello there!\n\nYour answer:", 
                         ["Hi!", "General Kenobi!", "[Don't answer]"], 
                         idx => {
                             this.state = { 0: 1, 1: 2, 2: 0 }[idx];
-                            if (this.state !== 0) this.talk(showDialog, outputElement);
+                            if (this.state !== 0) this.talk(showDialog, showMsg);
                         }
                 );
-                return false;
+                break;
             case 1:
-                outputElement.textContent = "[" + this.name + "]: So uncivilized!";
-                return true;
+                showMsg("[" + this.name + "]: So uncivilized!");
+                break;
             case 2:
-                outputElement.textContent = "[" + this.name + "]: You are strong and wise, and I'm very proud of you!";
-                return true;
-            default:
-                return false;
+                showMsg("[" + this.name + "]: You are strong and wise, and I'm very proud of you!");
+                break;
         }
     },
     calcTarget: function() { movingAIs.static(this) }

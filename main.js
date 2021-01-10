@@ -4,7 +4,6 @@
 
 // all coords are given as (y,x)
 
-// TODO if not turn based, status stuff is pretty messed up
 const TURN_BASED = true;
 let turnInterval = null;
 !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
@@ -13,6 +12,7 @@ const info = document.getElementById("info");
 const status = document.getElementById("status");
 const menu = document.getElementById("clickMenu");
 const dialog = document.getElementById("dialog");
+const msgHistory = [];
 const timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
@@ -93,14 +93,14 @@ function trySpawnMob() {
 }
 
 function gameOver(msg) {
-    status.textContent = msg;
+    showMsg(msg);
     !TURN_BASED && clearInterval(turnInterval);
     interruptAutoTravel = true;
     removeListeners();
     customRenders.push({ symbol: level[player.pos[0]][player.pos[1]], pos: player.pos }); // erase player symbol
 }
 
-function processTurn(keepStatus) {
+function processTurn() {
     info.textContent = levels.currentLvl + "\nTurn " + timeTracker.timer + "\n";
 
     if (timeTracker.turnsUntilShoot > 0) {
@@ -108,7 +108,6 @@ function processTurn(keepStatus) {
     } else {
         info.textContent += "You can shoot";
     }
-    !keepStatus && (status.textContent = "");
 
     for (let mob of mobs) {
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
@@ -168,7 +167,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 break;
             case "Escape":
                 timeTracker.turnsUntilShoot = 0;
-                status.textContent = "";
+                showMsg("");
                 addListeners();
                 keypressListener.actionType = null;
                 clickListener.actionType = null;
@@ -220,7 +219,6 @@ async function shoot(fromPos, drc, mobIsShooting) {
 
 function talk(drc) {
     let talkPos = player.pos.slice();
-    let keepStatus = false;
 
     switch (drc) {
         case "4":
@@ -234,7 +232,7 @@ function talk(drc) {
             movePosToDrc(talkPos, drc);
             break;
         case "Escape":
-            status.textContent = "";
+            showMsg("");
             keypressListener.actionType = null;
             clickListener.actionType = null;
             return;
@@ -246,7 +244,7 @@ function talk(drc) {
     for (let mob of mobs) {
         if (coordsEq(talkPos, mob.pos) && mob.talk) {
             let mobState = mob.state;
-            keepStatus = mob.talk(showDialog, status);
+            mob.talk(showDialog, showMsg);
 
             if (mobState !== mob.state && story[mob.name] && story[mob.name][mob.state]) {
                 story[mob.name][mob.state]();
@@ -255,7 +253,7 @@ function talk(drc) {
     }
     keypressListener.actionType = null;
     clickListener.actionType = null;
-    processTurn(keepStatus);
+    processTurn();
 }
 
 function movePlayer(newPos) {
@@ -270,7 +268,7 @@ function movePlayer(newPos) {
     if (newPos[0] > level.length - 1 || newPos[1] > level[0].length - 1 || newPos[0] < 0 || newPos[1] < 0
         || level[newPos[0]][newPos[1]] === "" || overlapMob
     ) {
-        return false;
+        return;
     }
     player.pos = newPos;
 
@@ -297,22 +295,20 @@ function movePlayer(newPos) {
     }
     for (let item of items) {
         if (coordsEq(player.pos, item.pos)) {
-            status.textContent = "";
+            let msg = "";
 
             if (item.hidden) {
-                status.textContent += "You find an item! ";
+                msg += "You find an item! ";
                 item.hidden = false;
             }
-            status.textContent += "There's " + item.name + " here.";
-            return true;
+            msg += "There's " + item.name + " here.";
+            showMsg(msg);
+            return;
         }
     }
-    return false;
 }
 
 function action(key) {
-    let keepStatus = false;
-
     switch (key) {
         case "4":
         case "6":
@@ -324,7 +320,7 @@ function action(key) {
         case "3":
             const newPos = player.pos.slice();
             movePosToDrc(newPos, key);
-            keepStatus = movePlayer(newPos);
+            movePlayer(newPos);
             break;
         case "Enter":
             if (level[player.pos[0]][player.pos[1]] === ">" || level[player.pos[0]][player.pos[1]] === "<") {
@@ -354,10 +350,13 @@ function action(key) {
         case "f":
             if (timeTracker.turnsUntilShoot === 0) {
                 timeTracker.turnsUntilShoot = 10;
-                status.textContent = "In what direction?";
+                showMsg("In what direction?");
                 keypressListener.actionType = "shoot";
                 clickListener.actionType = "chooseDrc";
             }
+            return;
+        case "h":
+            if (msgHistory.length) showDialog("Message history:", msgHistory, ()=>{});
             return;
         case "i":
             let contents = "";
@@ -366,13 +365,13 @@ function action(key) {
 
             contents = contents.slice(0, -2);
             if (contents.length !== 0) {
-                status.textContent = "Contents of your inventory:\n" + contents + ".";
+                showMsg("Contents of your inventory:\n" + contents + ".");
             } else {
-                status.textContent = "Your inventory is empty.";
+                showMsg("Your inventory is empty.");
             }
             return;
         case "t":
-            status.textContent = "In what direction?";
+            showMsg("In what direction?");
             keypressListener.actionType = "talk";
             clickListener.actionType = "chooseDrc";
             return;
@@ -381,8 +380,7 @@ function action(key) {
                 if (coordsEq(player.pos, items[i].pos)) {
                     const removed = items.splice(i, 1)[0];
                     player.inventory.push(removed);
-                    status.textContent = "You pick up " + removed.name + ".";
-                    keepStatus = true;
+                    showMsg("You pick up " + removed.name + ".");
                     break;
                 }
             }
@@ -391,7 +389,7 @@ function action(key) {
             return;
     }
     if (TURN_BASED) {
-        processTurn(keepStatus);
+        processTurn();
     } else {
         renderAll(player.pos, items, mobs, customRenders);
     }
@@ -420,10 +418,10 @@ async function autoTravel(coords) {
             blockAutoTravel = false;
             return;
         }
-        let keepStatus = movePlayer(coord);
+        movePlayer(coord);
         
         if (TURN_BASED) {
-            processTurn(keepStatus);
+            processTurn();
         } else {
             renderAll(player.pos, items, mobs, customRenders);
         }
@@ -532,7 +530,15 @@ function hideDialog() {
     }
 };
 
+function showMsg(msg) {
+    status.textContent = msg;
+    if (!msg) return;
+    msgHistory.unshift("\"" + msg + "\"");
+}
+
 const keypressListener = e => {
+    if ("12346789fhit,".indexOf(e.key) !== -1) showMsg("");
+
     switch (keypressListener.actionType) {
         case "shoot":
             shoot(player.pos, e.key);
@@ -552,6 +558,7 @@ const clickListener = e => {
         menu.style.display = "none";
         return;
     }
+    showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
     const x = e.x - (rect.left + rect.width / 2);
@@ -576,10 +583,10 @@ const clickListener = e => {
             } else {
                 const newPos = player.pos.slice();
                 movePosToDrc(newPos, drc);
-                let keepStatus = movePlayer(newPos);
+                movePlayer(newPos);
                 
                 if (TURN_BASED) {
-                    processTurn(keepStatus);
+                    processTurn();
                 } else {
                     renderAll(player.pos, items, mobs, customRenders);
                 }
@@ -597,14 +604,15 @@ const menuListener = e => {
     const showInfoButton = document.getElementById("showInfoButton");
     travelButton.onclick = () => autoTravel(e.target.customProps.coords);
     showInfoButton.onclick = () => {
-        status.textContent = "";
+        let msg = "";
 
         if (!e.target.customProps.infoKeys.length) {
-            status.textContent += "[ ]: An unseen area\n";
+            msg += "[ ]: An unseen area\n";
         }
         for (let key of e.target.customProps.infoKeys) {
-            status.textContent += infoTable[key] + "\n";
+            msg += infoTable[key] + "\n";
         }
+        showMsg(msg);
     };
 };
 let dialogKeyListener;
