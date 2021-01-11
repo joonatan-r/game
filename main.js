@@ -108,7 +108,6 @@ function processTurn() {
     } else {
         info.textContent += "You can shoot";
     }
-
     for (let mob of mobs) {
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
             gameOver(mob.name + " hits you! You die...");
@@ -434,7 +433,7 @@ async function autoTravel(coords) {
 function showDialog(text, choices, onSelect, allowEsc, skipLog) {
     let choiceGroupIdx = null;
     removeListeners();
-    !skipLog && msgHistory.unshift(("\t" + text.trim()).replaceAll("\n", "\n\t"));
+    !skipLog && msgHistory.unshift(text.trim().replaceAll("\n", "\n\t"));
 
     // if there are over 9 possible choices, divide them into groups of 8 (last one being probably
     // shorter) and add an option 9 to go to the next "choice group" (last one has the option to go
@@ -476,7 +475,7 @@ function showDialog(text, choices, onSelect, allowEsc, skipLog) {
         for (let choice of choiceGroup) {
             const choiceIdx = idx;
             const c = document.createElement("p");
-            c.textContent = "[" + (idx + 1) + "]: " + choice;
+            c.textContent = "[" + (idx + 1) + "]:\t" + choice;
             dialog.appendChild(c);
             c.onclick = e => {
                 e.stopPropagation();
@@ -485,7 +484,7 @@ function showDialog(text, choices, onSelect, allowEsc, skipLog) {
                     repopulateDialog();
                 } else {
                     let optionNumber = choiceIdx;
-                    !skipLog && msgHistory.unshift("\t[You chose: \"" + choiceGroup[optionNumber] + "\"]");
+                    !skipLog && msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
 
                     if (choiceGroupIdx !== null) {
                         optionNumber += 8 * choiceGroupIdx;
@@ -511,7 +510,7 @@ function showDialog(text, choices, onSelect, allowEsc, skipLog) {
             repopulateDialog();
         } else {
             let optionNumber = pressedNumber - 1;
-            !skipLog && msgHistory.unshift("\t[You chose: \"" + choiceGroup[optionNumber] + "\"]");
+            !skipLog && msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
 
             if (choiceGroupIdx !== null) {
                 optionNumber += 8 * choiceGroupIdx;
@@ -543,7 +542,7 @@ function hideDialog() {
 function showMsg(msg) {
     status.textContent = msg;
     if (!msg) return; // empty string / null
-    msg = ("\t" + msg.trim()).replaceAll("\n", "\n\t"); // more readable in history
+    msg = msg.trim().replaceAll("\n", "\n\t"); // more readable in history
     msgHistory.unshift(msg);
 }
 
@@ -627,6 +626,26 @@ const menuListener = e => {
     };
 };
 let dialogKeyListener;
+document.addEventListener("mousemove", e => {
+    if (clickListener.actionType === "chooseDrc") {
+        const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
+        const x = e.x - (rect.left + rect.width / 2);
+        const y = e.y - (rect.top + rect.height / 2);
+        const drc = pixelCoordsToDrc(y, x);
+        document.body.style.cursor = {
+            "1": "sw-resize",
+            "2": "s-resize",
+            "3": "se-resize",
+            "4": "w-resize",
+            "6": "e-resize",
+            "7": "nw-resize",
+            "8": "n-resize",
+            "9": "ne-resize",
+        }[drc];
+    } else if (document.body.style.cursor !== "default") {
+        document.body.style.cursor = "default";
+    }
+});
 
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
