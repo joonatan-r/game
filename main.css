@@ -51,6 +51,7 @@ p {
 
 .player {
     border: 1px solid green;
+    border-radius: 26px;
 }
 
 .wall.l {

@@ -39,6 +39,15 @@ const story = {
 };
 
 mobs.push(Shady_Guy);
+items.push({
+    name: "a chest",
+    symbol: "(",
+    onInteract: function() {
+        showMsg("You try to loot " + this.name + ".");
+    },
+    blocksTravel: true,
+    pos: [9, 22]
+});
 levels["Ukko's House"].mobs.push(Ukko);
 levels["Random House"].mobs.push(Some_Guy);
 levels["Wilderness"].items.push({
@@ -115,17 +124,26 @@ function processTurn() {
         }
         mob.calcTarget();
         let mobInTheWay = false;
+        let itemInTheWay = false;
 
         for (let otherMob of mobs) {
             if (coordsEq(otherMob.pos, mob.target)) {
                 // this could be the mob itself, but then it won't be moving anyway
                 mobInTheWay = true;
+                break;
+            }
+        }
+        for (let item of items) {
+            if (coordsEq(item.pos, mob.target) && item.blocksTravel) {
+                itemInTheWay = true;
+                break;
             }
         }
         if (mob.isShooter && mob.straightLineToTargetDrc) {
             shoot(mob.pos, mob.straightLineToTargetDrc, true);
         } else if (!coordsEq(player.pos, mob.target) 
             && !mobInTheWay
+            && !itemInTheWay
             && !(
                 mob.target[0] > level.length - 1 
                 || mob.target[1] > level[0].length - 1 
@@ -210,14 +228,14 @@ async function shoot(fromPos, drc, mobIsShooting) {
         }
         removeByReference(customRenders, obj);
     }
-    addListeners();
+    TURN_BASED && addListeners();
     keypressListener.actionType = null;
     clickListener.actionType = null;
     !mobIsShooting && processTurn();
 }
 
-function talk(drc) {
-    let talkPos = player.pos.slice();
+function interact(drc) {
+    let interactPos = player.pos.slice();
 
     switch (drc) {
         case "4":
@@ -228,7 +246,7 @@ function talk(drc) {
         case "1":
         case "9":
         case "3":
-            movePosToDrc(talkPos, drc);
+            movePosToDrc(interactPos, drc);
             break;
         case "Escape":
             showMsg("");
@@ -236,18 +254,23 @@ function talk(drc) {
             clickListener.actionType = null;
             return;
         default:
-            keypressListener.actionType = "talk";
+            keypressListener.actionType = "interact";
             clickListener.actionType = "chooseDrc";
             return;
     }
     for (let mob of mobs) {
-        if (coordsEq(talkPos, mob.pos) && mob.talk) {
+        if (coordsEq(interactPos, mob.pos) && mob.talk) {
             let mobState = mob.state;
             mob.talk(showDialog, showMsg);
 
             if (mobState !== mob.state && story[mob.name] && story[mob.name][mob.state]) {
                 story[mob.name][mob.state]();
             }
+        }
+    }
+    for (let item of items) {
+        if (coordsEq(interactPos, item.pos) && item.onInteract) {
+            item.onInteract();
         }
     }
     keypressListener.actionType = null;
@@ -257,6 +280,7 @@ function talk(drc) {
 
 function movePlayer(newPos) {
     let overlapMob = false;
+    let itemInTheWay = false;
 
     for (let mob of mobs) {
         if (coordsEq(newPos, mob.pos)) {
@@ -264,8 +288,14 @@ function movePlayer(newPos) {
             break;
         }
     }
+    for (let item of items) {
+        if (coordsEq(newPos, item.pos) && item.blocksTravel) {
+            itemInTheWay = true;
+            break;
+        }
+    }
     if (newPos[0] > level.length - 1 || newPos[1] > level[0].length - 1 || newPos[0] < 0 || newPos[1] < 0
-        || level[newPos[0]][newPos[1]] === "" || overlapMob
+        || level[newPos[0]][newPos[1]] === "" || overlapMob || itemInTheWay
     ) {
         return;
     }
@@ -371,7 +401,7 @@ function action(key) {
             return;
         case "t":
             showMsg("In what direction?");
-            keypressListener.actionType = "talk";
+            keypressListener.actionType = "interact";
             clickListener.actionType = "chooseDrc";
             return;
         case ",":
@@ -553,8 +583,8 @@ const keypressListener = e => {
         case "shoot":
             shoot(player.pos, e.key);
             break;
-        case "talk":
-            talk(e.key);
+        case "interact":
+            interact(e.key);
             break;
         case "autoMove":
             if (e.key === "Escape") interruptAutoTravel = true;
@@ -581,8 +611,8 @@ const clickListener = e => {
                 case "shoot":
                     shoot(player.pos, drc);
                     break;
-                case "talk":
-                    talk(drc);
+                case "interact":
+                    interact(drc);
                     break;
             }
             break;

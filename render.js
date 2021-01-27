@@ -146,7 +146,6 @@ function renderAll(playerPos, items, mobs, customRenders) {
 }
 
 async function shotEffect(shotPos, playerPos, items, mobs, customRenders) {
-    const prevSymbol = area[shotPos[0]][shotPos[1]].textContent;
     const prevSymbols = [null, null, null, null];
     let obj, obj0, obj1, obj2, obj3;
     area[shotPos[0]][shotPos[1]].textContent = "x";
@@ -156,7 +155,7 @@ async function shotEffect(shotPos, playerPos, items, mobs, customRenders) {
     await new Promise(r => setTimeout(r, 300));
     
     removeByReference(customRenders, obj);
-    area[shotPos[0]][shotPos[1]].textContent = prevSymbol;
+    renderPos(shotPos, playerPos, items, mobs, customRenders)
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1]
         && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].textContent);
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] + 1] 
