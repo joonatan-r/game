@@ -61,6 +61,25 @@ levels["Wilderness"].items.push({
     pos: [3, 8]
 });
 
+function posIsValid(pos) {
+    for (let mob of mobs) {
+        if (coordsEq(mob.pos, pos)) return false;
+    }
+    for (let item of items) {
+        if (coordsEq(item.pos, pos) && item.blocksTravel) return false;
+    }
+    if (coordsEq(player.pos, pos) 
+        || pos[0] > level.length - 1 
+        || pos[1] > level[0].length - 1 
+        || pos[0] < 0 
+        || pos[1] < 0
+        || level[pos[0]][pos[1]] === ""
+    ) {
+        return false;
+    }
+    return true;
+}
+
 function trySpawnMob() {
     let spawnPos = null;
     let notRenderedNbr = 1;
@@ -122,35 +141,11 @@ function processTurn() {
             gameOver(mob.name + " hits you! You die...");
             break;
         }
-        mob.calcTarget();
-        let mobInTheWay = false;
-        let itemInTheWay = false;
+        mob.calcTarget(posIsValid);
 
-        for (let otherMob of mobs) {
-            if (coordsEq(otherMob.pos, mob.target)) {
-                // this could be the mob itself, but then it won't be moving anyway
-                mobInTheWay = true;
-                break;
-            }
-        }
-        for (let item of items) {
-            if (coordsEq(item.pos, mob.target) && item.blocksTravel) {
-                itemInTheWay = true;
-                break;
-            }
-        }
         if (mob.isShooter && mob.straightLineToTargetDrc) {
             shoot(mob.pos, mob.straightLineToTargetDrc, true);
-        } else if (!coordsEq(player.pos, mob.target) 
-            && !mobInTheWay
-            && !itemInTheWay
-            && !(
-                mob.target[0] > level.length - 1 
-                || mob.target[1] > level[0].length - 1 
-                || mob.target[0] < 0 || mob.target[1] < 0
-                || level[mob.target[0]][mob.target[1]] === ""
-            )
-        ) {
+        } else {
             mob.pos = mob.target.slice();
         }
     }

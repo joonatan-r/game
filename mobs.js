@@ -50,7 +50,7 @@ const Ukko = {
         }
         showMsg("[" + this.name + "]: Yo man!");
     },
-    calcTarget: function() { movingAIs.random(this) }
+    calcTarget: function(posIsValid) { movingAIs.random(this, posIsValid) }
 };
 const Some_Guy = {
     name: "Some guy",
@@ -83,11 +83,11 @@ const Make = {
     name: "Make",
     symbol: "M",
     isHostile: true,
-    calcTarget: function() {
+    calcTarget: function(posIsValid) {
         if (rendered[this.pos[0]][this.pos[1]] && this.huntingTarget) { // if player can see mob, mob can see player
-            movingAIs.towardsPos(this, this.huntingTarget.pos);
+            movingAIs.towardsPos(this, this.huntingTarget.pos, posIsValid);
         } else {
-            movingAIs.random(this);
+            movingAIs.random(this, posIsValid);
         }
     }
 };
@@ -96,9 +96,9 @@ const Pekka = {
     symbol: "P",
     isHostile: true,
     isShooter: true,
-    calcTarget: function() {
+    calcTarget: function(posIsValid) {
         if (rendered[this.pos[0]][this.pos[1]] && this.huntingTarget) {
-            movingAIs.towardsStraightLineFromPos(this, this.huntingTarget.pos);
+            movingAIs.towardsStraightLineFromPos(this, this.huntingTarget.pos, posIsValid);
         } else {
             movingAIs.static(this);
         }
@@ -108,13 +108,13 @@ const Jorma = {
     name: "Jorma",
     symbol: "J",
     isHostile: true,
-    calcTarget: function() { movingAIs.random(this) }
+    calcTarget: function(posIsValid) { movingAIs.random(this, posIsValid) }
 };
 const movingAIs = {
     static: mob => {
         mob.target = mob.pos.slice();
     },
-    random: mob => {
+    random: (mob, posIsValid) => {
         let drc;
         mob.target = mob.pos.slice();
     
@@ -126,17 +126,14 @@ const movingAIs = {
 
             movePosToDrc(mob.target, "" + drc);
 
-            if (mob.target[0] > level.length - 1 || mob.target[1] > level[0].length - 1 
-                || mob.target[0] < 0 || mob.target[1] < 0
-                || level[mob.target[0]][mob.target[1]] === ""
-            ) {
-                    mob.target = prevTarget.slice();
-                    continue;
+            if (!posIsValid(mob.target)) {
+                mob.target = prevTarget.slice();
+                continue;
             }
             break;
         }
     },
-    towardsPos: (mob, targetPos) => {
+    towardsPos: (mob, targetPos, posIsValid) => {
         bresenham(mob.pos[0], mob.pos[1], targetPos[0], targetPos[1], (y, x) => {
             if (coordsEq([y, x], mob.pos)) {
                 return "ok";
@@ -145,25 +142,33 @@ const movingAIs = {
             return "stop";
         });
         const drcs = getCoordsNextTo(mob.pos);
-        const excluded = [];
         const drcQueue = [mob.target];
+        let excluded = [];
+        let maxIters = 8;
+        let currentDrc, newDrcs;
 
-        if (level[mob.target[0]][mob.target[1]] === "") {
-            if (!mob.alreadyTried) mob.alreadyTried = [];
+        if (!posIsValid(mob.target)) {
+            if (!mob.alreadyVisited) mob.alreadyVisited = [];
 
-            // better ability to go around walls when not backtracking 
+            // better ability to go around obstacles when not backtracking 
             // while blocked on consecutive turns
-            mob.alreadyTried.push(mob.pos);
-            excluded.push(...mob.alreadyTried);
+            mob.alreadyVisited.push(mob.pos);
+            excluded.push(...mob.alreadyVisited);
 
-            while (1) {
-                const currentDrc = drcQueue.shift();
-                const newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
-
+            while (maxIters--) {
+                if (drcQueue.length === 0) {
+                    // no other valid drcs, choose even if excluded
+                    excluded = [];
+                    mob.alreadyVisited = [];
+                    newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
+                } else {
+                    currentDrc = drcQueue.shift();
+                    newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
+                }
                 for (let d of newDrcs) {
                     if (d.length === 0) continue;
                     if (!level[d[0]] || typeof level[d[0]][d[1]] === "undefined") continue;
-                    if (level[d[0]][d[1]] !== "") {
+                    if (posIsValid(d)) {
                         mob.target = d;
                         return;
                     } else {
@@ -173,10 +178,10 @@ const movingAIs = {
                 }
             }
         } else {
-            mob.alreadyTried = [];
+            mob.alreadyVisited = [];
         }
     },
-    towardsStraightLineFromPos: (mob, fromPos) => {
+    towardsStraightLineFromPos: (mob, fromPos, posIsValid) => {
         let min = { pos: null, dist: null };
         mob.straightLineToTargetDrc = null;
 
@@ -208,7 +213,7 @@ const movingAIs = {
             }
         }
         if (min.pos && !coordsEq(mob.pos, min.pos)) {
-            movingAIs.towardsPos(mob, min.pos);
+            movingAIs.towardsPos(mob, min.pos, posIsValid);
         } else {
             mob.target = mob.pos.slice();
         }
