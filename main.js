@@ -383,13 +383,24 @@ function action(key) {
             if (msgHistory.length) showDialog("Message history:", msgHistory, ()=>{}, true, true);
             return;
         case "i":
-            let contents = "";
+            let contentNames = [];
             
-            for (let item of player.inventory) contents += item.name + ", ";
+            for (let item of player.inventory) contentNames.push(item.name);
 
-            contents = contents.slice(0, -2);
-            if (contents.length !== 0) {
-                showMsg("Contents of your inventory:\n" + contents + ".");
+            if (contentNames.length !== 0) {
+                showDialog("Contents of your inventory:", contentNames, idx => {
+                    showDialog("What do you want to do with \"" + contentNames[idx] + "\"?", ["Drop"], idx => {
+                        switch (idx) {
+                            case 0:
+                                let item = player.inventory.splice(idx, 1)[0];
+                                item.pos = player.pos;
+                                items.push(item);
+                                showMsg("You drop \"" + contentNames[idx] + "\".");
+                                processTurn();
+                                break;
+                        }
+                    }, true, true);
+                }, true, true);
             } else {
                 showMsg("Your inventory is empty.");
             }

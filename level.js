@@ -155,6 +155,7 @@ const infoTable = {
     "Player": "[@]: You, the player",
     "some money": "[$]: Some money",
     "a weird object": "[?]: A strange object",
+    "a chest": "[(]: A chest",
     "Ukko": "[@]: Ukko, a peaceful human",
     "Some guy": "[@]: Some guy, a peaceful human",
     "Shady guy": "[@]: Shady guy, a peaceful human",
