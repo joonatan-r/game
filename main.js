@@ -317,15 +317,28 @@ function movePlayer(newPos) {
             }
         }
     }
-    for (let item of items) {
-        if (coordsEq(player.pos, item.pos)) {
+    for (let i = 0; i < items.length; i++) {
+        if (coordsEq(player.pos, items[i].pos)) {
             let msg = "";
+            let severalItems = false;
 
-            if (item.hidden) {
+            if (items[i].hidden) {
                 msg += "You find an item! ";
-                item.hidden = false;
+                items[i].hidden = false;
             }
-            msg += "There's " + item.name + " here.";
+            for (let j = 0; j < items.length; j++) {
+                if (coordsEq(items[i].pos, items[j].pos) 
+                    && i !== j && !items[j].hidden
+                ) {
+                    severalItems = true;
+                    break;
+                }
+            }
+            if (severalItems) {
+                msg += "There are several items here.";
+            } else {
+                msg += "There's " + items[i].name + " here.";
+            }
             showMsg(msg);
             return;
         }
@@ -413,9 +426,28 @@ function action(key) {
         case ",":
             for (let i = 0; i < items.length; i++) {
                 if (coordsEq(player.pos, items[i].pos)) {
-                    const removed = items.splice(i, 1)[0];
-                    player.inventory.push(removed);
-                    showMsg("You pick up " + removed.name + ".");
+                    let itemsHere = [];
+                    let itemNames = [];
+                    let itemIdxs = [];
+
+                    for (let j = 0; j < items.length; j++) {
+                        if (coordsEq(items[i].pos, items[j].pos) && !items[j].hidden) {
+                            itemsHere.push(items[j]);
+                            itemNames.push(items[j].name);
+                            itemIdxs.push(j);
+                        }
+                    }
+                    if (itemsHere.length > 1) {
+                        showDialog("What do you want to pick up?", itemNames, idx => {
+                            const removed = items.splice(itemIdxs[idx], 1)[0];
+                            player.inventory.push(removed);
+                            showMsg("You pick up " + removed.name + ".");
+                        }, true, true);
+                    } else {
+                        const removed = items.splice(i, 1)[0];
+                        player.inventory.push(removed);
+                        showMsg("You pick up " + removed.name + ".");
+                    }
                     break;
                 }
             }
