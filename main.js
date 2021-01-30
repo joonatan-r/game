@@ -345,7 +345,7 @@ function movePlayer(newPos) {
     }
 }
 
-function action(key) {
+function action(key, ctrl) {
     switch (key) {
         case "4":
         case "6":
@@ -355,9 +355,21 @@ function action(key) {
         case "1":
         case "9":
         case "3":
-            const newPos = player.pos.slice();
-            movePosToDrc(newPos, key);
-            movePlayer(newPos);
+            let newPos = player.pos.slice();
+            let prevPos;
+
+            if (ctrl) {
+                while (level[newPos[0]] && level[newPos[0]][newPos[1]] 
+                        && level[newPos[0]][newPos[1]] !== ""
+                ) {
+                    prevPos = newPos.slice();
+                    movePosToDrc(newPos, key);
+                }
+                autoTravel(prevPos); // last ok position
+            } else {
+                movePosToDrc(newPos, key);
+                movePlayer(newPos);
+            }
             break;
         case "Enter":
             if (level[player.pos[0]][player.pos[1]] === ">" || level[player.pos[0]][player.pos[1]] === "<") {
@@ -628,7 +640,7 @@ const keypressListener = e => {
             if (e.key === "Escape") interruptAutoTravel = true;
             break;
         default:
-            action(e.key);
+            action(e.key, e.ctrlKey);
     }
 };
 const clickListener = e => {
