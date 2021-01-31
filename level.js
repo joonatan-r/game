@@ -4,7 +4,7 @@ const area = [];
 const rendered = [];
 const edges = [];
 let memorized = [];
-const levels = { currentLvl: "" };
+let levels = { currentLvl: "" };
 let level = [[]];
 
 // end "global" variables

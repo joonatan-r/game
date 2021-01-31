@@ -13,15 +13,16 @@ const status = document.getElementById("status");
 const menu = document.getElementById("clickMenu");
 const dialog = document.getElementById("dialog");
 const msgHistory = [];
-const timeTracker = {};
+let timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
-const player = {};
+let player = {};
 player.inventory = [];
 player.pos = [10, 13];
 let mobs = [];
 let items = [];
 let customRenders = []; // for "animations" to not get erased
+let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let blockAutoTravel = false;
 
@@ -109,10 +110,10 @@ function trySpawnMob() {
 
     if (r < 0.2) {
         mob = createMobOfType(Make);
-        mob.huntingTarget = player;
+        mob.huntingTarget = refer(player);
     } else if (r > 0.8) {
         mob = createMobOfType(Pekka);
-        mob.huntingTarget = player;
+        mob.huntingTarget = refer(player);
     } else {
         mob = createMobOfType(Jorma);
     }
@@ -741,3 +742,83 @@ function removeListeners() {
 
 addListeners();
 processTurn();
+
+function refer(obj) {
+    if (referenced.indexOf(obj) === -1) referenced.push(obj);
+    return obj;
+}
+
+let textFile = null;
+const makeTextFile = text => {
+    const data = new Blob([text], {type: "text/plain"});
+
+    if (textFile !== null) {
+        window.URL.revokeObjectURL(textFile);
+    }
+    textFile = window.URL.createObjectURL(data);
+    return textFile;
+};
+document.getElementById("save").addEventListener("click", () => {
+    const link = document.createElement("a");
+    const saveData = {
+        levels: levels,
+        player: player,
+        timeTracker: timeTracker,
+        mobs: mobs,
+        items: items,
+        memorized: memorized
+    };
+    link.setAttribute("download", "save.json");
+    link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
+            if (typeof val === "function") {
+                return "" + val;
+            }
+            const idx = referenced.indexOf(val);
+
+            if (idx !== -1) {
+                return "refTo " + idx;
+            }
+            return val;
+        })
+            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(referenced) + "}" // no replacer
+    );
+    document.body.appendChild(link);
+    window.requestAnimationFrame(() => {
+        const event = new MouseEvent("click");
+        link.dispatchEvent(event);
+        document.body.removeChild(link);
+    });
+});
+document.getElementById("inputFile").addEventListener("change", function() {
+    const fr = new FileReader();
+    fr.onload = () => {
+        const refs = [];
+        const loadData = JSON.parse(fr.result, function(key, val) {
+            if (typeof val === "string" && val.startsWith("function")) {
+                return eval("(" + val + ")");
+            }
+            if (typeof val === "string" && val.startsWith("refTo ")) {
+                refs.push(this);
+            }
+            return val;
+        });
+
+        for (let obj of refs) {
+            for (let key of Object.keys(obj)) {
+                if (typeof obj[key] === "string" && obj[key].startsWith("refTo ")) {
+                    const idx = obj[key].split(" ")[1];
+                    obj[key] = loadData.referenced[idx];
+                }
+            }
+        }
+        levels = loadData.levels;
+        level = levels[levels.currentLvl].level;
+        player = loadData.player;
+        timeTracker = loadData.timeTracker;
+        mobs = loadData.mobs;
+        items = loadData.items;
+        memorized = loadData.memorized;
+        renderAll(player.pos, items, mobs, customRenders);
+    };
+    fr.readAsText(this.files[0]);
+});
