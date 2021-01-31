@@ -1,4 +1,4 @@
-// level, levels, area, rendered, memorized, infoTable from level.js
+// level, levels, area, rendered, memorized, infoTable, table from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
 // movingAIs, Ukko, Some_Guy, Shady_Guy, createMobOfType, Make, Pekka, Jorma from mobs.js
 
@@ -649,6 +649,7 @@ const clickListener = e => {
         menu.style.display = "none";
         return;
     }
+    if (!table.contains(e.target)) return;
     showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
@@ -771,7 +772,7 @@ document.getElementById("save").addEventListener("click", () => {
     link.setAttribute("download", "save.json");
     link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
             if (typeof val === "function") {
-                return "" + val;
+                return "" + val; // store functions as string
             }
             const idx = referenced.indexOf(val);
 
@@ -780,7 +781,8 @@ document.getElementById("save").addEventListener("click", () => {
             }
             return val;
         })
-            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(referenced) + "}" // no replacer
+            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(referenced) + "}"
+            // objects that have multiple references to them are stored in "referenced", no replacer here
     );
     document.body.appendChild(link);
     window.requestAnimationFrame(() => {
@@ -795,21 +797,18 @@ document.getElementById("inputFile").addEventListener("change", function() {
         const refs = [];
         const loadData = JSON.parse(fr.result, function(key, val) {
             if (typeof val === "string" && val.startsWith("function")) {
+                // convert string representations of functions back to functions
                 return eval("(" + val + ")");
             }
             if (typeof val === "string" && val.startsWith("refTo ")) {
-                refs.push(this);
+                refs.push({ obj: this, key: key });
             }
             return val;
         });
 
-        for (let obj of refs) {
-            for (let key of Object.keys(obj)) {
-                if (typeof obj[key] === "string" && obj[key].startsWith("refTo ")) {
-                    const idx = obj[key].split(" ")[1];
-                    obj[key] = loadData.referenced[idx];
-                }
-            }
+        for (let ref of refs) {
+            const idx = ref.obj[ref.key].split(" ")[1];
+            ref.obj[ref.key] = loadData.referenced[idx]; // replace references with actual objects
         }
         levels = loadData.levels;
         level = levels[levels.currentLvl].level;
