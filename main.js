@@ -126,10 +126,10 @@ function gameOver(msg) {
     !TURN_BASED && clearInterval(turnInterval);
     interruptAutoTravel = true;
     removeListeners();
-    customRenders.push({ symbol: level[player.pos[0]][player.pos[1]], pos: player.pos }); // erase player symbol
+    player.dead = true;
 }
 
-function processTurn() {
+function updateInfo() {
     info.textContent = levels.currentLvl + "\nTurn " + timeTracker.timer + "\n";
 
     if (timeTracker.turnsUntilShoot > 0) {
@@ -137,6 +137,13 @@ function processTurn() {
     } else {
         info.textContent += "You can shoot";
     }
+}
+
+function processTurn() {
+    timeTracker.timer++;
+    if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
+    updateInfo();
+
     for (let mob of mobs) {
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
             gameOver(mob.name + " hits you! You die...");
@@ -150,10 +157,8 @@ function processTurn() {
             mob.pos = mob.target.slice();
         }
     }
-    renderAll(player.pos, items, mobs, customRenders);
+    renderAll(player, items, mobs, customRenders);
     trySpawnMob();
-    timeTracker.timer++;
-    if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
 }
 
 async function shoot(fromPos, drc, mobIsShooting) {
@@ -164,65 +169,65 @@ async function shoot(fromPos, drc, mobIsShooting) {
     keypressListener.actionType = null;
     clickListener.actionType = null;
 
-    while (1) {
-        renderPos(bulletPos, player.pos, items, mobs, customRenders);
-
-        switch (drc) {
-            case "4":
-            case "6":
-            case "8":
-            case "2":
-            case "7":
-            case "1":
-            case "9":
-            case "3":
+    switch (drc) {
+        case "4":
+        case "6":
+        case "8":
+        case "2":
+        case "7":
+        case "1":
+        case "9":
+        case "3":
+            while (1) {
+                renderPos(bulletPos, player, items, mobs, customRenders);
                 movePosToDrc(bulletPos, drc);
-                break;
-            case "Escape":
-                timeTracker.turnsUntilShoot = 0;
-                showMsg("");
-                addListeners();
-                keypressListener.actionType = null;
-                clickListener.actionType = null;
-                return;
-            default:
-                addListeners();
-                keypressListener.actionType = "shoot";
-                clickListener.actionType = "chooseDrc";
-                return;
-        }
-        if (!level[bulletPos[0]] || !level[bulletPos[0]][bulletPos[1]] 
-            || level[bulletPos[0]][bulletPos[1]] === ""
-        ) {
-            break;
-        }
-        if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].textContent = "o";
-        obj = { symbol: "o", pos: [bulletPos[0], bulletPos[1]] };
-        customRenders.push(obj);
 
-        await new Promise(r => setTimeout(r, 30));
+                if (!level[bulletPos[0]] || !level[bulletPos[0]][bulletPos[1]] 
+                    || level[bulletPos[0]][bulletPos[1]] === ""
+                ) {
+                    break;
+                }
+                if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].textContent = "o";
+                obj = { symbol: "o", pos: [bulletPos[0], bulletPos[1]] };
+                customRenders.push(obj);
         
-        if (coordsEq(bulletPos, player.pos)) {
-            gameOver("A bullet hits you! You die...");
-            removeByReference(customRenders, obj);
-            renderPos(bulletPos, player.pos, items, mobs, customRenders);
-            shotEffect(bulletPos, player.pos, items, mobs, customRenders);
-            return;
-        }
-        for (let i = 0; i < mobs.length; i++) {
-            if (coordsEq(bulletPos, mobs[i].pos)) {
-                mobs.splice(i, 1);
-                addListeners();
-                keypressListener.actionType = null;
-                clickListener.actionType = null;
+                await new Promise(r => setTimeout(r, 30));
+                
+                if (coordsEq(bulletPos, player.pos)) {
+                    gameOver("A bullet hits you! You die...");
+                    removeByReference(customRenders, obj);
+                    renderPos(bulletPos, player, items, mobs, customRenders);
+                    shotEffect(bulletPos, player, items, mobs, customRenders);
+                    return;
+                }
+                for (let i = 0; i < mobs.length; i++) {
+                    if (coordsEq(bulletPos, mobs[i].pos)) {
+                        mobs.splice(i, 1);
+                        TURN_BASED && addListeners();
+                        keypressListener.actionType = null;
+                        clickListener.actionType = null;
+                        removeByReference(customRenders, obj);
+                        renderPos(bulletPos, player, items, mobs, customRenders);
+                        shotEffect(bulletPos, player, items, mobs, customRenders);
+                        !mobIsShooting && processTurn();
+                        return;
+                    }
+                }
                 removeByReference(customRenders, obj);
-                renderPos(bulletPos, player.pos, items, mobs, customRenders);
-                shotEffect(bulletPos, player.pos, items, mobs, customRenders);
-                !mobIsShooting && processTurn();
-                return;
             }
-        }
-        removeByReference(customRenders, obj);
+            break;
+        case "Escape":
+            timeTracker.turnsUntilShoot = 0;
+            showMsg("");
+            TURN_BASED && addListeners();
+            keypressListener.actionType = null;
+            clickListener.actionType = null;
+            return;
+        default:
+            TURN_BASED && addListeners();
+            keypressListener.actionType = "shoot";
+            clickListener.actionType = "chooseDrc";
+            return;
     }
     TURN_BASED && addListeners();
     keypressListener.actionType = null;
@@ -471,7 +476,7 @@ function action(key, ctrl) {
     if (TURN_BASED) {
         processTurn();
     } else {
-        renderAll(player.pos, items, mobs, customRenders);
+        renderAll(player, items, mobs, customRenders);
     }
 }
 
@@ -503,7 +508,7 @@ async function autoTravel(coords) {
         if (TURN_BASED) {
             processTurn();
         } else {
-            renderAll(player.pos, items, mobs, customRenders);
+            renderAll(player, items, mobs, customRenders);
         }
         await new Promise(r => setTimeout(r, 50));
     }
@@ -680,7 +685,7 @@ const clickListener = e => {
                 if (TURN_BASED) {
                     processTurn();
                 } else {
-                    renderAll(player.pos, items, mobs, customRenders);
+                    renderAll(player, items, mobs, customRenders);
                 }
             }
     }
@@ -742,7 +747,8 @@ function removeListeners() {
 }
 
 addListeners();
-processTurn();
+updateInfo();
+renderAll(player, items, mobs, customRenders);
 
 function refer(obj) {
     if (referenced.indexOf(obj) === -1) referenced.push(obj);
@@ -817,7 +823,8 @@ document.getElementById("inputFile").addEventListener("change", function() {
         mobs = loadData.mobs;
         items = loadData.items;
         memorized = loadData.memorized;
-        renderAll(player.pos, items, mobs, customRenders);
+        updateInfo();
+        renderAll(player, items, mobs, customRenders);
     };
     fr.readAsText(this.files[0]);
 });

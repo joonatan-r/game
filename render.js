@@ -16,7 +16,7 @@ for (let i = 0; i < level.length; i++) {
     }
 }
 
-function renderPos(posToRender, playerPos, items, mobs, customRenders) {
+function renderPos(posToRender, player, items, mobs, customRenders) {
     if (!rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
         area[posToRender[0]][posToRender[1]].textContent = "";
         return;
@@ -28,6 +28,7 @@ function renderPos(posToRender, playerPos, items, mobs, customRenders) {
         return;
     }
     area[posToRender[0]][posToRender[1]].textContent = level[posToRender[0]][posToRender[1]];
+    area[posToRender[0]][posToRender[1]].className = "";
     area[posToRender[0]][posToRender[1]].customProps.infoKeys.unshift(level[posToRender[0]][posToRender[1]]);
 
     for (let item of items) {
@@ -36,10 +37,10 @@ function renderPos(posToRender, playerPos, items, mobs, customRenders) {
             area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
         }
     }
-    if (coordsEq(playerPos, posToRender)) {
-        area[playerPos[0]][playerPos[1]].textContent = "@";
-        area[playerPos[0]][playerPos[1]].className = "player";
-        area[playerPos[0]][playerPos[1]].customProps.infoKeys.unshift("Player");
+    if (coordsEq(player.pos, posToRender) && !player.dead) {
+        area[player.pos[0]][player.pos[1]].textContent = "@";
+        area[player.pos[0]][player.pos[1]].className = "player";
+        area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
     }
     for (let mob of mobs) {
         if (coordsEq(mob.pos, posToRender)) {
@@ -54,7 +55,7 @@ function renderPos(posToRender, playerPos, items, mobs, customRenders) {
     }
 }
 
-function renderAll(playerPos, items, mobs, customRenders) {
+function renderAll(player, items, mobs, customRenders) {
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
             rendered[i][j] = false;
@@ -64,7 +65,7 @@ function renderAll(playerPos, items, mobs, customRenders) {
         }
     }
     for (let coords of edges) {
-        bresenham(playerPos[0], playerPos[1], coords[0], coords[1], (y,x) => {
+        bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
             if (rendered[y][x]) {
                 return level[y][x] === "" || level[y][x] === " " ? "stop" : "ok"; // wall blocks sight
             }
@@ -93,10 +94,11 @@ function renderAll(playerPos, items, mobs, customRenders) {
             area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
         }
     }
-    area[playerPos[0]][playerPos[1]].textContent = "@";
-    area[playerPos[0]][playerPos[1]].className = "player";
-    area[playerPos[0]][playerPos[1]].customProps.infoKeys.unshift("Player");
-
+    if (!player.dead) {
+        area[player.pos[0]][player.pos[1]].textContent = "@";
+        area[player.pos[0]][player.pos[1]].className = "player";
+        area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
+    }
     for (let mob of mobs) {
         if (rendered[mob.pos[0]][mob.pos[1]]) {
             area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
@@ -145,7 +147,7 @@ function renderAll(playerPos, items, mobs, customRenders) {
     }
 }
 
-async function shotEffect(shotPos, playerPos, items, mobs, customRenders) {
+async function shotEffect(shotPos, player, items, mobs, customRenders) {
     const prevSymbols = [null, null, null, null];
     let obj, obj0, obj1, obj2, obj3;
     area[shotPos[0]][shotPos[1]].textContent = "x";
@@ -155,7 +157,7 @@ async function shotEffect(shotPos, playerPos, items, mobs, customRenders) {
     await new Promise(r => setTimeout(r, 300));
     
     removeByReference(customRenders, obj);
-    renderPos(shotPos, playerPos, items, mobs, customRenders)
+    renderPos(shotPos, player, items, mobs, customRenders);
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] - 1]
         && (prevSymbols[0] = area[shotPos[0] - 1][shotPos[1] - 1].textContent);
     area[shotPos[0] - 1] && area[shotPos[0] - 1][shotPos[1] + 1] 
@@ -190,18 +192,18 @@ async function shotEffect(shotPos, playerPos, items, mobs, customRenders) {
     
     if (prevSymbols[0]) {
         removeByReference(customRenders, obj0);
-        renderPos([shotPos[0] - 1, shotPos[1] - 1], playerPos, items, mobs, customRenders);
+        renderPos([shotPos[0] - 1, shotPos[1] - 1], player, items, mobs, customRenders);
     }
     if (prevSymbols[1]) {
         removeByReference(customRenders, obj1);
-        renderPos([shotPos[0] - 1, shotPos[1] + 1], playerPos, items, mobs, customRenders);
+        renderPos([shotPos[0] - 1, shotPos[1] + 1], player, items, mobs, customRenders);
     }
     if (prevSymbols[2]) {
         removeByReference(customRenders, obj2);
-        renderPos([shotPos[0] + 1, shotPos[1] + 1], playerPos, items, mobs, customRenders);
+        renderPos([shotPos[0] + 1, shotPos[1] + 1], player, items, mobs, customRenders);
     }
     if (prevSymbols[3]) {
         removeByReference(customRenders, obj3);
-        renderPos([shotPos[0] + 1, shotPos[1] - 1], playerPos, items, mobs, customRenders);
+        renderPos([shotPos[0] + 1, shotPos[1] - 1], player, items, mobs, customRenders);
     }
 }
