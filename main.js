@@ -1,6 +1,6 @@
 // level, levels, area, rendered, memorized, infoTable, table from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
-// movingAIs, Ukko, Some_Guy, Shady_Guy, createMobOfType, Make, Pekka, Jorma from mobs.js
+// movingAIs, Ukko, Some_Guy, Shady_Guy, trySpawnMob, Make, Pekka, Jorma from mobs.js
 
 // all coords are given as (y,x)
 
@@ -81,46 +81,6 @@ function posIsValid(pos) {
     return true;
 }
 
-function trySpawnMob() {
-    let spawnPos = null;
-    let notRenderedNbr = 1;
-
-    if (!levels[levels.currentLvl].spawnsHostiles) return;
-    if (timeTracker.timer % 10 !== 0) return;
-
-    for (let i = 0; i < level.length; i++) {
-        for (let j = 0; j < level[0].length; j++) {
-            if (!rendered[i][j] && level[i][j] !== "") notRenderedNbr++;
-        }
-    }
-    for (let i = 0; i < level.length; i++) {
-        if (spawnPos) break;
-
-        for (let j = 0; j < level[0].length; j++) {
-            if (!rendered[i][j] && level[i][j] !== "" && Math.random() < (1 / notRenderedNbr)) {
-                spawnPos = [i, j];
-                break;
-            }
-        }
-    }
-    if (!spawnPos) return;
-
-    const r = Math.random();
-    let mob;
-
-    if (r < 0.2) {
-        mob = createMobOfType(Make);
-        mob.huntingTarget = refer(player);
-    } else if (r > 0.8) {
-        mob = createMobOfType(Pekka);
-        mob.huntingTarget = refer(player);
-    } else {
-        mob = createMobOfType(Jorma);
-    }
-    mob.pos = spawnPos;
-    mobs.push(mob);
-}
-
 function gameOver(msg) {
     showMsg(msg);
     !TURN_BASED && clearInterval(turnInterval);
@@ -158,7 +118,16 @@ function processTurn() {
         }
     }
     renderAll(player, items, mobs, customRenders);
-    trySpawnMob();
+
+    if (!levels[levels.currentLvl].spawnsHostiles) return;
+    if (timeTracker.timer % 10 !== 0) return;
+
+    let mob = trySpawnMob();
+
+    if (mob !== null) {
+        mob.huntingTarget = refer(player);
+        mobs.push(mob);
+    }
 }
 
 async function shoot(fromPos, drc, mobIsShooting) {
@@ -280,33 +249,15 @@ function interact(drc) {
 }
 
 function movePlayer(newPos) {
-    let overlapMob = false;
-    let itemInTheWay = false;
-
-    for (let mob of mobs) {
-        if (coordsEq(newPos, mob.pos)) {
-            overlapMob = true;
-            break;
-        }
-    }
-    for (let item of items) {
-        if (coordsEq(newPos, item.pos) && item.blocksTravel) {
-            itemInTheWay = true;
-            break;
-        }
-    }
-    if (newPos[0] > level.length - 1 || newPos[1] > level[0].length - 1 || newPos[0] < 0 || newPos[1] < 0
-        || level[newPos[0]][newPos[1]] === "" || overlapMob || itemInTheWay
-    ) {
-        return;
-    }
+    if (!posIsValid(newPos)) return;
+    
     player.pos = newPos;
 
     if (level[player.pos[0]][player.pos[1]] === "^") {
         const tps = levels[levels.currentLvl].travelPoints;
 
         for (let lvl of Object.keys(tps)) {
-            let idx = 0;
+            let idx = 0; // for tracking which point in lvl to travel to if several
 
             for (let coords of tps[lvl]) {
                 if (coordsEq(coords, player.pos)) {
@@ -382,7 +333,7 @@ function action(key, ctrl) {
                 const tps = levels[levels.currentLvl].travelPoints;
 
                 for (let lvl of Object.keys(tps)) {
-                    let idx = 0; // for tracking which point in lvl to travel to if several
+                    let idx = 0;
         
                     for (let coords of tps[lvl]) {
                         if (coordsEq(coords, player.pos)) {

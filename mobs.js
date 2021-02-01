@@ -13,6 +13,41 @@ function createMobOfType(mobType) {
     };
 }
 
+function trySpawnMob() {
+    let spawnPos = null;
+    let notRenderedNbr = 1;
+
+    for (let i = 0; i < level.length; i++) {
+        for (let j = 0; j < level[0].length; j++) {
+            if (!rendered[i][j] && level[i][j] !== "") notRenderedNbr++;
+        }
+    }
+    for (let i = 0; i < level.length; i++) {
+        if (spawnPos) break;
+
+        for (let j = 0; j < level[0].length; j++) {
+            if (!rendered[i][j] && level[i][j] !== "" && Math.random() < (1 / notRenderedNbr)) {
+                spawnPos = [i, j];
+                break;
+            }
+        }
+    }
+    if (!spawnPos) return null;
+
+    const r = Math.random();
+    let mob;
+
+    if (r < 0.2) {
+        mob = createMobOfType(Make);
+    } else if (r > 0.8) {
+        mob = createMobOfType(Pekka);
+    } else {
+        mob = createMobOfType(Jorma);
+    }
+    mob.pos = spawnPos;
+    return mob;
+}
+
 const Shady_Guy = {
     name: "Shady guy",
     symbol: "@",
