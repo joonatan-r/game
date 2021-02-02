@@ -375,7 +375,7 @@ function action(key, ctrl) {
                         switch (idx) {
                             case 0:
                                 let item = player.inventory.splice(idx, 1)[0];
-                                item.pos = player.pos;
+                                item.pos = player.pos.slice();
                                 items.push(item);
                                 showMsg("You drop \"" + contentNames[idx] + "\".");
                                 processTurn();
@@ -421,6 +421,12 @@ function action(key, ctrl) {
                 }
             }
             break;
+        case ";":
+            showMsg("Move to select a location. Use enter to select and esc to leave.");
+            keypressListener.actionType = "selectPos";
+            clickListener.actionType = "ignore";
+            selectPos.currentPos = player.pos.slice();
+            break;
         default:
             return;
     }
@@ -465,6 +471,53 @@ async function autoTravel(coords) {
     }
     keypressListener.actionType = null;
     blockAutoTravel = false;
+}
+
+function selectPos(drc) {
+    let prevPos = selectPos.currentPos.slice();
+
+    switch (drc) {
+        case "4":
+        case "6":
+        case "8":
+        case "2":
+        case "7":
+        case "1":
+        case "9":
+        case "3":
+            movePosToDrc(selectPos.currentPos, drc);
+
+            if (!level[selectPos.currentPos[0]] 
+                || level[selectPos.currentPos[0]][selectPos.currentPos[1]] === undefined
+            ) {
+                selectPos.currentPos = prevPos;
+            }
+            area[prevPos[0]][prevPos[1]].classList.toggle("selected");
+            area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.toggle("selected");
+            break;
+        case "Enter":
+            let msg = "";
+            let infoKeys = area[selectPos.currentPos[0]][selectPos.currentPos[1]].customProps.infoKeys;
+    
+            if (!infoKeys.length) {
+                msg += "[ ]: An unseen area\n";
+            }
+            for (let key of infoKeys) {
+                msg += infoTable[key] + "\n";
+            }
+            showMsg(msg);
+            break;
+        case "Escape":
+            showMsg("");
+            area[prevPos[0]][prevPos[1]].classList.toggle("selected");
+            keypressListener.actionType = null;
+            clickListener.actionType = null;
+            return;
+        default:
+            keypressListener.actionType = "selectPos";
+            clickListener.actionType = "ignore";
+            return;
+    }
 }
 
 function showDialog(text, choices, onSelect, allowEsc, skipLog) {
@@ -596,6 +649,9 @@ const keypressListener = e => {
         case "autoMove":
             if (e.key === "Escape") interruptAutoTravel = true;
             break;
+        case "selectPos":
+            selectPos(e.key);
+            break;
         default:
             action(e.key, e.ctrlKey);
     }
@@ -624,6 +680,8 @@ const clickListener = e => {
                     break;
             }
             break;
+        case "ignore":
+            return;
         default:
             if (e.ctrlKey) {
                 if (e.target.tagName !== "TD") return;

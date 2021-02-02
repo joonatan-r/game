@@ -54,6 +54,10 @@ p {
     border-radius: 26px;
 }
 
+.selected {
+    border: 1px solid green;
+}
+
 .wall.l {
     border-left: solid white 1px;
 }
