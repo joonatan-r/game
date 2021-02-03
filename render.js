@@ -1,4 +1,4 @@
-// level, area, rendered, memorized, edges from level.js
+// level, area, rendered, memorized, edges, areaCache from main.js
 // coordsEq, getCoordsNextTo, removeByReference from util.js
 
 // NOTE: with current implementation, if a memorized level tile is changed, 
@@ -6,15 +6,6 @@
 
 const SHOW_MEMORIZED = true;
 const GRAY_MEMORIZED = true;
-
-const areaCache = [];
-
-for (let i = 0; i < level.length; i++) {
-    areaCache.push([]);
-    for (let j = 0; j < level[0].length; j++) {
-        areaCache[i][j] = "";
-    }
-}
 
 function renderPos(posToRender, player, items, mobs, customRenders) {
     if (!rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {

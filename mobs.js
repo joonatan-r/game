@@ -1,6 +1,5 @@
-// level, rendered from level.js
-// bresenham, coordsEq, getCoordsNextTo, getSecondBestDirections, movePosToDrc, 
-// oppositeDrcs from util.js
+// level, rendered from main.js
+// bresenham, coordsEq, getCoordsNextTo, getSecondBestDirections, movePosToDrc, oppositeDrcs from util.js
 
 function createMobOfType(mobType) {
     return {

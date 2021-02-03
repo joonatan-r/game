@@ -1,17 +1,33 @@
-// level, levels, area, rendered, memorized, infoTable, table from level.js
+// createLevels, initialize, changeLvl, infoTable from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
-// movingAIs, Ukko, Some_Guy, Shady_Guy, trySpawnMob, Make, Pekka, Jorma from mobs.js
+// trySpawnMob, Ukko, Some_Guy, Shady_Guy from mobs.js
 
 // all coords are given as (y,x)
+
+// "global" variables
+
+const area = [];
+const areaCache = [];
+const rendered = [];
+const edges = [];
+let memorized = [];
+let levels = createLevels();
+let level = levels[levels.currentLvl].level;
+
+// end "global" variables
+
+const table = document.getElementById("table");
+const info = document.getElementById("info");
+const status = document.getElementById("status");
+const menu = document.getElementById("clickMenu");
+const dialog = document.getElementById("dialog");
+
+initialize(table, levels, level, area, areaCache, rendered, edges, memorized);
 
 const TURN_BASED = true;
 let turnInterval = null;
 !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
 
-const info = document.getElementById("info");
-const status = document.getElementById("status");
-const menu = document.getElementById("clickMenu");
-const dialog = document.getElementById("dialog");
 const msgHistory = [];
 let timeTracker = {};
 timeTracker.timer = 0;
@@ -755,17 +771,14 @@ function removeListeners() {
     document.removeEventListener("contextmenu", menuListener);
 }
 
-addListeners();
-updateInfo();
-renderAll(player, items, mobs, customRenders);
-
 function refer(obj) {
     if (referenced.indexOf(obj) === -1) referenced.push(obj);
     return obj;
 }
 
 let textFile = null;
-const makeTextFile = text => {
+
+function makeTextFile(text) {
     const data = new Blob([text], {type: "text/plain"});
 
     if (textFile !== null) {
@@ -773,7 +786,8 @@ const makeTextFile = text => {
     }
     textFile = window.URL.createObjectURL(data);
     return textFile;
-};
+}
+
 document.getElementById("save").addEventListener("click", () => {
     const link = document.createElement("a");
     const saveData = {
@@ -837,3 +851,7 @@ document.getElementById("inputFile").addEventListener("change", function() {
     };
     fr.readAsText(this.files[0]);
 });
+
+addListeners();
+updateInfo();
+renderAll(player, items, mobs, customRenders);
