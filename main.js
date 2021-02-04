@@ -1,6 +1,7 @@
 // createLevels, initialize, changeLvl, infoTable from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
-// trySpawnMob, Ukko, Some_Guy, Shady_Guy from mobs.js
+// trySpawnMob, addMobs from mobs.js
+// showDialog from UI.js
 
 // all coords are given as (y,x)
 
@@ -16,18 +17,14 @@ let level = levels[levels.currentLvl].level;
 
 // end "global" variables
 
-const table = document.getElementById("table");
-const info = document.getElementById("info");
-const status = document.getElementById("status");
-const menu = document.getElementById("clickMenu");
-const dialog = document.getElementById("dialog");
-
-initialize(table, levels, level, area, areaCache, rendered, edges, memorized);
-
 const TURN_BASED = true;
 let turnInterval = null;
 !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
 
+const table = document.getElementById("table");
+const info = document.getElementById("info");
+const status = document.getElementById("status");
+const menu = document.getElementById("clickMenu");
 const msgHistory = [];
 let timeTracker = {};
 timeTracker.timer = 0;
@@ -42,6 +39,12 @@ let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let blockAutoTravel = false;
 
+// initialize showDialog
+
+showDialog.removeListeners = removeListeners;
+showDialog.addListeners = addListeners;
+showDialog.msgHistory = msgHistory;
+
 const story = {
     "Shady guy": {
         1: () => {
@@ -55,7 +58,8 @@ const story = {
     }
 };
 
-mobs.push(Shady_Guy);
+initialize(table, levels, level, area, areaCache, rendered, edges, memorized);
+addMobs(levels, mobs);
 items.push({
     name: "a chest",
     symbol: "(",
@@ -65,8 +69,6 @@ items.push({
     blocksTravel: true,
     pos: [9, 22]
 });
-levels["Ukko's House"].mobs.push(Ukko);
-levels["Random House"].mobs.push(Some_Guy);
 levels["Wilderness"].items.push({
     name: "some money",
     symbol: "$",
@@ -77,8 +79,12 @@ levels["Wilderness"].items.push({
     hidden: true,
     pos: [3, 8]
 });
+addListeners();
+updateInfo();
+renderAll(player, items, mobs, customRenders);
 
 function posIsValid(pos) {
+    if (pos.length !== 2) return false;
     for (let mob of mobs) {
         if (coordsEq(mob.pos, pos)) return false;
     }
@@ -536,115 +542,6 @@ function selectPos(drc) {
     }
 }
 
-function showDialog(text, choices, onSelect, allowEsc, skipLog) {
-    let choiceGroupIdx = null;
-    removeListeners();
-    !skipLog && msgHistory.unshift(text.trim().replaceAll("\n", "\n\t"));
-
-    // if there are over 9 possible choices, divide them into groups of 8 (last one being probably
-    // shorter) and add an option 9 to go to the next "choice group" (last one has the option to go
-    // back to start), this way number keys 1-9 can be still be used to select a choice
-
-    if (choices.length > 9) {
-        const choicesCopy = choices.slice();
-        let currIdx = 0;
-        choiceGroupIdx = 0;
-        choices = [];
-
-        while (choicesCopy.length) {
-            choices.push([]);
-
-            for (let i = 0; i < 8 && choicesCopy.length; i++) {
-                choices[currIdx].push(choicesCopy.shift());
-            }
-            if (choicesCopy.length) {
-                choices[currIdx].push("[Show more]");
-            } else {
-                choices[currIdx].push("[Back to start]");
-            }
-            currIdx++;
-        }
-    }
-    let choiceGroup = choiceGroupIdx !== null ? choices[choiceGroupIdx] : choices;
-
-    const repopulateDialog = noGroupUpdate => {
-        if (!noGroupUpdate) {
-            choiceGroupIdx = choiceGroupIdx < choices.length - 1 ? choiceGroupIdx + 1 : 0;
-            choiceGroup = choices[choiceGroupIdx];
-        }
-        let idx = 0;
-    
-        while (dialog.children.length > 1) { // remove all but the first text element
-            dialog.firstChild.onclick = null; // just to be safe
-            dialog.removeChild(dialog.lastChild);
-        }
-        for (let choice of choiceGroup) {
-            const choiceIdx = idx;
-            const c = document.createElement("p");
-            c.textContent = "[" + (idx + 1) + "]:\t" + choice;
-            dialog.appendChild(c);
-            c.onclick = e => {
-                e.stopPropagation();
-    
-                if (choiceGroupIdx !== null && choiceIdx === choiceGroup.length - 1) {
-                    repopulateDialog();
-                } else {
-                    let optionNumber = choiceIdx;
-                    !skipLog && msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
-
-                    if (choiceGroupIdx !== null) {
-                        optionNumber += 8 * choiceGroupIdx;
-                    }
-                    hideDialog();
-                    onSelect(optionNumber);
-                }
-            }
-            idx++;
-        }
-    }
-    dialogKeyListener = e => {
-        if (allowEsc && e.key === "Escape") {
-            hideDialog();
-            return;
-        }
-        let pressedNumber = Number(e.key);
-
-        if (isNaN(pressedNumber) || pressedNumber > choiceGroup.length || pressedNumber <= 0) {
-            return;
-        }
-        if (choiceGroupIdx !== null && pressedNumber === choiceGroup.length) {
-            repopulateDialog();
-        } else {
-            let optionNumber = pressedNumber - 1;
-            !skipLog && msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
-
-            if (choiceGroupIdx !== null) {
-                optionNumber += 8 * choiceGroupIdx;
-            }
-            hideDialog();
-            onSelect(optionNumber);
-        }
-    };
-    document.addEventListener("keydown", dialogKeyListener);
-    dialog.style.display = "block";
-    const p = document.createElement("p");
-    p.setAttribute("id", "dialogText");
-    p.textContent = text;
-    dialog.appendChild(p);
-    repopulateDialog(true);
-}
-
-function hideDialog() {
-    dialog.style.display = "none";
-    document.removeEventListener("keydown", dialogKeyListener);
-    addListeners();
-
-    while (dialog.firstChild) {
-        dialog.firstChild.onclick = null; // just to be safe
-        dialog.removeChild(dialog.firstChild);
-    }
-};
-
 function showMsg(msg) {
     status.textContent = msg;
     if (!msg) return; // empty string / null
@@ -652,7 +549,7 @@ function showMsg(msg) {
     msgHistory.unshift(msg);
 }
 
-const keypressListener = e => {
+function keypressListener(e) {
     if ("12346789fhit,".indexOf(e.key) !== -1) showMsg("");
 
     switch (keypressListener.actionType) {
@@ -671,8 +568,9 @@ const keypressListener = e => {
         default:
             action(e.key, e.ctrlKey);
     }
-};
-const clickListener = e => {
+}
+
+function clickListener(e) {
     if (menu.style.display !== "none" && menu.style.display.length !== 0) {
         menu.style.display = "none";
         return;
@@ -714,8 +612,9 @@ const clickListener = e => {
                 }
             }
     }
-};
-const menuListener = e => {
+}
+
+function menuListener(e) {
     e.preventDefault();
     if (e.target.tagName !== "TD") return;
     menu.style.left = e.x + "px";
@@ -736,28 +635,7 @@ const menuListener = e => {
         }
         showMsg(msg);
     };
-};
-let dialogKeyListener;
-document.addEventListener("mousemove", e => {
-    if (clickListener.actionType === "chooseDrc") {
-        const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
-        const x = e.x - (rect.left + rect.width / 2);
-        const y = e.y - (rect.top + rect.height / 2);
-        const drc = pixelCoordsToDrc(y, x);
-        document.body.style.cursor = {
-            "1": "sw-resize",
-            "2": "s-resize",
-            "3": "se-resize",
-            "4": "w-resize",
-            "6": "e-resize",
-            "7": "nw-resize",
-            "8": "n-resize",
-            "9": "ne-resize",
-        }[drc];
-    } else if (document.body.style.cursor !== "default") {
-        document.body.style.cursor = "default";
-    }
-});
+}
 
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
@@ -788,6 +666,26 @@ function makeTextFile(text) {
     return textFile;
 }
 
+document.addEventListener("mousemove", e => {
+    if (clickListener.actionType === "chooseDrc") {
+        const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
+        const x = e.x - (rect.left + rect.width / 2);
+        const y = e.y - (rect.top + rect.height / 2);
+        const drc = pixelCoordsToDrc(y, x);
+        document.body.style.cursor = {
+            "1": "sw-resize",
+            "2": "s-resize",
+            "3": "se-resize",
+            "4": "w-resize",
+            "6": "e-resize",
+            "7": "nw-resize",
+            "8": "n-resize",
+            "9": "ne-resize",
+        }[drc];
+    } else if (document.body.style.cursor !== "default") {
+        document.body.style.cursor = "default";
+    }
+});
 document.getElementById("save").addEventListener("click", () => {
     const link = document.createElement("a");
     const saveData = {
@@ -851,7 +749,3 @@ document.getElementById("inputFile").addEventListener("change", function() {
     };
     fr.readAsText(this.files[0]);
 });
-
-addListeners();
-updateInfo();
-renderAll(player, items, mobs, customRenders);

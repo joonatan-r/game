@@ -12,6 +12,12 @@ function createMobOfType(mobType) {
     };
 }
 
+function addMobs(levels, mobs) {
+    mobs.push(Shady_Guy);
+    levels["Ukko's House"].mobs.push(Ukko);
+    levels["Random House"].mobs.push(Some_Guy);
+}
+
 function trySpawnMob() {
     let spawnPos = null;
     let notRenderedNbr = 1;
@@ -206,6 +212,7 @@ const movingAIs = {
                         mob.target = d;
                         return;
                     } else {
+                        // push invalid drc to queue to later getSecondBestDirections based on it
                         drcQueue.push(d);
                         excluded.push(currentDrc);
                     }

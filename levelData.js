@@ -1,6 +1,5 @@
 // "w" is mapped to "", which means wall, "." is mapped to middle dot
 // all characters' special meaning can be escaped using preceding "e"
-// (except the "doorway" characters)
 
 const levelData = `
 Village

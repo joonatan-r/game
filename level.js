@@ -82,7 +82,7 @@ function createLevels() {
         if (!escaped && Object.keys(levelCharMap).indexOf(c) !== -1) {
             c = levelCharMap[c];
         }
-        if (c === ">" || c === "<" || c === "^") travelCoords.push([yIdx, xIdx]);
+        if (!escaped && (c === ">" || c === "<" || c === "^")) travelCoords.push([yIdx, xIdx]);
         level[yIdx][xIdx] = c;
         xIdx++;
         escaped = false;
