@@ -5,6 +5,10 @@
 
 // all coords are given as (y,x)
 
+const TURN_BASED = true;
+let turnInterval = null;
+!TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
+
 // "global" variables
 
 const area = [];
@@ -17,10 +21,36 @@ let level = levels[levels.currentLvl].level;
 
 // end "global" variables
 
-const TURN_BASED = true;
-let turnInterval = null;
-!TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
-
+const story = {
+    "Shady guy": {
+        1: function() {
+            items.push({
+                name: "some money",
+                symbol: "$",
+                hidden: true,
+                pos: [0, 4]
+            });
+        }
+    },
+    "Some guy": {
+        1: function() {
+            for (let mob of levels["Ukko's House"].mobs) {
+                if (mob.name === "Ukko") {
+                    mob.state = 0;
+                    break;
+                }
+            }
+        },
+        2: function() {
+            for (let mob of levels["Ukko's House"].mobs) {
+                if (mob.name === "Ukko") {
+                    mob.state = 0;
+                    break;
+                }
+            }
+        }
+    }
+};
 const table = document.getElementById("table");
 const info = document.getElementById("info");
 const status = document.getElementById("status");
@@ -38,25 +68,11 @@ let customRenders = []; // for "animations" to not get erased
 let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let blockAutoTravel = false;
-
-// initialize showDialog
-
-showDialog.removeListeners = removeListeners;
+let textFile = null;
+let prevMobStates = {};
+showDialog.removeListeners = removeListeners; // initialize showDialog
 showDialog.addListeners = addListeners;
 showDialog.msgHistory = msgHistory;
-
-const story = {
-    "Shady guy": {
-        1: () => {
-            items.push({
-                name: "some money",
-                symbol: "$",
-                hidden: true,
-                pos: [0, 4]
-            });
-        }
-    }
-};
 
 initialize(table, levels, level, area, areaCache, rendered, edges, memorized);
 addMobs(levels, mobs);
@@ -79,9 +95,95 @@ levels["Wilderness"].items.push({
     hidden: true,
     pos: [3, 8]
 });
-addListeners();
+addListeners(); // listeners that may get disabled at certain times
 updateInfo();
 renderAll(player, items, mobs, customRenders);
+
+// listeners that won't be removed
+
+document.addEventListener("mousemove", e => {
+    if (clickListener.actionType === "chooseDrc") {
+        const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
+        const x = e.x - (rect.left + rect.width / 2);
+        const y = e.y - (rect.top + rect.height / 2);
+        const drc = pixelCoordsToDrc(y, x);
+        document.body.style.cursor = {
+            "1": "sw-resize",
+            "2": "s-resize",
+            "3": "se-resize",
+            "4": "w-resize",
+            "6": "e-resize",
+            "7": "nw-resize",
+            "8": "n-resize",
+            "9": "ne-resize",
+        }[drc];
+    } else if (document.body.style.cursor !== "default") {
+        document.body.style.cursor = "default";
+    }
+});
+document.getElementById("save").addEventListener("click", () => {
+    const link = document.createElement("a");
+    const saveData = {
+        levels: levels,
+        player: player,
+        timeTracker: timeTracker,
+        mobs: mobs,
+        items: items,
+        memorized: memorized
+    };
+    link.setAttribute("download", "save.json");
+    link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
+            if (typeof val === "function") {
+                return "" + val; // store functions as string
+            }
+            const idx = referenced.indexOf(val);
+
+            if (idx !== -1) {
+                return "refTo " + idx;
+            }
+            return val;
+        })
+            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(referenced) + "}"
+            // objects that have multiple references to them are stored in "referenced", no replacer here
+    );
+    document.body.appendChild(link);
+    window.requestAnimationFrame(() => {
+        const event = new MouseEvent("click");
+        link.dispatchEvent(event);
+        document.body.removeChild(link);
+    });
+});
+document.getElementById("inputFile").addEventListener("change", function() {
+    const fr = new FileReader();
+    fr.onload = () => {
+        const refs = [];
+        const loadData = JSON.parse(fr.result, function(key, val) {
+            if (typeof val === "string" && val.startsWith("function")) {
+                // convert string representations of functions back to functions
+                return eval("(" + val + ")");
+            }
+            if (typeof val === "string" && val.startsWith("refTo ")) {
+                refs.push({ obj: this, key: key });
+            }
+            return val;
+        });
+
+        for (let ref of refs) {
+            const idx = ref.obj[ref.key].split(" ")[1];
+            ref.obj[ref.key] = loadData.referenced[idx]; // replace references with actual objects
+        }
+        levels = loadData.levels;
+        level = levels[levels.currentLvl].level;
+        player = loadData.player;
+        timeTracker = loadData.timeTracker;
+        mobs = loadData.mobs;
+        items = loadData.items;
+        memorized = loadData.memorized;
+        updateInfo();
+        renderAll(player, items, mobs, customRenders);
+    };
+    fr.readAsText(this.files[0]);
+});
 
 function posIsValid(pos) {
     if (pos.length !== 2) return false;
@@ -126,7 +228,17 @@ function processTurn() {
     if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
     updateInfo();
 
+    let mobStates = {};
+
     for (let mob of mobs) {
+        mobStates[mob.name] = mob.state;
+
+        if (typeof prevMobStates[mob.name] !== "undefined" 
+            && prevMobStates[mob.name] !== mob.state
+            && story[mob.name] && story[mob.name][mob.state]
+        ) {
+            story[mob.name][mob.state]();
+        }
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
             gameOver(mob.name + " hits you! You die...");
             break;
@@ -139,6 +251,7 @@ function processTurn() {
             mob.pos = mob.target.slice();
         }
     }
+    prevMobStates = mobStates;
     renderAll(player, items, mobs, customRenders);
 
     if (!levels[levels.currentLvl].spawnsHostiles) return;
@@ -251,14 +364,7 @@ function interact(drc) {
             return;
     }
     for (let mob of mobs) {
-        if (coordsEq(interactPos, mob.pos) && mob.talk) {
-            let mobState = mob.state;
-            mob.talk(showDialog, showMsg);
-
-            if (mobState !== mob.state && story[mob.name] && story[mob.name][mob.state]) {
-                story[mob.name][mob.state]();
-            }
-        }
+        if (coordsEq(interactPos, mob.pos) && mob.talk) mob.talk(showDialog, showMsg);
     }
     for (let item of items) {
         if (coordsEq(interactPos, item.pos) && item.onInteract) {
@@ -654,8 +760,6 @@ function refer(obj) {
     return obj;
 }
 
-let textFile = null;
-
 function makeTextFile(text) {
     const data = new Blob([text], {type: "text/plain"});
 
@@ -665,87 +769,3 @@ function makeTextFile(text) {
     textFile = window.URL.createObjectURL(data);
     return textFile;
 }
-
-document.addEventListener("mousemove", e => {
-    if (clickListener.actionType === "chooseDrc") {
-        const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
-        const x = e.x - (rect.left + rect.width / 2);
-        const y = e.y - (rect.top + rect.height / 2);
-        const drc = pixelCoordsToDrc(y, x);
-        document.body.style.cursor = {
-            "1": "sw-resize",
-            "2": "s-resize",
-            "3": "se-resize",
-            "4": "w-resize",
-            "6": "e-resize",
-            "7": "nw-resize",
-            "8": "n-resize",
-            "9": "ne-resize",
-        }[drc];
-    } else if (document.body.style.cursor !== "default") {
-        document.body.style.cursor = "default";
-    }
-});
-document.getElementById("save").addEventListener("click", () => {
-    const link = document.createElement("a");
-    const saveData = {
-        levels: levels,
-        player: player,
-        timeTracker: timeTracker,
-        mobs: mobs,
-        items: items,
-        memorized: memorized
-    };
-    link.setAttribute("download", "save.json");
-    link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
-            if (typeof val === "function") {
-                return "" + val; // store functions as string
-            }
-            const idx = referenced.indexOf(val);
-
-            if (idx !== -1) {
-                return "refTo " + idx;
-            }
-            return val;
-        })
-            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(referenced) + "}"
-            // objects that have multiple references to them are stored in "referenced", no replacer here
-    );
-    document.body.appendChild(link);
-    window.requestAnimationFrame(() => {
-        const event = new MouseEvent("click");
-        link.dispatchEvent(event);
-        document.body.removeChild(link);
-    });
-});
-document.getElementById("inputFile").addEventListener("change", function() {
-    const fr = new FileReader();
-    fr.onload = () => {
-        const refs = [];
-        const loadData = JSON.parse(fr.result, function(key, val) {
-            if (typeof val === "string" && val.startsWith("function")) {
-                // convert string representations of functions back to functions
-                return eval("(" + val + ")");
-            }
-            if (typeof val === "string" && val.startsWith("refTo ")) {
-                refs.push({ obj: this, key: key });
-            }
-            return val;
-        });
-
-        for (let ref of refs) {
-            const idx = ref.obj[ref.key].split(" ")[1];
-            ref.obj[ref.key] = loadData.referenced[idx]; // replace references with actual objects
-        }
-        levels = loadData.levels;
-        level = levels[levels.currentLvl].level;
-        player = loadData.player;
-        timeTracker = loadData.timeTracker;
-        mobs = loadData.mobs;
-        items = loadData.items;
-        memorized = loadData.memorized;
-        updateInfo();
-        renderAll(player, items, mobs, customRenders);
-    };
-    fr.readAsText(this.files[0]);
-});
