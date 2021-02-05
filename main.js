@@ -69,7 +69,6 @@ let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let blockAutoTravel = false;
 let textFile = null;
-let prevMobStates = {};
 showDialog.removeListeners = removeListeners; // initialize showDialog
 showDialog.addListeners = addListeners;
 showDialog.msgHistory = msgHistory;
@@ -205,6 +204,12 @@ function posIsValid(pos) {
     return true;
 }
 
+function onMobStateChange(mob) {
+    if (story[mob.name] && story[mob.name][mob.state]) {
+        story[mob.name][mob.state]();
+    }
+}
+
 function gameOver(msg) {
     showMsg(msg);
     !TURN_BASED && clearInterval(turnInterval);
@@ -228,17 +233,7 @@ function processTurn() {
     if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
     updateInfo();
 
-    let mobStates = {};
-
     for (let mob of mobs) {
-        mobStates[mob.name] = mob.state;
-
-        if (typeof prevMobStates[mob.name] !== "undefined" 
-            && prevMobStates[mob.name] !== mob.state
-            && story[mob.name] && story[mob.name][mob.state]
-        ) {
-            story[mob.name][mob.state]();
-        }
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
             gameOver(mob.name + " hits you! You die...");
             break;
@@ -251,7 +246,6 @@ function processTurn() {
             mob.pos = mob.target.slice();
         }
     }
-    prevMobStates = mobStates;
     renderAll(player, items, mobs, customRenders);
 
     if (!levels[levels.currentLvl].spawnsHostiles) return;
@@ -364,7 +358,7 @@ function interact(drc) {
             return;
     }
     for (let mob of mobs) {
-        if (coordsEq(interactPos, mob.pos) && mob.talk) mob.talk(showDialog, showMsg);
+        if (coordsEq(interactPos, mob.pos) && mob.talk) mob.talk(showDialog, showMsg, onMobStateChange);
     }
     for (let item of items) {
         if (coordsEq(interactPos, item.pos) && item.onInteract) {

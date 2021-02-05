@@ -59,17 +59,17 @@ const Shady_Guy = {
     isHostile: false,
     state: 0,
     pos: [23, 30],
-    talk: function(showDialog, showMsg) {
+    talk: function(showDialog, showMsg, onStateChange) {
         switch (this.state) {
             case 0:
                 showMsg("[" + this.name + "]: Hey man, I heard there's some money hidden behind Ukko's house!");
                 this.state = 1;
+                onStateChange(this);
                 break;
             case 1:
                 showMsg("[" + this.name + "]: Did you check the place?");
                 break;
         }
-
     },
     calcTarget: function() { movingAIs.static(this) }
 };
@@ -108,14 +108,18 @@ const Some_Guy = {
     isHostile: false,
     state: 0,
     pos: [13, 18],
-    talk: function(showDialog, showMsg) {
+    talk: function(showDialog, showMsg, onStateChange) {
         switch (this.state) {
             case 0:
                 showDialog("[" + this.name + "]: Hello there!\n\nYour answer:", 
                         ["Hi!", "General Kenobi!", "[Don't answer]"], 
                         idx => {
                             this.state = { 0: 1, 1: 2, 2: 0 }[idx];
-                            if (this.state !== 0) this.talk(showDialog, showMsg);
+
+                            if (this.state !== 0) {
+                                onStateChange(this);
+                                this.talk(showDialog, showMsg);
+                            }
                         }
                 );
                 break;
