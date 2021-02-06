@@ -492,14 +492,14 @@ function action(key, ctrl) {
             for (let item of player.inventory) contentNames.push(item.name);
 
             if (contentNames.length !== 0) {
-                showDialog("Contents of your inventory:", contentNames, idx => {
-                    showDialog("What do you want to do with \"" + contentNames[idx] + "\"?", ["Drop"], idx => {
-                        switch (idx) {
+                showDialog("Contents of your inventory:", contentNames, itemIdx => {
+                    showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", ["Drop"], actionIdx => {
+                        switch (actionIdx) {
                             case 0:
-                                let item = player.inventory.splice(idx, 1)[0];
+                                let item = player.inventory.splice(itemIdx, 1)[0];
                                 item.pos = player.pos.slice();
                                 items.push(item);
-                                showMsg("You drop \"" + contentNames[idx] + "\".");
+                                showMsg("You drop \"" + contentNames[itemIdx] + "\".");
                                 processTurn();
                                 break;
                         }
