@@ -1,4 +1,4 @@
-// createLevels, initialize, changeLvl, infoTable from level.js
+// createLevels, initialize, infoTable from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
 // trySpawnMob, addMobs from mobs.js
 // showDialog from UI.js
@@ -16,9 +16,9 @@ const area = [];
 const areaCache = [];
 const rendered = [];
 const edges = [];
-let memorized = [];
 let levels = createLevels();
 let level = levels[levels.currentLvl].level;
+let memorized = levels[levels.currentLvl].memorized;
 
 // end "global" variables
 
@@ -33,8 +33,8 @@ timeTracker.turnsUntilShoot = 0;
 let player = {};
 player.inventory = [];
 player.pos = [10, 13];
-let mobs = [];
-let items = [];
+let mobs = levels[levels.currentLvl].mobs;
+let items = levels[levels.currentLvl].items;
 let customRenders = []; // for "animations" to not get erased
 let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
@@ -104,10 +104,7 @@ document.getElementById("save").addEventListener("click", () => {
     const saveData = {
         levels: levels,
         player: player,
-        timeTracker: timeTracker,
-        mobs: mobs,
-        items: items,
-        memorized: memorized
+        timeTracker: timeTracker
     };
     link.setAttribute("download", "save.json");
     link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
@@ -152,11 +149,11 @@ document.getElementById("inputFile").addEventListener("change", function() {
         }
         levels = loadData.levels;
         level = levels[levels.currentLvl].level;
+        mobs = levels[levels.currentLvl].mobs;
+        items = levels[levels.currentLvl].items;
+        memorized = levels[levels.currentLvl].memorized;
         player = loadData.player;
         timeTracker = loadData.timeTracker;
-        mobs = loadData.mobs;
-        items = loadData.items;
-        memorized = loadData.memorized;
         updateInfo();
         renderAll(player, items, mobs, customRenders);
     };
@@ -368,25 +365,7 @@ function movePlayer(newPos) {
     player.pos = newPos;
 
     if (level[player.pos[0]][player.pos[1]] === "^") {
-        const tps = levels[levels.currentLvl].travelPoints;
-
-        for (let lvl of Object.keys(tps)) {
-            let idx = 0; // for tracking which point in lvl to travel to if several
-
-            for (let coords of tps[lvl]) {
-                if (coordsEq(coords, player.pos)) {
-                    const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items, memorized);
-                    level = retObj.level;
-                    player.pos = retObj.pos.slice();
-                    mobs = retObj.mobs;
-                    items = retObj.items;
-                    memorized = retObj.memorized;
-                    levels.currentLvl = lvl;
-                    break;
-                }
-                idx++;
-            }
-        }
+        changeLvl();
     }
     for (let i = 0; i < items.length; i++) {
         if (coordsEq(player.pos, items[i].pos)) {
@@ -414,6 +393,27 @@ function movePlayer(newPos) {
             }
             showMsg(msg);
             return;
+        }
+    }
+}
+
+function changeLvl() {
+    const tps = levels[levels.currentLvl].travelPoints;
+
+    for (let lvl of Object.keys(tps)) {
+        let idx = 0; // for tracking which point in lvl to travel to if several
+
+        for (let coords of tps[lvl]) {
+            if (coordsEq(coords, player.pos)) {
+                level = levels[lvl].level;
+                player.pos = levels[lvl].travelPoints[levels.currentLvl][idx].slice();
+                mobs = levels[lvl].mobs;
+                items = levels[lvl].items;
+                memorized = levels[lvl].memorized;
+                levels.currentLvl = lvl;
+                return;
+            }
+            idx++;
         }
     }
 }
@@ -446,25 +446,7 @@ function action(key, ctrl) {
             break;
         case "Enter":
             if (level[player.pos[0]][player.pos[1]] === ">" || level[player.pos[0]][player.pos[1]] === "<") {
-                const tps = levels[levels.currentLvl].travelPoints;
-
-                for (let lvl of Object.keys(tps)) {
-                    let idx = 0;
-        
-                    for (let coords of tps[lvl]) {
-                        if (coordsEq(coords, player.pos)) {
-                            const retObj = changeLvl(levels.currentLvl, lvl, idx, mobs, items, memorized);
-                            level = retObj.level;
-                            player.pos = retObj.pos.slice();
-                            mobs = retObj.mobs;
-                            items = retObj.items;
-                            memorized = retObj.memorized;
-                            levels.currentLvl = lvl;
-                            break;
-                        }
-                        idx++;
-                    }
-                }
+                changeLvl();
             } else {
                 return;
             }

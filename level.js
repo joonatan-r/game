@@ -131,20 +131,6 @@ function initialize(table, levels, level, area, areaCache, rendered, edges, memo
     }
 }
 
-function changeLvl(fromLvl, toLvl, pointIdx, mobs, items, memorized) {
-    levels[fromLvl].mobs = mobs;
-    levels[fromLvl].items = items;
-    levels[fromLvl].memorized = memorized;
-
-    return {
-        level: levels[toLvl].level,
-        pos: levels[toLvl].travelPoints[fromLvl][pointIdx],
-        mobs: levels[toLvl].mobs,
-        items: levels[toLvl].items,
-        memorized: levels[toLvl].memorized
-    };
-}
-
 const infoTable = {
     "": "[ ]: A wall",
     " ": "[ ]: A wall",
