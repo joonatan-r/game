@@ -2,6 +2,7 @@
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
 // trySpawnMob, addMobs from mobs.js
 // showDialog from UI.js
+// storyEvents from story.js
 
 // all coords are given as (y,x)
 
@@ -21,61 +22,6 @@ let level = levels[levels.currentLvl].level;
 
 // end "global" variables
 
-const storyEvents = {
-    stateChange: {
-        "Shady guy": {
-            1: function() {
-                items.push({
-                    name: "some money",
-                    symbol: "$",
-                    hidden: true,
-                    pos: [0, 4]
-                });
-            }
-        },
-        "Some guy": {
-            1: function() {
-    
-                // TODO: should state change story event be fired when it's changed here in an event?
-    
-                for (let mob of levels["Ukko's House"].mobs) {
-                    if (mob.name === "Ukko") {
-                        mob.state = 0;
-                        break;
-                    }
-                }
-            },
-            2: function() {
-                for (let mob of levels["Ukko's House"].mobs) {
-                    if (mob.name === "Ukko") {
-                        mob.state = 0;
-                        break;
-                    }
-                }
-            }
-        }
-    },
-    beforeInteract: {
-        "a chest": function() {
-            let playerHasKey = false;
-
-            for (let item of player.inventory) {
-                if (item.name === "a key") {
-                    playerHasKey = true;
-                    break;
-                }
-            }
-            if (playerHasKey) {
-                for (let item of items) {
-                    if (item.name === "a chest") {
-                        item.state = 1;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-};
 const table = document.getElementById("table");
 const info = document.getElementById("info");
 const status = document.getElementById("status");
@@ -238,6 +184,12 @@ function posIsValid(pos) {
 }
 
 function tryFireStoryEvent(type, name, val) {
+    storyEvents.items = items;
+    storyEvents.mobs = mobs;
+    storyEvents.levels = levels;
+    storyEvents.level = level;
+    storyEvents.player = player;
+
     if (storyEvents[type] && storyEvents[type][name]) {
         if (typeof val === "undefined") {
             storyEvents[type][name]();
