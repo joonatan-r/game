@@ -12,8 +12,8 @@ function createMobOfType(mobType) {
     };
 }
 
-function addMobs(levels, mobs) {
-    mobs.push(Shady_Guy);
+function addMobs(levels) {
+    levels["Village"].mobs.push(Shady_Guy);
     levels["Ukko's House"].mobs.push(Ukko);
     levels["Random House"].mobs.push(Some_Guy);
 }

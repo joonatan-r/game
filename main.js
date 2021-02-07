@@ -1,5 +1,6 @@
 // createLevels, initialize, infoTable from level.js
-// bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, pixelCoordsToDrc from util.js
+// bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, 
+// pixelCoordsToDrc, makeTextFile from util.js
 // trySpawnMob, addMobs from mobs.js
 // showDialog from UI.js
 // storyEvents from story.js
@@ -39,13 +40,12 @@ let customRenders = []; // for "animations" to not get erased
 let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let blockAutoTravel = false;
-let textFile = null;
 showDialog.removeListeners = removeListeners; // initialize showDialog
 showDialog.addListeners = addListeners;
 showDialog.msgHistory = msgHistory;
 
-initialize(table, levels, level, area, areaCache, rendered, edges, memorized);
-addMobs(levels, mobs);
+initialize(table, levels, area, areaCache, rendered, edges);
+addMobs(levels);
 items.push({
     name: "a chest",
     symbol: "(",
@@ -123,8 +123,7 @@ document.getElementById("save").addEventListener("click", () => {
     );
     document.body.appendChild(link);
     window.requestAnimationFrame(() => {
-        const event = new MouseEvent("click");
-        link.dispatchEvent(event);
+        link.dispatchEvent(new MouseEvent("click"));
         document.body.removeChild(link);
     });
 });
@@ -365,7 +364,7 @@ function movePlayer(newPos) {
     player.pos = newPos;
 
     if (level[player.pos[0]][player.pos[1]] === "^") {
-        changeLvl();
+        tryChangeLvl();
     }
     for (let i = 0; i < items.length; i++) {
         if (coordsEq(player.pos, items[i].pos)) {
@@ -397,7 +396,7 @@ function movePlayer(newPos) {
     }
 }
 
-function changeLvl() {
+function tryChangeLvl() {
     const tps = levels[levels.currentLvl].travelPoints;
 
     for (let lvl of Object.keys(tps)) {
@@ -446,7 +445,7 @@ function action(key, ctrl) {
             break;
         case "Enter":
             if (level[player.pos[0]][player.pos[1]] === ">" || level[player.pos[0]][player.pos[1]] === "<") {
-                changeLvl();
+                tryChangeLvl();
             } else {
                 return;
             }
@@ -469,7 +468,8 @@ function action(key, ctrl) {
 
             if (contentNames.length !== 0) {
                 showDialog("Contents of your inventory:", contentNames, itemIdx => {
-                    showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", ["Drop"], actionIdx => {
+                    showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", 
+                               ["Drop"], actionIdx => {
                         switch (actionIdx) {
                             case 0:
                                 let item = player.inventory.splice(itemIdx, 1)[0];
@@ -728,14 +728,4 @@ function removeListeners() {
 function refer(obj) {
     if (referenced.indexOf(obj) === -1) referenced.push(obj);
     return obj;
-}
-
-function makeTextFile(text) {
-    const data = new Blob([text], {type: "text/plain"});
-
-    if (textFile !== null) {
-        window.URL.revokeObjectURL(textFile);
-    }
-    textFile = window.URL.createObjectURL(data);
-    return textFile;
 }

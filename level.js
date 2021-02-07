@@ -92,21 +92,21 @@ function createLevels() {
     return levels;
 }
 
-function initialize(table, levels, level, area, areaCache, rendered, edges, memorized) {
+function initialize(table, levels, area, areaCache, rendered, edges) {
+    let level = levels[levels.currentLvl].level;
+
     for (let i = 0; i < level.length; i++) {
         const tr = document.createElement("tr");
         table.appendChild(tr);
         area.push([]);
         areaCache.push([]);
         rendered.push([]);
-        memorized.push([]);
       
         for (let j = 0; j < level[0].length; j++) {
             if (i === 0 || j === 0 || i === level.length - 1 || j === level[0].length - 1) {
                 edges.push([i, j]);
             }
             rendered[i][j] = false;
-            memorized[i][j] = false;
             const td = document.createElement("td");
             tr.appendChild(td);
             area[i][j] = td;
@@ -118,16 +118,13 @@ function initialize(table, levels, level, area, areaCache, rendered, edges, memo
     for (let lvl of Object.keys(levels)) {
         if (lvl === "currentLvl") continue;
     
-        let tempMem = [];
-    
         for (let i = 0; i < level.length; i++) {
-            tempMem.push([]);
+            levels[lvl].memorized.push([]);
     
             for (let j = 0; j < level[0].length; j++) {
-                tempMem[i][j] = false;
+                levels[lvl].memorized[i][j] = false;
             }
         }
-        levels[lvl].memorized = tempMem;
     }
 }
 

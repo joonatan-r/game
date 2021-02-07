@@ -57,6 +57,18 @@ function bresenham(y0, x0, y1, x1, onNewPos) {
     }
 }
 
+makeTextFile.textFile = null;
+
+function makeTextFile(text) {
+    const data = new Blob([text], {type: "text/plain"});
+
+    if (makeTextFile.textFile !== null) {
+        window.URL.revokeObjectURL(makeTextFile.textFile);
+    }
+    makeTextFile.textFile = window.URL.createObjectURL(data);
+    return makeTextFile.textFile;
+}
+
 function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
