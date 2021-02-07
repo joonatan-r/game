@@ -154,6 +154,7 @@ const infoTable = {
     "some money": "[$]: Some money",
     "a weird object": "[?]: A strange object",
     "a chest": "[(]: A chest",
+    "a key": "[\u00A3]: A key",
     "Ukko": "[@]: Ukko, a peaceful human",
     "Some guy": "[@]: Some guy, a peaceful human",
     "Shady guy": "[@]: Shady guy, a peaceful human",

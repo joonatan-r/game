@@ -21,31 +21,56 @@ let level = levels[levels.currentLvl].level;
 
 // end "global" variables
 
-const story = {
-    "Shady guy": {
-        1: function() {
-            items.push({
-                name: "some money",
-                symbol: "$",
-                hidden: true,
-                pos: [0, 4]
-            });
+const storyEvents = {
+    stateChange: {
+        "Shady guy": {
+            1: function() {
+                items.push({
+                    name: "some money",
+                    symbol: "$",
+                    hidden: true,
+                    pos: [0, 4]
+                });
+            }
+        },
+        "Some guy": {
+            1: function() {
+    
+                // TODO: should state change story event be fired when it's changed here in an event?
+    
+                for (let mob of levels["Ukko's House"].mobs) {
+                    if (mob.name === "Ukko") {
+                        mob.state = 0;
+                        break;
+                    }
+                }
+            },
+            2: function() {
+                for (let mob of levels["Ukko's House"].mobs) {
+                    if (mob.name === "Ukko") {
+                        mob.state = 0;
+                        break;
+                    }
+                }
+            }
         }
     },
-    "Some guy": {
-        1: function() {
-            for (let mob of levels["Ukko's House"].mobs) {
-                if (mob.name === "Ukko") {
-                    mob.state = 0;
+    beforeInteract: {
+        "a chest": function() {
+            let playerHasKey = false;
+
+            for (let item of player.inventory) {
+                if (item.name === "a key") {
+                    playerHasKey = true;
                     break;
                 }
             }
-        },
-        2: function() {
-            for (let mob of levels["Ukko's House"].mobs) {
-                if (mob.name === "Ukko") {
-                    mob.state = 0;
-                    break;
+            if (playerHasKey) {
+                for (let item of items) {
+                    if (item.name === "a chest") {
+                        item.state = 1;
+                        break;
+                    }
                 }
             }
         }
@@ -78,15 +103,23 @@ addMobs(levels, mobs);
 items.push({
     name: "a chest",
     symbol: "(",
-    onInteract: function() {
-        showMsg("You try to loot " + this.name + ".");
-    },
     blocksTravel: true,
-    pos: [9, 22]
+    state: 0,
+    pos: [9, 22],
+    onInteract: function() {
+        switch (this.state) {
+            case 0:
+                showMsg("You try to loot " + this.name + ", but it's locked.");
+                break;
+            case 1:
+                showMsg("You try to loot " + this.name + ", but it's empty.");
+                break;
+        }
+    }
 });
 levels["Wilderness"].items.push({
-    name: "some money",
-    symbol: "$",
+    name: "a key",
+    symbol: "\u00A3",
     pos: [12, 27]
 }, {
     name: "a weird object",
@@ -204,11 +237,17 @@ function posIsValid(pos) {
     return true;
 }
 
-function onMobStateChange(mob) {
-    if (story[mob.name] && story[mob.name][mob.state]) {
-        story[mob.name][mob.state]();
+function tryFireStoryEvent(type, name, val) {
+    if (storyEvents[type] && storyEvents[type][name]) {
+        if (typeof val === "undefined") {
+            storyEvents[type][name]();
+        } else if (storyEvents[type][name][val]) {
+            storyEvents[type][name][val]();
+        }
     }
 }
+
+function onMobStateChange(mob) { tryFireStoryEvent("stateChange", mob.name, mob.state) }
 
 function gameOver(msg) {
     showMsg(msg);
@@ -362,6 +401,7 @@ function interact(drc) {
     }
     for (let item of items) {
         if (coordsEq(interactPos, item.pos) && item.onInteract) {
+            tryFireStoryEvent("beforeInteract", item.name);
             item.onInteract();
         }
     }
@@ -400,6 +440,8 @@ function movePlayer(newPos) {
         if (coordsEq(player.pos, items[i].pos)) {
             let msg = "";
             let severalItems = false;
+
+            // NOTE: currently hidden items won't be found if there are other items "on top"
 
             if (items[i].hidden) {
                 msg += "You find an item! ";
@@ -523,7 +565,7 @@ function action(key, ctrl) {
 
                     for (let j = 0; j < items.length; j++) {
                         if (coordsEq(items[i].pos, items[j].pos) && !items[j].hidden) {
-                            itemsHere.push(items[j]);
+                            itemsHere.push(items[j]); // i is included here
                             itemNames.push(items[j].name);
                             itemIdxs.push(j);
                         }
