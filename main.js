@@ -1,6 +1,7 @@
 // createLevels, initialize, infoTable from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, 
 // pixelCoordsToDrc, makeTextFile from util.js
+// render from render.js
 // trySpawnMob, addMobs from mobs.js
 // showDialog from UI.js
 // storyEvents from story.js
@@ -11,22 +12,14 @@ const TURN_BASED = true;
 let turnInterval = null;
 !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
 
-// "global" variables
-
-const area = [];
-const areaCache = [];
-const rendered = [];
-const edges = [];
-let levels = createLevels();
-let level = levels[levels.currentLvl].level;
-let memorized = levels[levels.currentLvl].memorized;
-
-// end "global" variables
-
 const table = document.getElementById("table");
 const info = document.getElementById("info");
 const status = document.getElementById("status");
 const menu = document.getElementById("clickMenu");
+const area = [];
+const areaCache = [];
+const rendered = [];
+const edges = [];
 const msgHistory = [];
 let timeTracker = {};
 timeTracker.timer = 0;
@@ -34,6 +27,9 @@ timeTracker.turnsUntilShoot = 0;
 let player = {};
 player.inventory = [];
 player.pos = [10, 13];
+let levels = createLevels();
+let level = levels[levels.currentLvl].level;
+let memorized = levels[levels.currentLvl].memorized;
 let mobs = levels[levels.currentLvl].mobs;
 let items = levels[levels.currentLvl].items;
 let customRenders = []; // for "animations" to not get erased
@@ -43,6 +39,10 @@ let blockAutoTravel = false;
 showDialog.removeListeners = removeListeners; // initialize showDialog
 showDialog.addListeners = addListeners;
 showDialog.msgHistory = msgHistory;
+render.area = area; // initialize render
+render.areaCache = areaCache;
+render.rendered = rendered;
+render.edges = edges;
 
 initialize(table, levels, area, areaCache, rendered, edges);
 addMobs(levels);
@@ -75,7 +75,7 @@ levels["Wilderness"].items.push({
 });
 addListeners(); // listeners that may get disabled at certain times
 updateInfo();
-renderAll(player, items, mobs, customRenders);
+render.renderAll(player, levels, customRenders);
 
 // listeners that won't be removed
 
@@ -154,7 +154,7 @@ document.getElementById("inputFile").addEventListener("change", function() {
         player = loadData.player;
         timeTracker = loadData.timeTracker;
         updateInfo();
-        renderAll(player, items, mobs, customRenders);
+        render.renderAll(player, levels, customRenders);
     };
     fr.readAsText(this.files[0]);
 });
@@ -225,7 +225,7 @@ function processTurn() {
             gameOver(mob.name + " hits you! You die...");
             break;
         }
-        mob.calcTarget(posIsValid);
+        mob.calcTarget(posIsValid, level, rendered);
 
         if (mob.isShooter && mob.straightLineToTargetDrc) {
             shoot(mob.pos, mob.straightLineToTargetDrc, true);
@@ -233,12 +233,12 @@ function processTurn() {
             mob.pos = mob.target.slice();
         }
     }
-    renderAll(player, items, mobs, customRenders);
+    render.renderAll(player, levels, customRenders);
 
     if (!levels[levels.currentLvl].spawnsHostiles) return;
     if (timeTracker.timer % 10 !== 0) return;
 
-    let mob = trySpawnMob();
+    let mob = trySpawnMob(level, rendered);
 
     if (mob !== null) {
         mob.huntingTarget = refer(player);
@@ -264,7 +264,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
         case "9":
         case "3":
             while (1) {
-                renderPos(bulletPos, player, items, mobs, customRenders);
+                render.renderPos(bulletPos, player, levels, customRenders);
                 movePosToDrc(bulletPos, drc);
 
                 if (!level[bulletPos[0]] || !level[bulletPos[0]][bulletPos[1]] 
@@ -281,8 +281,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 if (coordsEq(bulletPos, player.pos)) {
                     gameOver("A bullet hits you! You die...");
                     removeByReference(customRenders, obj);
-                    renderPos(bulletPos, player, items, mobs, customRenders);
-                    shotEffect(bulletPos, player, items, mobs, customRenders);
+                    render.renderPos(bulletPos, player, levels, customRenders);
+                    render.shotEffect(bulletPos, player, levels, customRenders);
                     return;
                 }
                 for (let i = 0; i < mobs.length; i++) {
@@ -292,8 +292,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
                         keypressListener.actionType = null;
                         clickListener.actionType = null;
                         removeByReference(customRenders, obj);
-                        renderPos(bulletPos, player, items, mobs, customRenders);
-                        shotEffect(bulletPos, player, items, mobs, customRenders);
+                        render.renderPos(bulletPos, player, levels, customRenders);
+                        render.shotEffect(bulletPos, player, levels, customRenders);
                         !mobIsShooting && processTurn();
                         return;
                     }
@@ -531,7 +531,7 @@ function action(key, ctrl) {
     if (TURN_BASED) {
         processTurn();
     } else {
-        renderAll(player, items, mobs, customRenders);
+        render.renderAll(player, levels, customRenders);
     }
 }
 
@@ -563,7 +563,7 @@ async function autoTravel(coords) {
         if (TURN_BASED) {
             processTurn();
         } else {
-            renderAll(player, items, mobs, customRenders);
+            render.renderAll(player, levels, customRenders);
         }
         await new Promise(r => setTimeout(r, 50));
     }
@@ -684,7 +684,7 @@ function clickListener(e) {
                 if (TURN_BASED) {
                     processTurn();
                 } else {
-                    renderAll(player, items, mobs, customRenders);
+                    render.renderAll(player, levels, customRenders);
                 }
             }
     }

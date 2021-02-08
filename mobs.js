@@ -1,4 +1,3 @@
-// level, rendered from main.js
 // bresenham, coordsEq, getCoordsNextTo, getSecondBestDirections, movePosToDrc, oppositeDrcs from util.js
 
 function createMobOfType(mobType) {
@@ -18,7 +17,7 @@ function addMobs(levels) {
     levels["Random House"].mobs.push(Some_Guy);
 }
 
-function trySpawnMob() {
+function trySpawnMob(level, rendered) {
     let spawnPos = null;
     let notRenderedNbr = 1;
 
@@ -137,9 +136,9 @@ const Make = {
     name: "Make",
     symbol: "M",
     isHostile: true,
-    calcTarget: function(posIsValid) {
+    calcTarget: function(posIsValid, level, rendered) {
         if (rendered[this.pos[0]][this.pos[1]] && this.huntingTarget) { // if player can see mob, mob can see player
-            movingAIs.towardsPos(this, this.huntingTarget.pos, posIsValid);
+            movingAIs.towardsPos(this, this.huntingTarget.pos, posIsValid, level);
         } else {
             movingAIs.random(this, posIsValid);
         }
@@ -150,9 +149,9 @@ const Pekka = {
     symbol: "P",
     isHostile: true,
     isShooter: true,
-    calcTarget: function(posIsValid) {
+    calcTarget: function(posIsValid, level, rendered) {
         if (rendered[this.pos[0]][this.pos[1]] && this.huntingTarget) {
-            movingAIs.towardsStraightLineFromPos(this, this.huntingTarget.pos, posIsValid);
+            movingAIs.towardsStraightLineFromPos(this, this.huntingTarget.pos, posIsValid, level);
         } else {
             movingAIs.static(this);
         }
@@ -187,7 +186,7 @@ const movingAIs = {
             break;
         }
     },
-    towardsPos: (mob, targetPos, posIsValid) => {
+    towardsPos: (mob, targetPos, posIsValid, level) => {
         bresenham(mob.pos[0], mob.pos[1], targetPos[0], targetPos[1], (y, x) => {
             if (coordsEq([y, x], mob.pos)) {
                 return "ok";
@@ -236,7 +235,7 @@ const movingAIs = {
             mob.alreadyVisited = [];
         }
     },
-    towardsStraightLineFromPos: (mob, fromPos, posIsValid) => {
+    towardsStraightLineFromPos: (mob, fromPos, posIsValid, level) => {
         let min = { pos: null, dist: null };
         mob.straightLineToTargetDrc = null;
 
@@ -268,7 +267,7 @@ const movingAIs = {
             }
         }
         if (min.pos && !coordsEq(mob.pos, min.pos)) {
-            movingAIs.towardsPos(mob, min.pos, posIsValid);
+            movingAIs.towardsPos(mob, min.pos, posIsValid, level);
         } else {
             mob.target = mob.pos.slice();
         }
