@@ -1,14 +1,10 @@
-// coordsEq, getCoordsNextTo, removeByReference from util.js
+// coordsEq, getCoordsNextTo, isWall, removeByReference from util.js
 
 // NOTE: with current implementation, if a memorized level tile is changed, 
 // it would be seen even if it's not rendered
 
 function blocksSight(tile) {
     return tile === "*w" || tile === "*f";
-}
-
-function isWall(tile) {
-    return tile === "*w" || tile === "*f" || tile === "*s";
 }
 
 function getTileToRender(tile) {

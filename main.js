@@ -1,12 +1,14 @@
 // createLevels, initialize, infoTable from level.js
-// bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, 
+// bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
 // pixelCoordsToDrc, makeTextFile from util.js
-// isWall, render from render.js
+// render from render.js
 // trySpawnMob, addMobs from mobs.js
 // showDialog from UI.js
 // storyEvents from story.js
 
 // all coords are given as (y,x)
+
+// TODO fix show info
 
 const TURN_BASED = true;
 let turnInterval = null;

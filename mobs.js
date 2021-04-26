@@ -1,4 +1,4 @@
-// bresenham, coordsEq, getCoordsNextTo, getSecondBestDirections, movePosToDrc, oppositeDrcs from util.js
+// bresenham, coordsEq, getCoordsNextTo, getSecondBestDirections, isWall, movePosToDrc, oppositeDrcs from util.js
 
 function createMobOfType(mobType) {
     return {
@@ -23,14 +23,14 @@ function trySpawnMob(level, rendered) {
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
-            if (!rendered[i][j] && level[i][j] !== "") notRenderedNbr++;
+            if (!rendered[i][j] && !isWall(level[i][j])) notRenderedNbr++;
         }
     }
     for (let i = 0; i < level.length; i++) {
         if (spawnPos) break;
 
         for (let j = 0; j < level[0].length; j++) {
-            if (!rendered[i][j] && level[i][j] !== "" && Math.random() < (1 / notRenderedNbr)) {
+            if (!rendered[i][j] && !isWall(level[i][j]) && Math.random() < (1 / notRenderedNbr)) {
                 spawnPos = [i, j];
                 break;
             }
@@ -250,7 +250,7 @@ const movingAIs = {
                 movePosToDrc(lineDrawPos, drc);
 
                 if (!level[lineDrawPos[0]] || !level[lineDrawPos[0]][lineDrawPos[1]]
-                    || level[lineDrawPos[0]][lineDrawPos[1]] === "") break;
+                    || isWall(level[lineDrawPos[0]][lineDrawPos[1]])) break;
                 if (distanceToMob) prevDistance = distanceToMob;
 
                 // actually squared but doesn't matter

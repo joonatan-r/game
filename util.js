@@ -187,6 +187,10 @@ const oppositeDrcs = {
     "9": "1",
 };
 
+function isWall(tile) {
+    return tile === "*w" || tile === "*f" || tile === "*s";
+}
+
 function getSecondBestDirections(drcs, currentDrc, excluded) {
     const retDrcs = [];
 
