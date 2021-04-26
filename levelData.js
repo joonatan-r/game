@@ -1,4 +1,4 @@
-// "w" is mapped to "", which means wall, "." is mapped to middle dot
+// for special meanings see levelCharMap in level.js
 // all characters' special meaning can be escaped using preceding "e"
 
 const levelData = `

@@ -3,7 +3,9 @@
 function createLevels() {
     const levelCharMap = {
         ".": "\u00B7",
-        "w": ""
+        "w": "*w", // "normal" wall
+        "f": "*f", // "fake" wall
+        "s": "*s" // "see-through" wall
     };
     let levels = { currentLvl: "" };
     let level = [[]];

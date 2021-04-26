@@ -1,7 +1,7 @@
 // createLevels, initialize, infoTable from level.js
 // bresenham, isNextTo, coordsEq, movePosToDrc, removeByReference, 
 // pixelCoordsToDrc, makeTextFile from util.js
-// render from render.js
+// isWall, render from render.js
 // trySpawnMob, addMobs from mobs.js
 // showDialog from UI.js
 // storyEvents from story.js
@@ -172,7 +172,8 @@ function posIsValid(pos) {
         || pos[1] > level[0].length - 1 
         || pos[0] < 0 
         || pos[1] < 0
-        || level[pos[0]][pos[1]] === ""
+        || level[pos[0]][pos[1]] === "*w"
+        || level[pos[0]][pos[1]] === "*s"
     ) {
         return false;
     }
@@ -268,7 +269,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 movePosToDrc(bulletPos, drc);
 
                 if (!level[bulletPos[0]] || !level[bulletPos[0]][bulletPos[1]] 
-                    || level[bulletPos[0]][bulletPos[1]] === ""
+                    || level[bulletPos[0]][bulletPos[1]] === "*w"
                 ) {
                     break;
                 }
@@ -318,6 +319,45 @@ async function shoot(fromPos, drc, mobIsShooting) {
     keypressListener.actionType = null;
     clickListener.actionType = null;
     !mobIsShooting && processTurn();
+}
+
+function melee(drc) {
+    let meleePos = player.pos.slice();
+
+    switch (drc) {
+        case "4":
+        case "6":
+        case "8":
+        case "2":
+        case "7":
+        case "1":
+        case "9":
+        case "3":
+            movePosToDrc(meleePos, drc);
+            break;
+        case "Escape":
+            showMsg("");
+            keypressListener.actionType = null;
+            clickListener.actionType = null;
+            return;
+        default:
+            keypressListener.actionType = "melee";
+            clickListener.actionType = "chooseDrc";
+            return;
+    }
+    processTurn(); // takes an extra turn
+    
+    if (player.dead) return;
+
+    for (let i = 0; i < mobs.length; i++) {
+        if (coordsEq(meleePos, mobs[i].pos)) {
+            showMsg("You hit " + mobs[i].name + "!");
+            mobs.splice(i, 1);
+        }
+    }
+    keypressListener.actionType = null;
+    clickListener.actionType = null;
+    processTurn();
 }
 
 function interact(drc) {
@@ -428,16 +468,16 @@ function action(key, ctrl) {
         case "9":
         case "3":
             let newPos = player.pos.slice();
-            let prevPos;
+            let prevPos = null;
 
             if (ctrl) {
                 while (level[newPos[0]] && level[newPos[0]][newPos[1]] 
-                        && level[newPos[0]][newPos[1]] !== ""
+                        && !isWall(level[newPos[0]][newPos[1]])
                 ) {
                     prevPos = newPos.slice();
                     movePosToDrc(newPos, key);
                 }
-                autoTravel(prevPos); // last ok position
+                prevPos && autoTravel(prevPos); // last ok position
             } else {
                 movePosToDrc(newPos, key);
                 movePlayer(newPos);
@@ -484,6 +524,11 @@ function action(key, ctrl) {
             } else {
                 showMsg("Your inventory is empty.");
             }
+            return;
+        case "r":
+            showMsg("In what direction?");
+            keypressListener.actionType = "melee";
+            clickListener.actionType = "chooseDrc";
             return;
         case "t":
             showMsg("In what direction?");
@@ -545,8 +590,11 @@ async function autoTravel(coords) {
     keypressListener.actionType = "autoMove";
     bresenham(player.pos[0], player.pos[1], coords[0], coords[1], 
             (y, x) => {
+                if (level[y] && isWall(level[y][x])) {
+                    return "stop";
+                }
                 coordsList.push([y, x]);
-                return level[y][x] === "" ? "stop" : "ok";
+                return "ok";
             }
     );
     coordsList.shift(); // first element is the player's start position
@@ -632,6 +680,9 @@ function keypressListener(e) {
         case "shoot":
             shoot(player.pos, e.key);
             break;
+        case "melee":
+            melee(e.key);
+            break;
         case "interact":
             interact(e.key);
             break;
@@ -664,6 +715,9 @@ function clickListener(e) {
             switch (keypressListener.actionType) {
                 case "shoot":
                     shoot(player.pos, drc);
+                    break;
+                case "melee":
+                    melee(drc);
                     break;
                 case "interact":
                     interact(drc);

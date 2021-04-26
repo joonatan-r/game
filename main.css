@@ -24,6 +24,11 @@ td {
     border: solid black 1px;
 }
 
+td > img {
+    max-width:100%;
+    max-height:100%;
+}
+
 p {
     font-size: 23px;
     white-space: pre-wrap;

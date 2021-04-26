@@ -3,6 +3,26 @@
 // NOTE: with current implementation, if a memorized level tile is changed, 
 // it would be seen even if it's not rendered
 
+function blocksSight(tile) {
+    return tile === "*w" || tile === "*f";
+}
+
+function isWall(tile) {
+    return tile === "*w" || tile === "*f" || tile === "*s";
+}
+
+function getTileToRender(tile) {
+    if (Object.keys(tileConversion).indexOf(tile) !== -1) {
+        return tileConversion[tile];
+    }
+    return tile;
+}
+
+const tileConversion = {
+    "*w": "",
+    "*f": "",
+    "*s": ""
+};
 const SHOW_MEMORIZED = true;
 const GRAY_MEMORIZED = true;
 const render = {
@@ -22,11 +42,11 @@ const render = {
         } else if (render.rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
             memorized[posToRender[0]][posToRender[1]] = true;
         } else if (!render.rendered[posToRender[0]][posToRender[1]] && SHOW_MEMORIZED && memorized[posToRender[0]][posToRender[1]]) {
-            render.area[posToRender[0]][posToRender[1]].textContent = level[posToRender[0]][posToRender[1]];
+            render.area[posToRender[0]][posToRender[1]].textContent = getTileToRender(level[posToRender[0]][posToRender[1]]);
             GRAY_MEMORIZED && (render.area[posToRender[0]][posToRender[1]].className = "mem");
             return;
         }
-        render.area[posToRender[0]][posToRender[1]].textContent = level[posToRender[0]][posToRender[1]];
+        render.area[posToRender[0]][posToRender[1]].textContent = getTileToRender(level[posToRender[0]][posToRender[1]]);
         render.area[posToRender[0]][posToRender[1]].className = "";
         render.area[posToRender[0]][posToRender[1]].customProps.infoKeys.unshift(level[posToRender[0]][posToRender[1]]);
     
@@ -38,6 +58,7 @@ const render = {
         }
         if (coordsEq(player.pos, posToRender) && !player.dead) {
             render.area[player.pos[0]][player.pos[1]].textContent = "@";
+            // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./img.jpg\"/>";
             render.area[player.pos[0]][player.pos[1]].className = "player";
             render.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
         }
@@ -70,13 +91,13 @@ const render = {
         for (let coords of render.edges) {
             bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
                 if (render.rendered[y][x]) {
-                    return level[y][x] === "" || level[y][x] === " " ? "stop" : "ok"; // wall blocks sight
+                    return blocksSight(level[y][x]) ? "stop" : "ok";
                 }
-                if (level[y][x] !== render.areaCache[y][x]) render.area[y][x].textContent = level[y][x];
+                if (getTileToRender(level[y][x]) !== render.areaCache[y][x]) render.area[y][x].textContent = getTileToRender(level[y][x]);
     
                 render.area[y][x].customProps.infoKeys.unshift(level[y][x]);
                 render.rendered[y][x] = true;
-                return level[y][x] === "" || level[y][x] === " " ? "stop" : "ok";
+                return blocksSight(level[y][x]) ? "stop" : "ok";
             });
         }
         for (let i = 0; i < level.length; i++) {
@@ -84,7 +105,7 @@ const render = {
                 if (render.rendered[i][j] && !memorized[i][j]) {
                     memorized[i][j] = true;
                 } else if (!render.rendered[i][j] && SHOW_MEMORIZED && memorized[i][j]) {
-                    render.area[i][j].textContent = level[i][j];
+                    render.area[i][j].textContent = getTileToRender(level[i][j]);
                     GRAY_MEMORIZED && (render.area[i][j].className = "mem");
                 } else if (!render.rendered[i][j]) {
                     render.area[i][j].textContent = "";
@@ -99,6 +120,7 @@ const render = {
         }
         if (!player.dead) {
             render.area[player.pos[0]][player.pos[1]].textContent = "@";
+            // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./img.jpg\"/>";
             render.area[player.pos[0]][player.pos[1]].className = "player";
             render.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
         }
@@ -116,32 +138,32 @@ const render = {
     
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
-                if (level[i][j] !== "" && level[i][j] !== " ") {
+                if (!isWall(level[i][j])) {
                     continue;
                 }
                 const classes = ["wall"];
     
                 if (i > 0 && j < level[0].length 
                     && (render.rendered[i - 1][j] || (SHOW_MEMORIZED && memorized[i - 1][j]))
-                    && (level[i - 1][j] !== "" && level[i - 1][j] !== " ")
+                    && !isWall(level[i - 1][j])
                 ) {
                     classes.push("t");
                 }
                 if (i + 1 < level.length && j < level[0].length 
                     && (render.rendered[i + 1][j] || (SHOW_MEMORIZED && memorized[i + 1][j]))
-                    && (level[i + 1][j] !== "" && level[i + 1][j]!== " ")
+                    && !isWall(level[i + 1][j])
                 ) {
                     classes.push("b");
                 }
                 if (i < level.length && j > 0 
                     && (render.rendered[i][j - 1] || (SHOW_MEMORIZED && memorized[i][j - 1]))
-                    && (level[i][j - 1] !== "" && level[i][j - 1] !== " ")
+                    && !isWall(level[i][j - 1])
                 ) {
                     classes.push("l");
                 }
                 if (i < level.length && j + 1 < level[0].length 
                     && (render.rendered[i][j + 1] || (SHOW_MEMORIZED && memorized[i][j + 1]))
-                    && (level[i][j + 1] !== "" && level[i][j + 1] !== " ")
+                    && !isWall(level[i][j + 1])
                 ) {
                     classes.push("r");
                 }
@@ -169,7 +191,6 @@ const render = {
         render.area[shotPos[0] + 1] && render.area[shotPos[0] + 1][shotPos[1] - 1] 
             && (prevSymbols[3] = render.area[shotPos[0] + 1][shotPos[1] - 1].textContent);
         
-        // also doesn't show on walls because then symbol is "" which becomes false
         if (prevSymbols[0]) {
             render.area[shotPos[0] - 1][shotPos[1] - 1].textContent = "\\";
             obj0 = { symbol: "\\", pos: [shotPos[0] - 1, shotPos[1] - 1] };
