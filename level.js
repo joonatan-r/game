@@ -89,7 +89,6 @@ function createLevels() {
         xIdx++;
         escaped = false;
     }
-    levels["Wilderness"].spawnsHostiles = true;
     levels.currentLvl = Object.keys(levels)[1];
     return levels;
 }

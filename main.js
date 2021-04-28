@@ -3,12 +3,13 @@
 // pixelCoordsToDrc, makeTextFile from util.js
 // render from render.js
 // trySpawnMob, addMobs from mobs.js
+// addItems from items.js
 // showDialog from UI.js
 // storyEvents from story.js
 
 // all coords are given as (y,x)
 
-// TODO fix show info
+// TODO improve show info, fix mob towards straight line to ignore see-through walls
 
 const TURN_BASED = true;
 let turnInterval = null;
@@ -48,33 +49,7 @@ render.edges = edges;
 
 initialize(table, levels, area, areaCache, rendered, edges);
 addMobs(levels);
-items.push({
-    name: "a chest",
-    symbol: "(",
-    blocksTravel: true,
-    state: 0,
-    pos: [9, 22],
-    onInteract: function() {
-        switch (this.state) {
-            case 0:
-                showMsg("You try to loot " + this.name + ", but it's locked.");
-                break;
-            case 1:
-                showMsg("You try to loot " + this.name + ", but it's empty.");
-                break;
-        }
-    }
-});
-levels["Wilderness"].items.push({
-    name: "a key",
-    symbol: "\u00A3",
-    pos: [12, 27]
-}, {
-    name: "a weird object",
-    symbol: "?",
-    hidden: true,
-    pos: [3, 8]
-});
+addItems(levels);
 addListeners(); // listeners that may get disabled at certain times
 updateInfo();
 render.renderAll(player, levels, customRenders);
@@ -651,7 +626,11 @@ function selectPos(drc) {
                 msg += "[ ]: An unseen area\n";
             }
             for (let key of infoKeys) {
-                msg += infoTable[key] + "\n";
+                if (typeof infoTable[key] !== "undefined") {
+                    msg += infoTable[key] + "\n";
+                } else {
+                    msg += "No info\n";
+                }
             }
             showMsg(msg);
             break;
@@ -763,7 +742,11 @@ function menuListener(e) {
             msg += "[ ]: An unseen area\n";
         }
         for (let key of e.target.customProps.infoKeys) {
-            msg += infoTable[key] + "\n";
+            if (typeof infoTable[key] !== "undefined") {
+                msg += infoTable[key] + "\n";
+            } else {
+                msg += "No info\n";
+            }
         }
         showMsg(msg);
     };

@@ -15,6 +15,7 @@ function addMobs(levels) {
     levels["Village"].mobs.push(Shady_Guy);
     levels["Ukko's House"].mobs.push(Ukko);
     levels["Random House"].mobs.push(Some_Guy);
+    levels["Wilderness"].spawnsHostiles = true;
 }
 
 function trySpawnMob(level, rendered) {
