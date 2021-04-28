@@ -56,7 +56,7 @@ function createLevels() {
                 mobs: [],
                 items: [],
                 memorized: [],
-                spawnsHostiles: false,
+                spawnDistribution: {},
                 travelPoints: {}
             };
             // NOTE: currently if multiple passages between two lvls, they are always connected
@@ -128,21 +128,3 @@ function initialize(table, levels, area, areaCache, rendered, edges) {
         }
     }
 }
-
-const infoTable = {
-    "": "[ ]: A wall",
-    " ": "[ ]: A wall",
-    "\u00B7": "[\u00B7]: The floor",
-    "^": "[^]: A doorway",
-    "Player": "[@]: You, the player",
-    "some money": "[$]: Some money",
-    "a weird object": "[?]: A strange object",
-    "a chest": "[(]: A chest",
-    "a key": "[\u00A3]: A key",
-    "Ukko": "[@]: Ukko, a peaceful human",
-    "Some guy": "[@]: Some guy, a peaceful human",
-    "Shady guy": "[@]: Shady guy, a peaceful human",
-    "Make": "[M]: Make, a hostile human",
-    "Pekka": "[P]: Pekka, a hostile human shooter",
-    "Jorma": "[J]: Jorma, a hostile human",
-};

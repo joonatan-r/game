@@ -15,12 +15,20 @@ function addMobs(levels) {
     levels["Village"].mobs.push(Shady_Guy);
     levels["Ukko's House"].mobs.push(Ukko);
     levels["Random House"].mobs.push(Some_Guy);
-    levels["Wilderness"].spawnsHostiles = true;
+    levels["Wilderness"].spawnDistribution = {
+        "Make": { mob: Make, prob: 0.2 },
+        "Pekka": { mob: Pekka, prob: 0.2 },
+        "Jorma": { mob: Jorma, prob: 0.6 }
+    };
 }
 
-function trySpawnMob(level, rendered) {
+function trySpawnMob(levels, rendered) {
     let spawnPos = null;
     let notRenderedNbr = 1;
+    let level = levels[levels.currentLvl].level;
+    let spawnDistr = levels[levels.currentLvl].spawnDistribution;
+
+    if (Object.keys(spawnDistr).length === 0) return null;
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
@@ -41,13 +49,15 @@ function trySpawnMob(level, rendered) {
 
     const r = Math.random();
     let mob;
+    let cumulativeProb = 0;
 
-    if (r < 0.2) {
-        mob = createMobOfType(Make);
-    } else if (r > 0.8) {
-        mob = createMobOfType(Pekka);
-    } else {
-        mob = createMobOfType(Jorma);
+    for (let key of Object.keys(spawnDistr)) {
+        cumulativeProb += spawnDistr[key].prob;
+
+        if (r < cumulativeProb) {
+            mob = createMobOfType(spawnDistr[key].mob);
+            break;
+        }  
     }
     mob.pos = spawnPos;
     return mob;

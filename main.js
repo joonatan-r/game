@@ -1,4 +1,5 @@
-// createLevels, initialize, infoTable from level.js
+// infoTable from levelData.js
+// createLevels, initialize from level.js
 // bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
 // pixelCoordsToDrc, makeTextFile from util.js
 // render from render.js
@@ -213,10 +214,9 @@ function processTurn() {
     }
     render.renderAll(player, levels, customRenders);
 
-    if (!levels[levels.currentLvl].spawnsHostiles) return;
     if (timeTracker.timer % 10 !== 0) return;
 
-    let mob = trySpawnMob(level, rendered);
+    let mob = trySpawnMob(levels, rendered);
 
     if (mob !== null) {
         mob.huntingTarget = refer(player);
