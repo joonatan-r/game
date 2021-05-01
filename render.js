@@ -137,7 +137,13 @@ const render = {
                 if (!isWall(level[i][j])) {
                     continue;
                 }
-                const classes = ["wall"];
+                const classes = [];
+
+                if (!blocksSight(level[i][j])) {
+                    classes.push("wall-s");
+                } else {
+                    classes.push("wall");
+                }
     
                 if (i > 0 && j < level[0].length 
                     && (render.rendered[i - 1][j] || (SHOW_MEMORIZED && memorized[i - 1][j]))

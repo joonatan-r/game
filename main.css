@@ -50,12 +50,16 @@ p {
     background-color: #777;
 }
 
+#inputFile {
+    display: none;
+}
+
 .mem {
     color: gray;
 }
 
 .player {
-    border: 1px solid green;
+    border: 1px solid white;
     border-radius: 26px;
 }
 
@@ -77,4 +81,20 @@ p {
 
 .wall.b {
     border-bottom: solid white 1px;
+}
+
+.wall-s.l {
+    border-left: solid gray 1px;
+}
+
+.wall-s.r {
+    border-right: solid gray 1px;
+}
+
+.wall-s.t {
+    border-top: solid gray 1px;
+}
+
+.wall-s.b {
+    border-bottom: solid gray 1px;
 }
