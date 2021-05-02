@@ -51,60 +51,12 @@ render.edges = edges;
 initialize(table, levels, area, areaCache, rendered, edges);
 addMobs(levels);
 addItems(levels);
-addListeners(); // listeners that may get disabled at certain times
+addListeners();
 updateInfo();
 render.renderAll(player, levels, customRenders);
 
-// listeners that won't be removed
+// added separately because never removed
 
-document.addEventListener("mousemove", e => {
-    if (clickListener.actionType === "chooseDrc") {
-        const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
-        const x = e.x - (rect.left + rect.width / 2);
-        const y = e.y - (rect.top + rect.height / 2);
-        const drc = pixelCoordsToDrc(y, x);
-        document.body.style.cursor = {
-            "1": "sw-resize",
-            "2": "s-resize",
-            "3": "se-resize",
-            "4": "w-resize",
-            "6": "e-resize",
-            "7": "nw-resize",
-            "8": "n-resize",
-            "9": "ne-resize",
-        }[drc];
-    } else if (document.body.style.cursor !== "default") {
-        document.body.style.cursor = "default";
-    }
-});
-document.getElementById("save").addEventListener("click", () => {
-    const link = document.createElement("a");
-    const saveData = {
-        levels: levels,
-        player: player,
-        timeTracker: timeTracker
-    };
-    link.setAttribute("download", "save.json");
-    link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
-            if (typeof val === "function") {
-                return "" + val; // store functions as string
-            }
-            const idx = referenced.indexOf(val);
-
-            if (idx !== -1) {
-                return "refTo " + idx;
-            }
-            return val;
-        })
-            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(referenced) + "}"
-            // objects that have multiple references to them are stored in "referenced", no replacer here
-    );
-    document.body.appendChild(link);
-    window.requestAnimationFrame(() => {
-        link.dispatchEvent(new MouseEvent("click"));
-        document.body.removeChild(link);
-    });
-});
 document.getElementById("inputFile").addEventListener("change", function() {
     const fr = new FileReader();
     fr.onload = () => {
@@ -136,6 +88,39 @@ document.getElementById("inputFile").addEventListener("change", function() {
     };
     fr.readAsText(this.files[0]);
 });
+
+function save() {
+    const link = document.createElement("a");
+    const saveData = {
+        levels: levels,
+        player: player,
+        timeTracker: timeTracker
+    };
+    link.setAttribute("download", "save.json");
+    link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
+            if (typeof val === "function") {
+                return "" + val; // store functions as string
+            }
+            const idx = referenced.indexOf(val);
+
+            if (idx !== -1) {
+                return "refTo " + idx;
+            }
+            return val;
+        })
+            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(referenced) + "}"
+            // objects that have multiple references to them are stored in "referenced", no replacer here
+    );
+    document.body.appendChild(link);
+    window.requestAnimationFrame(() => {
+        link.dispatchEvent(new MouseEvent("click"));
+        document.body.removeChild(link);
+    });
+}
+
+function load() {
+    document.getElementById("inputFile").click();
+}
 
 function posIsValid(pos) {
     if (pos.length !== 2) return false;
@@ -467,6 +452,18 @@ function action(key, ctrl) {
                 return;
             }
             break;
+        case "Escape":
+            showDialog("Menu", ["Resume", "Save", "Load"], idx => {
+                switch (idx) {
+                    case 1:
+                        save();
+                        break;
+                    case 2:
+                        load();
+                        break;
+                }
+            }, true, true);
+            return;
         case "f":
             if (timeTracker.turnsUntilShoot === 0) {
                 timeTracker.turnsUntilShoot = 10;
@@ -655,7 +652,7 @@ function showMsg(msg) {
 }
 
 function keypressListener(e) {
-    if ("12346789fhit,".indexOf(e.key) !== -1) showMsg("");
+    if ("12346789".indexOf(e.key) !== -1) showMsg("");
 
     switch (keypressListener.actionType) {
         case "shoot":
@@ -752,16 +749,39 @@ function menuListener(e) {
     };
 }
 
+function mouseStyleListener(e) {
+    if (clickListener.actionType === "chooseDrc") {
+        const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
+        const x = e.x - (rect.left + rect.width / 2);
+        const y = e.y - (rect.top + rect.height / 2);
+        const drc = pixelCoordsToDrc(y, x);
+        document.body.style.cursor = {
+            "1": "sw-resize",
+            "2": "s-resize",
+            "3": "se-resize",
+            "4": "w-resize",
+            "6": "e-resize",
+            "7": "nw-resize",
+            "8": "n-resize",
+            "9": "ne-resize",
+        }[drc];
+    } else if (document.body.style.cursor !== "default") {
+        document.body.style.cursor = "default";
+    }
+}
+
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
     document.addEventListener("click", clickListener);
     document.addEventListener("contextmenu", menuListener);
+    document.addEventListener("mousemove", mouseStyleListener);
 }
 
 function removeListeners() {
     document.removeEventListener("keydown", keypressListener);
     document.removeEventListener("click", clickListener);
     document.removeEventListener("contextmenu", menuListener);
+    document.removeEventListener("mousemove", mouseStyleListener);
 }
 
 function refer(obj) {
