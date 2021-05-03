@@ -10,7 +10,8 @@
 
 // all coords are given as (y,x)
 
-// TODO improve show info, fix mob towards straight line to ignore see-through walls
+// TODO wall rendering to renderPos, improve show info, 
+// fix mob towards straight line to ignore see-through walls
 
 const TURN_BASED = true;
 let turnInterval = null;
@@ -47,16 +48,11 @@ render.area = area; // initialize render
 render.areaCache = areaCache;
 render.rendered = rendered;
 render.edges = edges;
-
 initialize(table, levels, area, areaCache, rendered, edges);
 addMobs(levels);
 addItems(levels);
 addListeners();
-updateInfo();
-render.renderAll(player, levels, customRenders);
-
 // added separately because never removed
-
 document.getElementById("inputFile").addEventListener("change", function() {
     const fr = new FileReader();
     fr.onload = () => {
@@ -87,7 +83,19 @@ document.getElementById("inputFile").addEventListener("change", function() {
         render.renderAll(player, levels, customRenders);
     };
     fr.readAsText(this.files[0]);
+    this.value = null;
 });
+showDialog("Start", ["New game", "Load game"], idx => {
+    switch (idx) {
+        case 0:
+            updateInfo();
+            render.renderAll(player, levels, customRenders);
+            break;
+        case 1:
+            load();
+            break;
+    }
+}, false, true);
 
 function save() {
     const link = document.createElement("a");

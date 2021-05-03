@@ -14,6 +14,16 @@ function getTileToRender(tile) {
     return tile;
 }
 
+function addWall(i, j, currentTile, addCallback) {
+    if (level[i] && (typeof level[i][j] !== "undefined")
+        && (render.rendered[i][j] || (SHOW_MEMORIZED && memorized[i][j]))
+        && (!isWall(level[i][j]) 
+        || (blocksSight(currentTile) && !blocksSight(level[i][j])))
+    ) {
+        addCallback();
+    }
+}
+
 const tileConversion = {
     "*w": "",
     "*f": "",
@@ -144,31 +154,10 @@ const render = {
                 } else {
                     classes.push("wall");
                 }
-    
-                if (i > 0 && j < level[0].length 
-                    && (render.rendered[i - 1][j] || (SHOW_MEMORIZED && memorized[i - 1][j]))
-                    && !isWall(level[i - 1][j])
-                ) {
-                    classes.push("t");
-                }
-                if (i + 1 < level.length && j < level[0].length 
-                    && (render.rendered[i + 1][j] || (SHOW_MEMORIZED && memorized[i + 1][j]))
-                    && !isWall(level[i + 1][j])
-                ) {
-                    classes.push("b");
-                }
-                if (i < level.length && j > 0 
-                    && (render.rendered[i][j - 1] || (SHOW_MEMORIZED && memorized[i][j - 1]))
-                    && !isWall(level[i][j - 1])
-                ) {
-                    classes.push("l");
-                }
-                if (i < level.length && j + 1 < level[0].length 
-                    && (render.rendered[i][j + 1] || (SHOW_MEMORIZED && memorized[i][j + 1]))
-                    && !isWall(level[i][j + 1])
-                ) {
-                    classes.push("r");
-                }
+                addWall(i + 1, j, level[i][j], () => classes.push("b"));
+                addWall(i - 1, j, level[i][j], () => classes.push("t"));
+                addWall(i, j - 1, level[i][j], () => classes.push("l"));
+                addWall(i, j + 1, level[i][j], () => classes.push("r"));
                 render.area[i][j].classList.add(...classes);
             }
         }
