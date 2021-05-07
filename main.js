@@ -10,8 +10,7 @@
 
 // all coords are given as (y,x)
 
-// TODO wall rendering to renderPos, improve show info, 
-// fix mob towards straight line to ignore see-through walls
+// TODO improve show info, fix mob towards straight line to ignore see-through walls
 
 const TURN_BASED = true;
 let turnInterval = null;

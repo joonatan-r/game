@@ -1,5 +1,11 @@
 const dialog = document.getElementById("dialog");
+let movingDialog = false;
 let dialogKeyListener;
+
+function dialogMoveListener(e) {
+    dialog.style.left = (e.clientX - 5) + "px";
+    dialog.style.top = (e.clientY - 5) + "px";
+}
 
 // these have to be initialized before use
 
@@ -102,6 +108,18 @@ function showDialog(text, choices, onSelect, allowEsc, skipLog) {
     p.setAttribute("id", "dialogText");
     p.textContent = text;
     dialog.appendChild(p);
+    p.onclick = e => {
+        e.stopPropagation();
+
+        if (movingDialog) {
+            document.body.style.cursor = "default";
+            document.removeEventListener("mousemove", dialogMoveListener);
+        } else {
+            document.body.style.cursor = "move";
+            document.addEventListener("mousemove", dialogMoveListener);
+        }
+        movingDialog = !movingDialog;
+    }
     repopulateDialog(true);
 }
 

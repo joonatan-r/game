@@ -79,6 +79,21 @@ const render = {
                 render.area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
             }
         }
+        if (!isWall(level[posToRender[0]][posToRender[1]])) {
+            return;
+        }
+        const classes = [];
+
+        if (!blocksSight(level[posToRender[0]][posToRender[1]])) {
+            classes.push("wall-s");
+        } else {
+            classes.push("wall");
+        }
+        addWall(posToRender[0] - 1, posToRender[1], level[posToRender[0]][posToRender[1]], () => classes.push("t"));
+        addWall(posToRender[0], posToRender[1] - 1, level[posToRender[0]][posToRender[1]], () => classes.push("l"));
+        addWall(posToRender[0], posToRender[1] + 1, level[posToRender[0]][posToRender[1]], () => classes.push("r"));
+        addWall(posToRender[0] + 1, posToRender[1], level[posToRender[0]][posToRender[1]], () => classes.push("b"));
+        render.area[posToRender[0]][posToRender[1]].classList.add(...classes);
     },
     renderAll: function(player, levels, customRenders) {
         let level = levels[levels.currentLvl].level;
@@ -182,41 +197,41 @@ const render = {
         render.area[shotPos[0] + 1] && render.area[shotPos[0] + 1][shotPos[1] - 1] 
             && (prevSymbols[3] = render.area[shotPos[0] + 1][shotPos[1] - 1].textContent);
         
-        if (prevSymbols[0]) {
+        if (prevSymbols[0] !== null) {
             render.area[shotPos[0] - 1][shotPos[1] - 1].textContent = "\\";
             obj0 = { symbol: "\\", pos: [shotPos[0] - 1, shotPos[1] - 1] };
             customRenders.push(obj0);
         }
-        if (prevSymbols[1]) {
+        if (prevSymbols[1] !== null) {
             render.area[shotPos[0] - 1][shotPos[1] + 1].textContent = "/";
             obj1 = { symbol: "/", pos: [shotPos[0] - 1, shotPos[1] + 1] };
             customRenders.push(obj1);
         }
-        if (prevSymbols[2]) {
+        if (prevSymbols[2] !== null) {
             render.area[shotPos[0] + 1][shotPos[1] + 1].textContent = "\\";
             obj2 = { symbol: "\\", pos: [shotPos[0] + 1, shotPos[1] + 1] };
             customRenders.push(obj2);
         }
-        if (prevSymbols[3]) {
+        if (prevSymbols[3] !== null) {
             render.area[shotPos[0] + 1][shotPos[1] - 1].textContent = "/";
             obj3 = { symbol: "/", pos: [shotPos[0] + 1, shotPos[1] - 1] };
             customRenders.push(obj3);
         }
         await new Promise(r => setTimeout(r, 300));
         
-        if (prevSymbols[0]) {
+        if (prevSymbols[0] !== null) {
             removeByReference(customRenders, obj0);
             render.renderPos([shotPos[0] - 1, shotPos[1] - 1], player, levels, customRenders);
         }
-        if (prevSymbols[1]) {
+        if (prevSymbols[1] !== null) {
             removeByReference(customRenders, obj1);
             render.renderPos([shotPos[0] - 1, shotPos[1] + 1], player, levels, customRenders);
         }
-        if (prevSymbols[2]) {
+        if (prevSymbols[2] !== null) {
             removeByReference(customRenders, obj2);
             render.renderPos([shotPos[0] + 1, shotPos[1] + 1], player, levels, customRenders);
         }
-        if (prevSymbols[3]) {
+        if (prevSymbols[3] !== null) {
             removeByReference(customRenders, obj3);
             render.renderPos([shotPos[0] + 1, shotPos[1] - 1], player, levels, customRenders);
         }
