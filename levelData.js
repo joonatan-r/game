@@ -1,6 +1,4 @@
 const infoTable = {
-    "": "[ ]: A wall",
-    " ": "[ ]: A wall",
     "\u00B7": "[\u00B7]: The floor",
     "^": "[^]: A doorway",
     "Player": "[@]: You, the player",

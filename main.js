@@ -7,16 +7,23 @@
 // addItems from items.js
 // showDialog from UI.js
 // storyEvents from story.js
+// options from options.js
 
 // all coords are given as (y,x)
 
 // TODO improve show info, fix mob towards straight line to ignore see-through walls
 
-const TURN_BASED = true;
+const TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
 !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
 
 const table = document.getElementById("table");
+
+if (options.USE_BG_IMG) {
+    table.className = "bg";
+} else {
+    table.className = "no-bg";
+}
 const info = document.getElementById("info");
 const status = document.getElementById("status");
 const menu = document.getElementById("clickMenu");
@@ -237,7 +244,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 render.renderPos(bulletPos, player, levels, customRenders);
                 movePosToDrc(bulletPos, drc);
 
-                if (!level[bulletPos[0]] || !level[bulletPos[0]][bulletPos[1]] 
+                if (!level[bulletPos[0]] || typeof level[bulletPos[0]][bulletPos[1]] === "undefined" 
                     || level[bulletPos[0]][bulletPos[1]] === "*w"
                 ) {
                     break;
@@ -440,7 +447,7 @@ function action(key, ctrl) {
             let prevPos = null;
 
             if (ctrl) {
-                while (level[newPos[0]] && level[newPos[0]][newPos[1]] 
+                while (level[newPos[0]] && typeof level[newPos[0]][newPos[1]] !== "undefined"
                         && !isWall(level[newPos[0]][newPos[1]])
                 ) {
                     prevPos = newPos.slice();
@@ -615,7 +622,7 @@ function selectPos(drc) {
             movePosToDrc(selectPos.currentPos, drc);
 
             if (!level[selectPos.currentPos[0]] 
-                || level[selectPos.currentPos[0]][selectPos.currentPos[1]] === undefined
+                || typeof level[selectPos.currentPos[0]][selectPos.currentPos[1]] === "undefined"
             ) {
                 selectPos.currentPos = prevPos;
             }

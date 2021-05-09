@@ -260,7 +260,7 @@ const movingAIs = {
             while (1) {
                 movePosToDrc(lineDrawPos, drc);
 
-                if (!level[lineDrawPos[0]] || !level[lineDrawPos[0]][lineDrawPos[1]]
+                if (!level[lineDrawPos[0]] || typeof level[lineDrawPos[0]][lineDrawPos[1]] === "undefined"
                     || isWall(level[lineDrawPos[0]][lineDrawPos[1]])) break;
                 if (distanceToMob) prevDistance = distanceToMob;
 

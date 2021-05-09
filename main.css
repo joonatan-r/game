@@ -14,6 +14,15 @@ body {
 table {
     border: solid white 1px;
     text-align: center;
+    border-collapse: collapse;
+}
+
+table.bg {
+    background-image: url("Evendim.jpg");
+}
+
+table.no-bg {
+    background-color: black;
 }
 
 td {
@@ -21,7 +30,11 @@ td {
     width: 25px;
     min-width: 25px;
     height: 25px;
-    border: solid black 1px;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
 }
 
 td > img {
@@ -56,11 +69,15 @@ p {
 
 .mem {
     color: gray;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.not-rendered {
+    background-color: black;
 }
 
 .player {
     border: 1px solid white;
-    border-radius: 26px;
 }
 
 .selected {
@@ -96,5 +113,21 @@ p {
 }
 
 .wall-s.b {
-    border-bottom: solid gray 1px;
+    border-bottom: solid white 1px;
+}
+
+.wall-s-bg.l {
+    border-left: solid white 1px;
+}
+
+.wall-s-bg.r {
+    border-right: solid white 1px;
+}
+
+.wall-s-bg.t {
+    border-top: solid white 1px;
+}
+
+.wall-s-bg.b {
+    border-bottom: solid white 1px;
 }

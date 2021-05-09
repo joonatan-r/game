@@ -1,4 +1,5 @@
 // coordsEq, getCoordsNextTo, isWall, removeByReference from util.js
+// options from options.js
 
 // NOTE: with current implementation, if a memorized level tile is changed, 
 // it would be seen even if it's not rendered
@@ -29,8 +30,9 @@ const tileConversion = {
     "*f": "",
     "*s": ""
 };
-const SHOW_MEMORIZED = true;
-const GRAY_MEMORIZED = true;
+const USE_BG_IMG = options.USE_BG_IMG;
+const SHOW_MEMORIZED = options.SHOW_MEMORIZED;
+const GRAY_MEMORIZED = options.GRAY_MEMORIZED;
 const render = {
     area: [], // these have to be initialized before use
     areaCache: [],
@@ -41,6 +43,8 @@ const render = {
         let mobs = levels[levels.currentLvl].mobs;
         let items = levels[levels.currentLvl].items;
         let memorized = levels[levels.currentLvl].memorized;
+        
+        render.area[posToRender[0]][posToRender[1]].className = "not-rendered";
     
         if (!render.rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
             render.area[posToRender[0]][posToRender[1]].textContent = "";
@@ -49,12 +53,20 @@ const render = {
             memorized[posToRender[0]][posToRender[1]] = true;
         } else if (!render.rendered[posToRender[0]][posToRender[1]] && SHOW_MEMORIZED && memorized[posToRender[0]][posToRender[1]]) {
             render.area[posToRender[0]][posToRender[1]].textContent = getTileToRender(level[posToRender[0]][posToRender[1]]);
-            GRAY_MEMORIZED && (render.area[posToRender[0]][posToRender[1]].className = "mem");
+
+            if (!blocksSight(level[posToRender[0]][posToRender[1]])) { // always 
+                if (GRAY_MEMORIZED) {
+                    render.area[posToRender[0]][posToRender[1]].className = "mem";
+                } else {
+                    render.area[posToRender[0]][posToRender[1]].className = "";
+                }
+            }
             return;
         }
         render.area[posToRender[0]][posToRender[1]].textContent = getTileToRender(level[posToRender[0]][posToRender[1]]);
-        render.area[posToRender[0]][posToRender[1]].className = "";
         render.area[posToRender[0]][posToRender[1]].customProps.infoKeys.unshift(level[posToRender[0]][posToRender[1]]);
+        !blocksSight(level[posToRender[0]][posToRender[1]]) && (render.area[posToRender[0]][posToRender[1]].className = "rendered");
+        render.rendered[posToRender[0]][posToRender[1]] = true;
     
         for (let item of items) {
             if (coordsEq(item.pos, posToRender) && !item.hidden) {
@@ -85,7 +97,11 @@ const render = {
         const classes = [];
 
         if (!blocksSight(level[posToRender[0]][posToRender[1]])) {
-            classes.push("wall-s");
+            if (USE_BG_IMG) {
+                classes.push("wall-s-bg");
+            } else {
+                classes.push("wall-s");
+            }
         } else {
             classes.push("wall");
         }
@@ -105,7 +121,10 @@ const render = {
             for (let j = 0; j < level[0].length; j++) {
                 render.rendered[i][j] = false;
                 render.areaCache[i][j] = render.area[i][j].textContent;
-                render.area[i][j].className = "";
+                // render.area[i][j].firstChild 
+                //     && render.area[i][j].firstChild.tagName === "IMG"
+                //     && render.area[i][j].removeChild(render.area[i][j].firstChild);
+                render.area[i][j].className = "not-rendered";
                 render.area[i][j].customProps.infoKeys = [];
             }
         }
@@ -117,6 +136,7 @@ const render = {
                 if (getTileToRender(level[y][x]) !== render.areaCache[y][x]) render.area[y][x].textContent = getTileToRender(level[y][x]);
     
                 render.area[y][x].customProps.infoKeys.unshift(level[y][x]);
+                !blocksSight(level[y][x]) && (render.area[y][x].className = "rendered");
                 render.rendered[y][x] = true;
                 return blocksSight(level[y][x]) ? "stop" : "ok";
             });
@@ -127,7 +147,14 @@ const render = {
                     memorized[i][j] = true;
                 } else if (!render.rendered[i][j] && SHOW_MEMORIZED && memorized[i][j]) {
                     render.area[i][j].textContent = getTileToRender(level[i][j]);
-                    GRAY_MEMORIZED && (render.area[i][j].className = "mem");
+
+                    if (!blocksSight(level[i][j])) {
+                        if (GRAY_MEMORIZED) {
+                            render.area[i][j].className = "mem";
+                        } else {
+                            render.area[i][j].className = "";
+                        }
+                    }
                 } else if (!render.rendered[i][j]) {
                     render.area[i][j].textContent = "";
                 }
@@ -165,7 +192,11 @@ const render = {
                 const classes = [];
 
                 if (!blocksSight(level[i][j])) {
-                    classes.push("wall-s");
+                    if (USE_BG_IMG) {
+                        classes.push("wall-s-bg");
+                    } else {
+                        classes.push("wall-s");
+                    }
                 } else {
                     classes.push("wall");
                 }

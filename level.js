@@ -1,12 +1,17 @@
 // levelData from levelData.js
+// options from options.js
 
 function createLevels() {
     const levelCharMap = {
-        ".": "\u00B7",
+        ".": "",
         "w": "*w", // "normal" wall
         "f": "*f", // "fake" wall
         "s": "*s" // "see-through" wall
     };
+
+    if (options.USE_DOTS) {
+        levelCharMap["."] = "\u00B7";
+    }
     let levels = { currentLvl: "" };
     let level = [[]];
     let yIdx = 0;
