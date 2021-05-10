@@ -61,6 +61,7 @@ function createLevels() {
                 mobs: [],
                 items: [],
                 memorized: [],
+                spawnRate: 0,
                 spawnDistribution: {},
                 travelPoints: {}
             };

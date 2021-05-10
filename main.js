@@ -6,24 +6,17 @@
 // trySpawnMob, addMobs from mobs.js
 // addItems from items.js
 // showDialog from UI.js
-// storyEvents from story.js
+// events from events.js
 // options from options.js
 
-// all coords are given as (y,x)
+// NOTE: all coords are given as (y,x)
 
-// TODO improve show info, fix mob towards straight line to ignore see-through walls
+// TODO: improve show info, fix mob towards straight line to ignore see-through walls
 
 const TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
-!TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
 
 const table = document.getElementById("table");
-
-if (options.USE_BG_IMG) {
-    table.className = "bg";
-} else {
-    table.className = "no-bg";
-}
 const info = document.getElementById("info");
 const status = document.getElementById("status");
 const menu = document.getElementById("clickMenu");
@@ -58,6 +51,7 @@ initialize(table, levels, area, areaCache, rendered, edges);
 addMobs(levels);
 addItems(levels);
 addListeners();
+
 // added separately because never removed
 document.getElementById("inputFile").addEventListener("change", function() {
     const fr = new FileReader();
@@ -90,12 +84,27 @@ document.getElementById("inputFile").addEventListener("change", function() {
     };
     fr.readAsText(this.files[0]);
     this.value = null;
+    
+    !TURN_BASED && turnInterval === null && (turnInterval = setInterval(() => processTurn(), 500));
+
+    if (options.USE_BG_IMG) {
+        table.style.backgroundImage = "url('Evendim.jpg')";
+    } else {
+        table.style.backgroundColor = "#000";
+    }
 });
 showDialog("Start", ["New game", "Load game"], idx => {
     switch (idx) {
         case 0:
             updateInfo();
             render.renderAll(player, levels, customRenders);
+            !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
+
+            if (options.USE_BG_IMG) {
+                table.style.backgroundImage = "url('Evendim.jpg')";
+            } else {
+                table.style.backgroundColor = "#000";
+            }
             break;
         case 1:
             load();
@@ -157,23 +166,23 @@ function posIsValid(pos) {
     return true;
 }
 
-function tryFireStoryEvent(type, name, val) {
-    storyEvents.items = items;
-    storyEvents.mobs = mobs;
-    storyEvents.levels = levels;
-    storyEvents.level = level;
-    storyEvents.player = player;
+function tryFireEvent(type, name, val) {
+    events.items = items;
+    events.mobs = mobs;
+    events.levels = levels;
+    events.level = level;
+    events.player = player;
 
-    if (storyEvents[type] && storyEvents[type][name]) {
+    if (events[type] && events[type][name]) {
         if (typeof val === "undefined") {
-            storyEvents[type][name]();
-        } else if (storyEvents[type][name][val]) {
-            storyEvents[type][name][val]();
+            events[type][name]();
+        } else if (events[type][name][val]) {
+            events[type][name][val]();
         }
     }
 }
 
-function onMobStateChange(mob) { tryFireStoryEvent("stateChange", mob.name, mob.state) }
+function onMobStateChange(mob) { tryFireEvent("stateChange", mob.name, mob.state) }
 
 function gameOver(msg) {
     showMsg(msg);
@@ -213,11 +222,11 @@ function processTurn() {
     }
     render.renderAll(player, levels, customRenders);
 
-    if (timeTracker.timer % 10 !== 0) return;
-
     let mob = trySpawnMob(levels, rendered);
 
     if (mob !== null) {
+        // NOTE: all references within "levels", "player", or "timeTracker" to other objects within
+        //       must be done with "refer()" for saving to work properly
         mob.huntingTarget = refer(player);
         mobs.push(mob);
     }
@@ -365,7 +374,7 @@ function interact(drc) {
     }
     for (let item of items) {
         if (coordsEq(interactPos, item.pos) && item.onInteract) {
-            tryFireStoryEvent("beforeInteract", item.name);
+            tryFireEvent("beforeInteract", item.name);
             item.onInteract();
         }
     }
@@ -426,6 +435,12 @@ function tryChangeLvl() {
                 items = levels[lvl].items;
                 memorized = levels[lvl].memorized;
                 levels.currentLvl = lvl;
+
+                if (options.USE_BG_IMG) {
+                    table.style.backgroundImage = "url('Evendim.jpg')";
+                } else {
+                    table.style.backgroundColor = "#000";
+                }
                 return;
             }
             idx++;

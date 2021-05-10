@@ -17,14 +17,6 @@ table {
     border-collapse: collapse;
 }
 
-table.bg {
-    background-image: url("Evendim.jpg");
-}
-
-table.no-bg {
-    background-color: black;
-}
-
 td {
     font-size: 20px;
     width: 25px;

@@ -15,6 +15,7 @@ function addMobs(levels) {
     levels["Village"].mobs.push(Shady_Guy);
     levels["Ukko's House"].mobs.push(Ukko);
     levels["Random House"].mobs.push(Some_Guy);
+    levels["Wilderness"].spawnRate = 0.1;
     levels["Wilderness"].spawnDistribution = {
         "Make": { mob: Make, prob: 0.2 },
         "Pekka": { mob: Pekka, prob: 0.2 },
@@ -28,6 +29,7 @@ function trySpawnMob(levels, rendered) {
     let level = levels[levels.currentLvl].level;
     let spawnDistr = levels[levels.currentLvl].spawnDistribution;
 
+    if (levels[levels.currentLvl].spawnRate < Math.random()) return null;
     if (Object.keys(spawnDistr).length === 0) return null;
 
     for (let i = 0; i < level.length; i++) {
