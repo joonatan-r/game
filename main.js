@@ -88,7 +88,11 @@ document.getElementById("inputFile").addEventListener("change", function() {
     !TURN_BASED && turnInterval === null && (turnInterval = setInterval(() => processTurn(), 500));
 
     if (options.USE_BG_IMG) {
-        table.style.backgroundImage = "url('Evendim.jpg')";
+        if (levels[levels.currentLvl].bg.startsWith("#")) {
+            table.style.backgroundColor = levels[levels.currentLvl].bg;
+        } else {
+            table.style.backgroundImage = levels[levels.currentLvl].bg;
+        }
     } else {
         table.style.backgroundColor = "#000";
     }
@@ -437,7 +441,12 @@ function tryChangeLvl() {
                 levels.currentLvl = lvl;
 
                 if (options.USE_BG_IMG) {
-                    table.style.backgroundImage = "url('Evendim.jpg')";
+                    if (levels[levels.currentLvl].bg.startsWith("#")) {
+                        table.style.backgroundColor = levels[levels.currentLvl].bg;
+                        table.style.backgroundImage = "";
+                    } else {
+                        table.style.backgroundImage = levels[levels.currentLvl].bg;
+                    }
                 } else {
                     table.style.backgroundColor = "#000";
                 }

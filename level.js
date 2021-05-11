@@ -18,6 +18,7 @@ function createLevels() {
     let xIdx = 0;
     let parseStatus = "";
     let lvlName = "";
+    let bg = "";
     let travelNames = [];
     let travelName = "";
     let travelCoords = [];
@@ -29,10 +30,18 @@ function createLevels() {
         }
         if (parseStatus === "name") {
             if (c === "\n") {
-                parseStatus = "travel";
+                parseStatus = "bg";
                 continue;
             }
             lvlName += c;
+            continue;
+        }
+        if (parseStatus === "bg") {
+            if (c === "\n") {
+                parseStatus = "travel";
+                continue;
+            }
+            bg += c;
             continue;
         }
         if (parseStatus === "travel") {
@@ -58,6 +67,7 @@ function createLevels() {
         if (!escaped && c === ";") {
             levels[lvlName] = {
                 level: level,
+                bg: bg,
                 mobs: [],
                 items: [],
                 memorized: [],
@@ -76,6 +86,7 @@ function createLevels() {
             xIdx = 0;
             parseStatus = "";
             lvlName = "";
+            bg = "";
             travelName = "";
             travelNames = [];
             travelCoords = [];
