@@ -26,10 +26,15 @@ function addWall(i, j, currentTile, addCallback) {
 }
 
 const tileConversion = {
+    ".": "",
     "*w": "",
     "*f": "",
     "*s": ""
 };
+
+if (options.USE_DOTS) {
+    tileConversion["."] = "\u00B7";
+}
 const USE_BG_IMG = options.USE_BG_IMG;
 const SHOW_MEMORIZED = options.SHOW_MEMORIZED;
 const GRAY_MEMORIZED = options.GRAY_MEMORIZED;
@@ -76,7 +81,7 @@ const render = {
         }
         if (coordsEq(player.pos, posToRender) && !player.dead) {
             render.area[player.pos[0]][player.pos[1]].textContent = "@";
-            // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./img.jpg\"/>";
+            // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./jee.png\"/>";
             render.area[player.pos[0]][player.pos[1]].className = "player";
             render.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
         }
@@ -168,7 +173,7 @@ const render = {
         }
         if (!player.dead) {
             render.area[player.pos[0]][player.pos[1]].textContent = "@";
-            // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./img.jpg\"/>";
+            // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./jee.png\"/>";
             render.area[player.pos[0]][player.pos[1]].className = "player";
             render.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
         }

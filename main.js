@@ -39,7 +39,7 @@ let items = levels[levels.currentLvl].items;
 let customRenders = []; // for "animations" to not get erased
 let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
-let blockAutoTravel = false;
+let autoTravelStack = []; // used to cancel previous autoTravels when there is a new one
 showDialog.removeListeners = removeListeners; // initialize showDialog
 showDialog.addListeners = addListeners;
 showDialog.msgHistory = msgHistory;
@@ -593,16 +593,19 @@ function action(key, ctrl) {
 }
 
 async function autoTravel(coords) {
-    if (blockAutoTravel) return;
-
     const coordsList = [];
     const lvl = levels.currentLvl;
-    blockAutoTravel = true;
+    const idx = autoTravelStack.length;
+    autoTravelStack.push(true);
+
+    for (let i = 0; i < idx; i++) {
+        autoTravelStack[i] = false; // stop previous autoTravels
+    }
     interruptAutoTravel = false;
     keypressListener.actionType = "autoMove";
     bresenham(player.pos[0], player.pos[1], coords[0], coords[1], 
             (y, x) => {
-                if (level[y] && isWall(level[y][x])) {
+                if (level[y] && isWall(level[y][x]) && level[y][x] !== "*f") {
                     return "stop";
                 }
                 coordsList.push([y, x]);
@@ -613,9 +616,8 @@ async function autoTravel(coords) {
 
     for (let coord of coordsList) {
         // new coord may not be next to player if e.g. a mob blocks the way
-        if (interruptAutoTravel || levels.currentLvl !== lvl || !isNextTo(player.pos, coord)) {
+        if (!autoTravelStack[idx] || interruptAutoTravel || levels.currentLvl !== lvl || !isNextTo(player.pos, coord)) {
             keypressListener.actionType = null;
-            blockAutoTravel = false;
             return;
         }
         movePlayer(coord);
@@ -628,7 +630,7 @@ async function autoTravel(coords) {
         await new Promise(r => setTimeout(r, 50));
     }
     keypressListener.actionType = null;
-    blockAutoTravel = false;
+    autoTravelStack = [];
 }
 
 function selectPos(drc) {
@@ -743,7 +745,14 @@ function clickListener(e) {
         case "ignore":
             return;
         default:
-            if (e.ctrlKey) {
+            let doAutoTravel = false;
+            
+            if ((options.CTRL_CLICK_AUTOTRAVEL && e.ctrlKey) 
+                || (!options.CTRL_CLICK_AUTOTRAVEL && !e.ctrlKey)
+            ) {
+                doAutoTravel = true;
+            }
+            if (doAutoTravel) {
                 if (e.target.tagName !== "TD") return;
                 autoTravel(e.target.customProps.coords);
             } else {
