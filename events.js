@@ -5,40 +5,35 @@ const events = {
     level: [],
     player: {},
     stateChange: {
-        "Shady guy": {
-            1: function() {
-                events.items.push({
-                    name: "some money",
-                    symbol: "$",
-                    hidden: true,
-                    pos: [0, 4]
-                });
+        "Shady guy": function(mob) {
+            switch(mob.state) {
+                case 1:
+                    events.items.push({
+                        name: "some money",
+                        symbol: "$",
+                        hidden: true,
+                        pos: [0, 4]
+                    });
+                    break;
             }
         },
-        "Some guy": {
-            1: function() {
-    
-                // TODO: should state change story event be fired when it's changed here in an event?
-    
-                for (let mob of events.levels["Ukko's House"].mobs) {
-                    if (mob.name === "Ukko") {
-                        mob.state = 0;
-                        break;
+        "Some guy": function(mob) {
+            // TODO: should state change story event be fired when it's changed here in an event?
+            switch (mob.state) {
+                case 1:
+                case 2:
+                    for (let mob of events.levels["Ukko's House"].mobs) {
+                        if (mob.name === "Ukko") {
+                            mob.state = 0;
+                            break;
+                        }
                     }
-                }
-            },
-            2: function() {
-                for (let mob of events.levels["Ukko's House"].mobs) {
-                    if (mob.name === "Ukko") {
-                        mob.state = 0;
-                        break;
-                    }
-                }
+                    break;
             }
         }
     },
-    beforeInteract: {
-        "a chest": function() {
+    onInteract: {
+        "a chest": function(item) {
             let playerHasKey = false;
 
             for (let item of events.player.inventory) {
@@ -48,12 +43,7 @@ const events = {
                 }
             }
             if (playerHasKey) {
-                for (let item of events.items) {
-                    if (item.name === "a chest") {
-                        item.state = 1;
-                        break;
-                    }
-                }
+                item.state = 1;
             }
         }
     }

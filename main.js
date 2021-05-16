@@ -170,23 +170,19 @@ function posIsValid(pos) {
     return true;
 }
 
-function tryFireEvent(type, name, val) {
+function tryFireEvent(type, entity) {
     events.items = items;
     events.mobs = mobs;
     events.levels = levels;
     events.level = level;
     events.player = player;
 
-    if (events[type] && events[type][name]) {
-        if (typeof val === "undefined") {
-            events[type][name]();
-        } else if (events[type][name][val]) {
-            events[type][name][val]();
-        }
+    if (events[type] && events[type][entity.name]) {
+        events[type][entity.name](entity);
     }
 }
 
-function onMobStateChange(mob) { tryFireEvent("stateChange", mob.name, mob.state) }
+function onMobStateChange(mob) { tryFireEvent("stateChange", mob) }
 
 function gameOver(msg) {
     showMsg(msg);
@@ -226,6 +222,14 @@ function processTurn() {
     }
     render.renderAll(player, levels, customRenders);
 
+    if (options.INTERRUPT_AUTOTRAVEL_IF_MOBS) {
+        for (let mob of mobs) {
+            if (mob.isHostile && rendered[mob.pos[0]][mob.pos[1]]) {
+                interruptAutoTravel = true;
+                break;
+            }
+        }
+    }
     let mob = trySpawnMob(levels, rendered);
 
     if (mob !== null) {
@@ -378,7 +382,7 @@ function interact(drc) {
     }
     for (let item of items) {
         if (coordsEq(interactPos, item.pos) && item.onInteract) {
-            tryFireEvent("beforeInteract", item.name);
+            tryFireEvent("onInteract", item);
             item.onInteract();
         }
     }
@@ -472,7 +476,7 @@ function action(key, ctrl) {
 
             if (ctrl) {
                 while (level[newPos[0]] && typeof level[newPos[0]][newPos[1]] !== "undefined"
-                        && !isWall(level[newPos[0]][newPos[1]])
+                        && (!isWall(level[newPos[0]][newPos[1]]) || level[newPos[0]][newPos[1]] === "*f")
                 ) {
                     prevPos = newPos.slice();
                     movePosToDrc(newPos, key);
