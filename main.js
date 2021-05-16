@@ -178,11 +178,9 @@ function tryFireEvent(type, entity) {
     events.player = player;
 
     if (events[type] && events[type][entity.name]) {
-        events[type][entity.name](entity);
+        events[type][entity.name](entity, showMsg, showDialog);
     }
 }
-
-function onMobStateChange(mob) { tryFireEvent("stateChange", mob) }
 
 function gameOver(msg) {
     showMsg(msg);
@@ -378,13 +376,10 @@ function interact(drc) {
             return;
     }
     for (let mob of mobs) {
-        if (coordsEq(interactPos, mob.pos) && mob.talk) mob.talk(showDialog, showMsg, onMobStateChange);
+        if (coordsEq(interactPos, mob.pos)) tryFireEvent("onInteract", mob);
     }
     for (let item of items) {
-        if (coordsEq(interactPos, item.pos) && item.onInteract) {
-            tryFireEvent("onInteract", item);
-            item.onInteract();
-        }
+        if (coordsEq(interactPos, item.pos)) tryFireEvent("onInteract", item);
     }
     keypressListener.actionType = null;
     clickListener.actionType = null;

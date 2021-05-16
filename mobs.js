@@ -71,18 +71,6 @@ const Shady_Guy = {
     isHostile: false,
     state: 0,
     pos: [23, 30],
-    talk: function(showDialog, showMsg, onStateChange) {
-        switch (this.state) {
-            case 0:
-                showMsg("[" + this.name + "]: Hey man, I heard there's some money hidden behind Ukko's house!");
-                this.state = 1;
-                onStateChange(this);
-                break;
-            case 1:
-                showMsg("[" + this.name + "]: Did you check the place?");
-                break;
-        }
-    },
     calcTarget: function() { movingAIs.static(this) }
 };
 const Ukko = {
@@ -91,21 +79,6 @@ const Ukko = {
     isHostile: false,
     state: 9001,
     pos: [11, 13],
-    talk: function(showDialog, showMsg) {
-        switch (this.state) {
-            case 0:
-                showMsg("[" + this.name + "]: I heard that you talked to that guy in the random house.");
-                break;
-            case 9001:
-                showDialog("[" + this.name + "]: Hi! I have over 9 options.\n\nYour answer:", 
-                        ["option 1", "option 2", "option 3", "option 4", "option 5", "option 6", "option 7", 
-                         "option 8", "option 9", "option 10", "option 11", "option 12", "option 13", "option 14", 
-                         "option 15", "option 16", "option 17", "option 18", "option 19", "option 20"], 
-                        idx => showMsg("You selected option " + (idx+1) + ".")
-                );
-                break;
-        }
-    },
     calcTarget: function(posIsValid) {
         if (Math.random() < 0.5) {
             movingAIs.random(this, posIsValid);
@@ -120,29 +93,6 @@ const Some_Guy = {
     isHostile: false,
     state: 0,
     pos: [13, 18],
-    talk: function(showDialog, showMsg, onStateChange) {
-        switch (this.state) {
-            case 0:
-                showDialog("[" + this.name + "]: Hello there!\n\nYour answer:", 
-                        ["Hi!", "General Kenobi!", "[Don't answer]"], 
-                        idx => {
-                            this.state = { 0: 1, 1: 2, 2: 0 }[idx];
-
-                            if (this.state !== 0) {
-                                onStateChange(this);
-                                this.talk(showDialog, showMsg);
-                            }
-                        }
-                );
-                break;
-            case 1:
-                showMsg("[" + this.name + "]: So uncivilized!");
-                break;
-            case 2:
-                showMsg("[" + this.name + "]: You are strong and wise, and I'm very proud of you!");
-                break;
-        }
-    },
     calcTarget: function() { movingAIs.static(this) }
 };
 const Make = {
