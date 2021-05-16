@@ -19,7 +19,7 @@ const infoTable = {
 
 const levelData = `
 Village
-url('Evendim.jpg')
+url('village.jpg')
 Ukko's House
 Wilderness
 Wilderness
@@ -82,7 +82,7 @@ Village
 ........................................;
 
 Wilderness
-url('Evendim.jpg')
+url('wilderness.jpg')
 Village
 Village
 

@@ -105,7 +105,11 @@ showDialog("Start", ["New game", "Load game"], idx => {
             !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
 
             if (options.USE_BG_IMG) {
-                table.style.backgroundImage = "url('Evendim.jpg')";
+                if (levels[levels.currentLvl].bg.startsWith("#")) {
+                    table.style.backgroundColor = levels[levels.currentLvl].bg;
+                } else {
+                    table.style.backgroundImage = levels[levels.currentLvl].bg;
+                }
             } else {
                 table.style.backgroundColor = "#000";
             }
