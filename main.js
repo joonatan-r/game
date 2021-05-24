@@ -726,6 +726,15 @@ function handleKeypress(key, ctrl) {
     }
 }
 
+async function setKeyRepeat(e) {
+    await new Promise(r => setTimeout(r, 100));
+    
+    // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
+    if (keyIntervals[e.key] === "tempVal") {
+        keyIntervals[e.key] = setInterval(() => handleKeypress(e.key, e.ctrlKey), 70);
+    }
+}
+
 function keypressListener(e) {
     if (Object.keys(keyIntervals).indexOf(e.key) !== -1) {
         return;
@@ -733,7 +742,8 @@ function keypressListener(e) {
     if ("12346789".indexOf(e.key) !== -1) {
         // enabble key repeating only for moving
         if (!keypressListener.actionType) {
-            keyIntervals[e.key] = setInterval(() => handleKeypress(e.key, e.ctrlKey), 70);
+            keyIntervals[e.key] = "tempVal";
+            setKeyRepeat(e);
         }
         showMsg("");
     }
