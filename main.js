@@ -25,6 +25,7 @@ const areaCache = [];
 const rendered = [];
 const edges = [];
 const msgHistory = [];
+const keyIntervals = {}; // for key repeats when holding key
 let timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
@@ -53,6 +54,10 @@ addItems(levels);
 addListeners();
 
 // added separately because never removed
+document.addEventListener("keyup", function(e) {
+    clearInterval(keyIntervals[e.key]);
+    delete keyIntervals[e.key];
+});
 document.getElementById("inputFile").addEventListener("change", function() {
     const fr = new FileReader();
     fr.onload = () => {
@@ -192,6 +197,11 @@ function gameOver(msg) {
     interruptAutoTravel = true;
     removeListeners();
     player.dead = true;
+
+    for (let key of Object.keys(keyIntervals)) {
+        clearInterval(keyIntervals[key]);
+        delete keyIntervals[key];
+    }
 }
 
 function updateInfo() {
@@ -694,28 +704,40 @@ function showMsg(msg) {
     msgHistory.unshift(msg);
 }
 
-function keypressListener(e) {
-    if ("12346789".indexOf(e.key) !== -1) showMsg("");
-
+function handleKeypress(key, ctrl) {
     switch (keypressListener.actionType) {
         case "shoot":
-            shoot(player.pos, e.key);
+            shoot(player.pos, key);
             break;
         case "melee":
-            melee(e.key);
+            melee(key);
             break;
         case "interact":
-            interact(e.key);
+            interact(key);
             break;
         case "autoMove":
-            if (e.key === "Escape") interruptAutoTravel = true;
+            if (key === "Escape") interruptAutoTravel = true;
             break;
         case "selectPos":
-            selectPos(e.key);
+            selectPos(key);
             break;
         default:
-            action(e.key, e.ctrlKey);
+            action(key, ctrl);
     }
+}
+
+function keypressListener(e) {
+    if (Object.keys(keyIntervals).indexOf(e.key) !== -1) {
+        return;
+    }
+    if ("12346789".indexOf(e.key) !== -1) {
+        // enabble key repeating only for moving
+        if (!keypressListener.actionType) {
+            keyIntervals[e.key] = setInterval(() => handleKeypress(e.key, e.ctrlKey), 70);
+        }
+        showMsg("");
+    }
+    handleKeypress(e.key, e.ctrlKey);
 }
 
 function clickListener(e) {
