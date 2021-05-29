@@ -90,7 +90,7 @@ document.getElementById("inputFile").addEventListener("change", function() {
     fr.readAsText(this.files[0]);
     this.value = null;
     
-    !TURN_BASED && turnInterval === null && (turnInterval = setInterval(() => processTurn(), 500));
+    !TURN_BASED && turnInterval === null && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
 
     if (options.USE_BG_IMG) {
         if (levels[levels.currentLvl].bg.startsWith("#")) {
@@ -107,7 +107,7 @@ showDialog("Start", ["New game", "Load game"], idx => {
         case 0:
             updateInfo();
             render.renderAll(player, levels, customRenders);
-            !TURN_BASED && (turnInterval = setInterval(() => processTurn(), 500));
+            !TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
 
             if (options.USE_BG_IMG) {
                 if (levels[levels.currentLvl].bg.startsWith("#")) {
@@ -640,7 +640,7 @@ async function autoTravel(coords) {
         } else {
             render.renderAll(player, levels, customRenders);
         }
-        await new Promise(r => setTimeout(r, 50));
+        await new Promise(r => setTimeout(r, options.AUTOTRAVEL_REPEAT_DELAY));
     }
     keypressListener.actionType = null;
     autoTravelStack = [];
@@ -727,11 +727,11 @@ function handleKeypress(key, ctrl) {
 }
 
 async function setKeyRepeat(e) {
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
     
     // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
     if (keyIntervals[e.key] === "tempVal") {
-        keyIntervals[e.key] = setInterval(() => handleKeypress(e.key, e.ctrlKey), 70);
+        keyIntervals[e.key] = setInterval(() => handleKeypress(e.key, e.ctrlKey), options.TRAVEL_REPEAT_DELAY);
     }
 }
 
