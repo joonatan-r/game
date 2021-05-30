@@ -11,7 +11,8 @@
 
 // NOTE: all coords are given as (y,x)
 
-// TODO: improve show info, fix mob towards straight line to ignore see-through walls
+// TODO: improve show info, fix mob towards straight line to ignore see-through walls,
+//       fix inspecting, especially for non turn based
 
 const TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
@@ -864,6 +865,12 @@ function removeListeners() {
     document.removeEventListener("click", clickListener);
     document.removeEventListener("contextmenu", menuListener);
     document.removeEventListener("mousemove", mouseStyleListener);
+
+    // remove currently active key repeats to disable continuing moving
+    for (let key of Object.keys(keyIntervals)) {
+        clearInterval(keyIntervals[key]);
+        delete keyIntervals[key];
+    }
 }
 
 function refer(obj) {
