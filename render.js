@@ -29,7 +29,8 @@ const tileConversion = {
     ".": "",
     "*w": "",
     "*f": "",
-    "*s": ""
+    "*s": "",
+    "*t": ""
 };
 
 if (options.USE_DOTS) {
@@ -39,6 +40,7 @@ const USE_BG_IMG = options.USE_BG_IMG;
 const SHOW_MEMORIZED = options.SHOW_MEMORIZED;
 const GRAY_MEMORIZED = options.GRAY_MEMORIZED;
 const render = {
+    visitedTTypeWall: false,
     area: [], // these have to be initialized before use
     areaCache: [],
     rendered: [],
@@ -49,7 +51,7 @@ const render = {
         let items = levels[levels.currentLvl].items;
         let memorized = levels[levels.currentLvl].memorized;
         
-        render.area[posToRender[0]][posToRender[1]].className = "not-rendered";
+        render.area[posToRender[0]][posToRender[1]].className = "hidden";
     
         if (!render.rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
             render.area[posToRender[0]][posToRender[1]].textContent = "";
@@ -70,7 +72,7 @@ const render = {
         }
         render.area[posToRender[0]][posToRender[1]].textContent = getTileToRender(level[posToRender[0]][posToRender[1]]);
         render.area[posToRender[0]][posToRender[1]].customProps.infoKeys.unshift(level[posToRender[0]][posToRender[1]]);
-        !blocksSight(level[posToRender[0]][posToRender[1]]) && (render.area[posToRender[0]][posToRender[1]].className = "rendered");
+        !blocksSight(level[posToRender[0]][posToRender[1]]) && (render.area[posToRender[0]][posToRender[1]].className = "shown");
         render.rendered[posToRender[0]][posToRender[1]] = true;
     
         for (let item of items) {
@@ -129,19 +131,25 @@ const render = {
                 // render.area[i][j].firstChild 
                 //     && render.area[i][j].firstChild.tagName === "IMG"
                 //     && render.area[i][j].removeChild(render.area[i][j].firstChild);
-                render.area[i][j].className = "not-rendered";
+                render.area[i][j].className = "hidden";
                 render.area[i][j].customProps.infoKeys = [];
             }
         }
         for (let coords of render.edges) {
             bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
+                if (level[y][x] === "*t") {
+                    render.visitedTTypeWall = true;
+                } else if (render.visitedTTypeWall) {
+                    render.visitedTTypeWall = false;
+                    return "stop";
+                }
                 if (render.rendered[y][x]) {
                     return blocksSight(level[y][x]) ? "stop" : "ok";
                 }
                 if (getTileToRender(level[y][x]) !== render.areaCache[y][x]) render.area[y][x].textContent = getTileToRender(level[y][x]);
     
                 render.area[y][x].customProps.infoKeys.unshift(level[y][x]);
-                !blocksSight(level[y][x]) && (render.area[y][x].className = "rendered");
+                !blocksSight(level[y][x]) && (render.area[y][x].className = "shown");
                 render.rendered[y][x] = true;
                 return blocksSight(level[y][x]) ? "stop" : "ok";
             });

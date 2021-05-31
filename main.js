@@ -174,6 +174,7 @@ function posIsValid(pos) {
         || pos[1] < 0
         || level[pos[0]][pos[1]] === "*w"
         || level[pos[0]][pos[1]] === "*s"
+        || level[pos[0]][pos[1]] === "*t"
     ) {
         return false;
     }

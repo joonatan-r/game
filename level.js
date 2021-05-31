@@ -5,7 +5,8 @@ function createLevels() {
     const levelCharMap = {
         "w": "*w", // "normal" wall
         "f": "*f", // "fake" wall
-        "s": "*s" // "see-through" wall
+        "s": "*s", // "see-through" wall
+        "t": "*t" // wall that blocks sight, but shows the wall tile contents
     };
     let levels = { currentLvl: "" };
     let level = [[]];
