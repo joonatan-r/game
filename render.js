@@ -4,6 +4,15 @@ import options from "./options.js";
 // NOTE: with current implementation, if a memorized level tile is changed, 
 // it would be seen even if it's not rendered
 
+export function changeRenderOptions(newOptions) {
+    for (let key of Object.keys(newOptions)) {
+        options[key] = newOptions[key];
+    }
+    if (options.USE_DOTS) {
+        tileConversion["."] = "\u00B7";
+    }
+}
+
 function blocksSight(tile) {
     return tile === "*w" || tile === "*f";
 }
@@ -39,7 +48,7 @@ if (options.USE_DOTS) {
 const USE_BG_IMG = options.USE_BG_IMG;
 const SHOW_MEMORIZED = options.SHOW_MEMORIZED;
 const GRAY_MEMORIZED = options.GRAY_MEMORIZED;
-const render = {
+export const render = {
     area: [], // these have to be initialized before use
     areaCache: [],
     rendered: [],
@@ -281,5 +290,3 @@ const render = {
         }
     }
 };
-
-export default render;

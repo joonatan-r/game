@@ -55,7 +55,7 @@ p {
     background-color: #777;
 }
 
-#inputFile {
+#loadInputFile, #optionsInputFile {
     display: none;
 }
 

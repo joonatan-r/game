@@ -4,7 +4,7 @@ import {
     bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
     pixelCoordsToDrc, makeTextFile, projectileFromDrc 
 } from "./util.js";
-import render from "./render.js";
+import { render, changeRenderOptions } from "./render.js";
 import { trySpawnMob, addMobs } from "./mobs.js";
 import {addItems} from "./items.js";
 import {showDialog} from "./UI.js";
@@ -17,6 +17,7 @@ import { movingAIs } from "./mobs.js"; // for now, needed for eval when loading 
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls,
 //       fix inspecting, especially for non turn based
+//       better non-dynamic option replacing
 
 const TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
@@ -63,7 +64,7 @@ document.addEventListener("keyup", function(e) {
     clearInterval(keyIntervals[e.key]);
     delete keyIntervals[e.key];
 });
-document.getElementById("inputFile").addEventListener("change", function() {
+document.getElementById("loadInputFile").addEventListener("change", function() {
     const fr = new FileReader();
     fr.onload = () => {
         const refs = [];
@@ -107,28 +108,49 @@ document.getElementById("inputFile").addEventListener("change", function() {
         table.style.backgroundColor = "#000";
     }
 });
-showDialog("Start", ["New game", "Load game"], idx => {
-    switch (idx) {
-        case 0:
-            updateInfo();
-            render.renderAll(player, levels, customRenders);
-            !TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
+document.getElementById("optionsInputFile").addEventListener("change", function() {
+    const fr = new FileReader();
+    fr.onload = () => {
+        const newOptions = JSON.parse(fr.result);
+        changeRenderOptions(newOptions);
 
-            if (options.USE_BG_IMG) {
-                if (levels[levels.currentLvl].bg.startsWith("#")) {
-                    table.style.backgroundColor = levels[levels.currentLvl].bg;
+        for (let key of Object.keys(newOptions)) {
+            options[key] = newOptions[key];
+        }
+        showStartDialog();
+    };
+    fr.readAsText(this.files[0]);
+    this.value = null;
+});
+showStartDialog();
+
+function showStartDialog() {
+    showDialog("Start", ["New game", "Load game", "Options"], idx => {
+        switch (idx) {
+            case 0:
+                updateInfo();
+                render.renderAll(player, levels, customRenders);
+                !TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
+    
+                if (options.USE_BG_IMG) {
+                    if (levels[levels.currentLvl].bg.startsWith("#")) {
+                        table.style.backgroundColor = levels[levels.currentLvl].bg;
+                    } else {
+                        table.style.backgroundImage = levels[levels.currentLvl].bg;
+                    }
                 } else {
-                    table.style.backgroundImage = levels[levels.currentLvl].bg;
+                    table.style.backgroundColor = "#000";
                 }
-            } else {
-                table.style.backgroundColor = "#000";
-            }
-            break;
-        case 1:
-            load();
-            break;
-    }
-}, false, true);
+                break;
+            case 1:
+                load();
+                break;
+            case 2:
+                importOptions();
+                break;
+        }
+    }, false, true);
+}
 
 function save() {
     const link = document.createElement("a");
@@ -160,7 +182,11 @@ function save() {
 }
 
 function load() {
-    document.getElementById("inputFile").click();
+    document.getElementById("loadInputFile").click();
+}
+
+function importOptions() {
+    document.getElementById("optionsInputFile").click();
 }
 
 function posIsValid(pos) {
