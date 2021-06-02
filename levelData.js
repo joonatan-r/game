@@ -1,4 +1,4 @@
-const infoTable = {
+export const infoTable = {
     "\u00B7": "[\u00B7]: The floor",
     "^": "[^]: A doorway",
     "Player": "[@]: You, the player",
@@ -17,7 +17,7 @@ const infoTable = {
 // for special meanings see levelCharMap in level.js
 // all characters' special meaning can be escaped using preceding "e"
 
-const levelData = `
+export const levelData = `
 Village
 url('village.jpg')
 Ukko's House

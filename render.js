@@ -1,5 +1,5 @@
-// coordsEq, getCoordsNextTo, isWall, removeByReference from util.js
-// options from options.js
+import { bresenham, coordsEq, isWall, removeByReference } from "./util.js";
+import options from "./options.js";
 
 // NOTE: with current implementation, if a memorized level tile is changed, 
 // it would be seen even if it's not rendered
@@ -15,7 +15,7 @@ function getTileToRender(tile) {
     return tile;
 }
 
-function addWall(i, j, currentTile, addCallback) {
+function addWall(level, memorized, i, j, currentTile, addCallback) {
     if (level[i] && (typeof level[i][j] !== "undefined")
         && (render.rendered[i][j] || (SHOW_MEMORIZED && memorized[i][j]))
         && (!isWall(level[i][j]) 
@@ -40,7 +40,6 @@ const USE_BG_IMG = options.USE_BG_IMG;
 const SHOW_MEMORIZED = options.SHOW_MEMORIZED;
 const GRAY_MEMORIZED = options.GRAY_MEMORIZED;
 const render = {
-    visitedTTypeWall: false,
     area: [], // these have to be initialized before use
     areaCache: [],
     rendered: [],
@@ -112,10 +111,10 @@ const render = {
         } else {
             classes.push("wall");
         }
-        addWall(posToRender[0] - 1, posToRender[1], level[posToRender[0]][posToRender[1]], () => classes.push("t"));
-        addWall(posToRender[0], posToRender[1] - 1, level[posToRender[0]][posToRender[1]], () => classes.push("l"));
-        addWall(posToRender[0], posToRender[1] + 1, level[posToRender[0]][posToRender[1]], () => classes.push("r"));
-        addWall(posToRender[0] + 1, posToRender[1], level[posToRender[0]][posToRender[1]], () => classes.push("b"));
+        addWall(level, memorized, posToRender[0] - 1, posToRender[1], level[posToRender[0]][posToRender[1]], () => classes.push("t"));
+        addWall(level, memorized, posToRender[0], posToRender[1] - 1, level[posToRender[0]][posToRender[1]], () => classes.push("l"));
+        addWall(level, memorized, posToRender[0], posToRender[1] + 1, level[posToRender[0]][posToRender[1]], () => classes.push("r"));
+        addWall(level, memorized, posToRender[0] + 1, posToRender[1], level[posToRender[0]][posToRender[1]], () => classes.push("b"));
         render.area[posToRender[0]][posToRender[1]].classList.add(...classes);
     },
     renderAll: function(player, levels, customRenders) {
@@ -123,6 +122,7 @@ const render = {
         let mobs = levels[levels.currentLvl].mobs;
         let items = levels[levels.currentLvl].items;
         let memorized = levels[levels.currentLvl].memorized;
+        let visitedTTypeWall = false;
     
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
@@ -138,9 +138,9 @@ const render = {
         for (let coords of render.edges) {
             bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
                 if (level[y][x] === "*t") {
-                    render.visitedTTypeWall = true;
-                } else if (render.visitedTTypeWall) {
-                    render.visitedTTypeWall = false;
+                    visitedTTypeWall = true;
+                } else if (visitedTTypeWall) {
+                    visitedTTypeWall = false;
                     return "stop";
                 }
                 if (render.rendered[y][x]) {
@@ -213,10 +213,10 @@ const render = {
                 } else {
                     classes.push("wall");
                 }
-                addWall(i + 1, j, level[i][j], () => classes.push("b"));
-                addWall(i - 1, j, level[i][j], () => classes.push("t"));
-                addWall(i, j - 1, level[i][j], () => classes.push("l"));
-                addWall(i, j + 1, level[i][j], () => classes.push("r"));
+                addWall(level, memorized, i + 1, j, level[i][j], () => classes.push("b"));
+                addWall(level, memorized, i - 1, j, level[i][j], () => classes.push("t"));
+                addWall(level, memorized, i, j - 1, level[i][j], () => classes.push("l"));
+                addWall(level, memorized, i, j + 1, level[i][j], () => classes.push("r"));
                 render.area[i][j].classList.add(...classes);
             }
         }
@@ -281,3 +281,5 @@ const render = {
         }
     }
 };
+
+export default render;

@@ -11,3 +11,5 @@ const options = {
     TRAVEL_REPEAT_DELAY: 70, // milliseconds between each move when holding a moving key
     AUTOTRAVEL_REPEAT_DELAY: 50 // milliseconds between each move when autotraveling
 };
+
+export default options;

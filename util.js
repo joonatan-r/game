@@ -1,6 +1,6 @@
 // Bresenham's algorithm, modified to work for all directions
 
-function bresenham(y0, x0, y1, x1, onNewPos) {
+export function bresenham(y0, x0, y1, x1, onNewPos) {
     let swapYX = false;
     let mirrorY = false;
     let mirrorX = false;
@@ -59,7 +59,7 @@ function bresenham(y0, x0, y1, x1, onNewPos) {
 
 makeTextFile.textFile = null;
 
-function makeTextFile(text) {
+export function makeTextFile(text) {
     const data = new Blob([text], {type: "text/plain"});
 
     if (makeTextFile.textFile !== null) {
@@ -69,13 +69,13 @@ function makeTextFile(text) {
     return makeTextFile.textFile;
 }
 
-function getRandomInt(min, max) {
+export function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function removeByReference(arr, obj) {
+export function removeByReference(arr, obj) {
     let index = arr.indexOf(obj);
 
     if (index !== -1) {
@@ -83,7 +83,7 @@ function removeByReference(arr, obj) {
     }
 }
 
-function pixelCoordsToDrc(y, x) {
+export function pixelCoordsToDrc(y, x) {
     if (x === 0) {
         if (y > 0) return "2"; // b
         else return "8"; // t
@@ -106,7 +106,7 @@ function pixelCoordsToDrc(y, x) {
     }
 }
 
-function getCoordsNextTo(pos) {
+export function getCoordsNextTo(pos) {
     return [        
         [pos[0], pos[1] - 1], // l
         [pos[0] - 1, pos[1] - 1], // tl
@@ -119,7 +119,7 @@ function getCoordsNextTo(pos) {
     ];
 }
 
-function isNextTo(coord1, coord2, includeDiag) {
+export function isNextTo(coord1, coord2, includeDiag) {
     includeDiag = (typeof includeDiag !== "undefined") ? includeDiag : true;
 
     if (coordsEq([coord1[0], coord1[1] - 1], coord2)
@@ -138,12 +138,12 @@ function isNextTo(coord1, coord2, includeDiag) {
     return false;
 }
 
-function coordsEq(coord1, coord2) {
+export function coordsEq(coord1, coord2) {
     if (coord1[0] === coord2[0] && coord1[1] === coord2[1]) return true;
     return false;
 }
 
-function movePosToDrc(posToMove, drc) {
+export function movePosToDrc(posToMove, drc) {
     switch (drc) {
         case "4":
             posToMove[1]--;
@@ -176,7 +176,7 @@ function movePosToDrc(posToMove, drc) {
     }
 }
 
-const oppositeDrcs = {
+export const oppositeDrcs = {
     "1": "9",
     "2": "8",
     "3": "7",
@@ -187,11 +187,22 @@ const oppositeDrcs = {
     "9": "1",
 };
 
-function isWall(tile) {
+export const projectileFromDrc = {
+    "1": "/",
+    "2": "|",
+    "3": "\\",
+    "4": "-",
+    "6": "-",
+    "7": "\\",
+    "8": "|",
+    "9": "/",
+};
+
+export function isWall(tile) {
     return tile === "*w" || tile === "*f" || tile === "*s" || tile === "*t";
 }
 
-function getSecondBestDirections(drcs, currentDrc, excluded) {
+export function getSecondBestDirections(drcs, currentDrc, excluded) {
     const retDrcs = [];
 
     for (let d of drcs) {

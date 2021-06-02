@@ -1,13 +1,17 @@
-// infoTable from levelData.js
-// createLevels, initialize from level.js
-// bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
-// pixelCoordsToDrc, makeTextFile from util.js
-// render from render.js
-// trySpawnMob, addMobs from mobs.js
-// addItems from items.js
-// showDialog from UI.js
-// events from events.js
-// options from options.js
+import {infoTable} from "./levelData.js";
+import { createLevels, initialize } from "./level.js";
+import {
+    bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
+    pixelCoordsToDrc, makeTextFile, projectileFromDrc 
+} from "./util.js";
+import render from "./render.js";
+import { trySpawnMob, addMobs } from "./mobs.js";
+import {addItems} from "./items.js";
+import {showDialog} from "./UI.js";
+import events from "./events.js";
+import options from "./options.js";
+
+import { movingAIs } from "./mobs.js"; // for now, needed for eval when loading save, TODO: better system
 
 // NOTE: all coords are given as (y,x)
 
@@ -271,6 +275,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
         case "1":
         case "9":
         case "3":
+            const icon = projectileFromDrc[drc];
+            
             while (1) {
                 render.renderPos(bulletPos, player, levels, customRenders);
                 movePosToDrc(bulletPos, drc);
@@ -280,8 +286,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 ) {
                     break;
                 }
-                if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].textContent = "o";
-                obj = { symbol: "o", pos: [bulletPos[0], bulletPos[1]] };
+                if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].textContent = icon;
+                obj = { symbol: icon, pos: [bulletPos[0], bulletPos[1]] };
                 customRenders.push(obj);
         
                 await new Promise(r => setTimeout(r, 30));

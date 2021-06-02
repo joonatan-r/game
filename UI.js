@@ -13,7 +13,7 @@ showDialog.removeListeners = () => {};
 showDialog.addListeners = () => {};
 showDialog.msgHistory = [];
 
-function showDialog(text, choices, onSelect, allowEsc, skipLog) {
+export function showDialog(text, choices, onSelect, allowEsc, skipLog) {
     let choiceGroupIdx = null;
     showDialog.removeListeners();
     !skipLog && showDialog.msgHistory.unshift(text.trim().replaceAll("\n", "\n\t"));

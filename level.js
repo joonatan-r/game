@@ -1,7 +1,6 @@
-// levelData from levelData.js
-// options from options.js
+import {levelData} from "./levelData.js";
 
-function createLevels() {
+export function createLevels() {
     const levelCharMap = {
         "w": "*w", // "normal" wall
         "f": "*f", // "fake" wall
@@ -106,7 +105,7 @@ function createLevels() {
     return levels;
 }
 
-function initialize(table, levels, area, areaCache, rendered, edges) {
+export function initialize(table, levels, area, areaCache, rendered, edges) {
     let level = levels[levels.currentLvl].level;
 
     for (let i = 0; i < level.length; i++) {

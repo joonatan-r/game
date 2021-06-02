@@ -1,4 +1,7 @@
-// bresenham, coordsEq, getCoordsNextTo, getSecondBestDirections, isWall, movePosToDrc, oppositeDrcs from util.js
+import {
+    bresenham, coordsEq, getCoordsNextTo, getSecondBestDirections, 
+    getRandomInt, isWall, movePosToDrc, oppositeDrcs 
+} from "./util.js";
 
 function createMobOfType(mobType) {
     return {
@@ -11,7 +14,7 @@ function createMobOfType(mobType) {
     };
 }
 
-function addMobs(levels) {
+export function addMobs(levels) {
     levels["Village"].mobs.push(Shady_Guy);
     levels["Ukko's House"].mobs.push(Ukko);
     levels["Random House"].mobs.push(Some_Guy);
@@ -23,7 +26,7 @@ function addMobs(levels) {
     };
 }
 
-function trySpawnMob(levels, rendered) {
+export function trySpawnMob(levels, rendered) {
     let spawnPos = null;
     let notRenderedNbr = 1;
     let level = levels[levels.currentLvl].level;
@@ -126,7 +129,7 @@ const Jorma = {
     isHostile: true,
     calcTarget: function(posIsValid) { movingAIs.random(this, posIsValid) }
 };
-const movingAIs = {
+export const movingAIs = {
     static: mob => {
         mob.target = mob.pos.slice();
     },

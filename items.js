@@ -1,5 +1,4 @@
-
-function addItems(levels) {
+export function addItems(levels) {
     levels["Village"].items.push({
         name: "a chest",
         symbol: "(",
