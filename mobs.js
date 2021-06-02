@@ -11,7 +11,6 @@ function createMobOfType(mobType) {
         symbol: mobType.symbol,
         isHostile: mobType.isHostile,
         isShooter: mobType.isShooter,
-        talk: mobType.talk,
         movingFunction: mobType.movingFunction
     };
 }
@@ -136,14 +135,16 @@ export const movingAIs = {
         }
     },
     static: mob => {
-        mob.target = mob.pos.slice();
+        mob.target = [mob.pos[0], mob.pos[1]];
     },
     random: (mob, posIsValid) => {
         let drc;
-        mob.target = mob.pos.slice();
-    
-        while (1) {
-            const prevTarget = mob.target.slice();
+        let maxIters = 50;
+        mob.target = [mob.pos[0], mob.pos[1]];
+
+
+        while (maxIters--) {
+            const prevTarget = [mob.target[0], mob.target[1]];
             drc = getRandomInt(1, 8);
 
             if (drc === 5) drc = 9;
@@ -151,7 +152,7 @@ export const movingAIs = {
             movePosToDrc(mob.target, "" + drc);
 
             if (!posIsValid(mob.target)) {
-                mob.target = prevTarget.slice();
+                mob.target = [prevTarget[0], prevTarget[1]];
                 continue;
             }
             break;
@@ -240,7 +241,7 @@ export const movingAIs = {
         if (min.pos && !coordsEq(mob.pos, min.pos)) {
             movingAIs.towardsPos(mob, min.pos, posIsValid, level);
         } else {
-            mob.target = mob.pos.slice();
+            mob.target = [mob.pos[0], mob.pos[1]];
         }
     }
 };

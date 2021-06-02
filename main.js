@@ -261,7 +261,7 @@ function processTurn() {
         if (mob.isShooter && mob.straightLineToTargetDrc) {
             shoot(mob.pos, mob.straightLineToTargetDrc, true);
         } else {
-            mob.pos = mob.target.slice();
+            mob.pos = [mob.target[0], mob.target[1]];
         }
     }
     render.renderAll(player, levels, customRenders);
