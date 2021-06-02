@@ -10,10 +10,10 @@ import {addItems} from "./items.js";
 import {showDialog} from "./UI.js";
 import events from "./events.js";
 import options from "./options.js";
-
-import { movingAIs } from "./mobs.js"; // for now, needed for eval when loading save, TODO: better system
+import { movingAIs } from "./mobs.js";
 
 // NOTE: all coords are given as (y,x)
+// NOTE: save and load can handle member functions, currently not needed
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls,
 //       fix inspecting, especially for non turn based
@@ -256,7 +256,7 @@ function processTurn() {
             gameOver(mob.name + " hits you! You die...");
             break;
         }
-        mob.calcTarget(posIsValid, level, rendered);
+        movingAIs[mob.movingFunction](mob, posIsValid, level, rendered);
 
         if (mob.isShooter && mob.straightLineToTargetDrc) {
             shoot(mob.pos, mob.straightLineToTargetDrc, true);

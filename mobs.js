@@ -3,6 +3,8 @@ import {
     getRandomInt, isWall, movePosToDrc, oppositeDrcs 
 } from "./util.js";
 
+// NOTE: with current implementation, movingAIs towards* can't be directly used by a mob
+
 function createMobOfType(mobType) {
     return {
         name: mobType.name,
@@ -10,7 +12,7 @@ function createMobOfType(mobType) {
         isHostile: mobType.isHostile,
         isShooter: mobType.isShooter,
         talk: mobType.talk,
-        calcTarget: mobType.calcTarget
+        movingFunction: mobType.movingFunction
     };
 }
 
@@ -74,7 +76,7 @@ const Shady_Guy = {
     isHostile: false,
     state: 0,
     pos: [23, 30],
-    calcTarget: function() { movingAIs.static(this) }
+    movingFunction: "static"
 };
 const Ukko = {
     name: "Ukko",
@@ -82,13 +84,7 @@ const Ukko = {
     isHostile: false,
     state: 9001,
     pos: [11, 13],
-    calcTarget: function(posIsValid) {
-        if (Math.random() < 0.5) {
-            movingAIs.random(this, posIsValid);
-        } else {
-            movingAIs.static(this);
-        }
-    }
+    movingFunction: "Ukko"
 };
 const Some_Guy = {
     name: "Some guy",
@@ -96,40 +92,49 @@ const Some_Guy = {
     isHostile: false,
     state: 0,
     pos: [13, 18],
-    calcTarget: function() { movingAIs.static(this) }
+    movingFunction: "static"
 };
 const Make = {
     name: "Make",
     symbol: "M",
     isHostile: true,
-    calcTarget: function(posIsValid, level, rendered) {
-        if (rendered[this.pos[0]][this.pos[1]] && this.huntingTarget) { // if player can see mob, mob can see player
-            movingAIs.towardsPos(this, this.huntingTarget.pos, posIsValid, level);
-        } else {
-            movingAIs.random(this, posIsValid);
-        }
-    }
+    movingFunction: "Make"
 };
 const Pekka = {
     name: "Pekka",
     symbol: "P",
     isHostile: true,
     isShooter: true,
-    calcTarget: function(posIsValid, level, rendered) {
-        if (rendered[this.pos[0]][this.pos[1]] && this.huntingTarget) {
-            movingAIs.towardsStraightLineFromPos(this, this.huntingTarget.pos, posIsValid, level);
-        } else {
-            movingAIs.static(this);
-        }
-    }
+    movingFunction: "Pekka"
 };
 const Jorma = {
     name: "Jorma",
     symbol: "J",
     isHostile: true,
-    calcTarget: function(posIsValid) { movingAIs.random(this, posIsValid) }
+    movingFunction: "random"
 };
 export const movingAIs = {
+    Ukko: (mob, posIsValid) => {
+        if (Math.random() < 0.5) {
+            movingAIs.random(mob, posIsValid);
+        } else {
+            movingAIs.static(mob);
+        }
+    },
+    Make: (mob, posIsValid, level, rendered) => {
+        if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget) { // if player can see mob, mob can see player
+            movingAIs.towardsPos(mob, mob.huntingTarget.pos, posIsValid, level);
+        } else {
+            movingAIs.random(mob, posIsValid);
+        }
+    },
+    Pekka: (mob, posIsValid, level, rendered) => {
+        if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget) {
+            movingAIs.towardsStraightLineFromPos(mob, mob.huntingTarget.pos, posIsValid, level);
+        } else {
+            movingAIs.static(mob);
+        }
+    },
     static: mob => {
         mob.target = mob.pos.slice();
     },
