@@ -15,11 +15,9 @@ import { movingAIs } from "./mobs.js";
 // NOTE: all coords are given as (y,x)
 // NOTE: save and load can handle member functions, currently not needed
 
-// TODO: improve show info, fix mob towards straight line to ignore see-through walls,
-//       fix inspecting for non turn based
-//       better non-dynamic option replacing
+// TODO: improve show info, fix mob towards straight line to ignore see-through walls
 
-const TURN_BASED = options.TURN_BASED;
+let TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
 
 const table = document.getElementById("table");
@@ -117,6 +115,7 @@ document.getElementById("optionsInputFile").addEventListener("change", function(
         for (let key of Object.keys(newOptions)) {
             options[key] = newOptions[key];
         }
+        TURN_BASED = options.TURN_BASED;
         showStartDialog();
     };
     fr.readAsText(this.files[0]);
@@ -624,7 +623,7 @@ function action(key, ctrl) {
             }
             break;
         case ";":
-            showMsg("Move to select a location. Use enter to select and esc to leave.");
+            showMsg("Move to a location to inspect. Use enter to select and esc to leave.");
             keypressListener.actionType = "selectPos";
             clickListener.actionType = "ignore";
             selectPos.currentPos = player.pos.slice();
@@ -701,7 +700,6 @@ function selectPos(drc) {
             }
             area[prevPos[0]][prevPos[1]].classList.remove("selected");
             area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.add("selected");
-            if (coordsEq(player.pos, selectPos.currentPos)) console.log(area[selectPos.currentPos[0]][selectPos.currentPos[1]].className);
             break;
         case "Enter":
             let msg = "";

@@ -11,6 +11,10 @@ export function changeRenderOptions(newOptions) {
     if (options.USE_DOTS) {
         tileConversion["."] = "\u00B7";
     }
+    USE_BG_IMG = options.USE_BG_IMG;
+    OBJ_BG = options.OBJ_BG;
+    SHOW_MEMORIZED = options.SHOW_MEMORIZED;
+    GRAY_MEMORIZED = options.GRAY_MEMORIZED;
 }
 
 function blocksSight(tile) {
@@ -45,10 +49,10 @@ const tileConversion = {
 if (options.USE_DOTS) {
     tileConversion["."] = "\u00B7";
 }
-const USE_BG_IMG = options.USE_BG_IMG;
-const OBJ_BG = options.OBJ_BG;
-const SHOW_MEMORIZED = options.SHOW_MEMORIZED;
-const GRAY_MEMORIZED = options.GRAY_MEMORIZED;
+let USE_BG_IMG = options.USE_BG_IMG;
+let OBJ_BG = options.OBJ_BG;
+let SHOW_MEMORIZED = options.SHOW_MEMORIZED;
+let GRAY_MEMORIZED = options.GRAY_MEMORIZED;
 export const render = {
     area: [], // these have to be initialized before use
     areaCache: [],
@@ -140,6 +144,7 @@ export const render = {
         let items = levels[levels.currentLvl].items;
         let memorized = levels[levels.currentLvl].memorized;
         let visitedTTypeWall = false;
+        let selectionPos = null; // used to not erase selection marker on pos when inspecting
     
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
@@ -148,6 +153,10 @@ export const render = {
                 // render.area[i][j].firstChild 
                 //     && render.area[i][j].firstChild.tagName === "IMG"
                 //     && render.area[i][j].removeChild(render.area[i][j].firstChild);
+
+                if (render.area[i][j].classList.contains("selected")) {
+                    selectionPos = [i, j];
+                }
                 render.area[i][j].className = "hidden";
                 render.area[i][j].customProps.infoKeys = [];
             }
@@ -244,6 +253,7 @@ export const render = {
                 render.area[i][j].classList.add(...classes);
             }
         }
+        selectionPos && render.area[selectionPos[0]][selectionPos[1]].classList.add("selected");
     },
     shotEffect: async function(shotPos, player, levels, customRenders) {
         const prevSymbols = [null, null, null, null];
