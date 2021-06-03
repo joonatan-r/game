@@ -46,6 +46,7 @@ if (options.USE_DOTS) {
     tileConversion["."] = "\u00B7";
 }
 const USE_BG_IMG = options.USE_BG_IMG;
+const OBJ_BG = options.OBJ_BG;
 const SHOW_MEMORIZED = options.SHOW_MEMORIZED;
 const GRAY_MEMORIZED = options.GRAY_MEMORIZED;
 export const render = {
@@ -86,18 +87,25 @@ export const render = {
         for (let item of items) {
             if (coordsEq(item.pos, posToRender) && !item.hidden) {
                 render.area[item.pos[0]][item.pos[1]].textContent = item.symbol;
+                OBJ_BG && (render.area[item.pos[0]][item.pos[1]].className = "obj-bg");
                 render.area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
             }
         }
         if (coordsEq(player.pos, posToRender) && !player.dead) {
             render.area[player.pos[0]][player.pos[1]].textContent = "@";
             // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./jee.png\"/>";
-            render.area[player.pos[0]][player.pos[1]].className = "player";
+
+            if (OBJ_BG) {
+                render.area[player.pos[0]][player.pos[1]].className = "player obj-bg"
+            } else {
+                render.area[player.pos[0]][player.pos[1]].className = "player";
+            }
             render.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
         }
         for (let mob of mobs) {
             if (coordsEq(mob.pos, posToRender)) {
                 render.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
+                OBJ_BG && (render.area[mob.pos[0]][mob.pos[1]].className = "obj-bg");
                 render.area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
             }
         }
@@ -185,18 +193,25 @@ export const render = {
         for (let item of items) {
             if (render.rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
                 render.area[item.pos[0]][item.pos[1]].textContent = item.symbol;
+                OBJ_BG && (render.area[item.pos[0]][item.pos[1]].className = "obj-bg");
                 render.area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
             }
         }
         if (!player.dead) {
             render.area[player.pos[0]][player.pos[1]].textContent = "@";
             // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./jee.png\"/>";
-            render.area[player.pos[0]][player.pos[1]].className = "player";
+
+            if (OBJ_BG) {
+                render.area[player.pos[0]][player.pos[1]].className = "player obj-bg"
+            } else {
+                render.area[player.pos[0]][player.pos[1]].className = "player";
+            }
             render.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
         }
         for (let mob of mobs) {
             if (render.rendered[mob.pos[0]][mob.pos[1]]) {
                 render.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
+                OBJ_BG && (render.area[mob.pos[0]][mob.pos[1]].className = "obj-bg");
                 render.area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
             }
         }

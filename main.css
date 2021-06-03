@@ -68,12 +68,21 @@ p {
     background-color: black;
 }
 
+.obj-bg {
+    background-color: black;
+}
+
 .player {
-    border: 1px solid white;
+    /* border but completely inside element */
+    -webkit-box-shadow:inset 0px 0px 0px 1px white;
+    -moz-box-shadow:inset 0px 0px 0px 1px white;
+    box-shadow:inset 0px 0px 0px 1px white;
 }
 
 .selected {
-    border: 1px solid green;
+    -webkit-box-shadow:inset 0px 0px 0px 1px white;
+    -moz-box-shadow:inset 0px 0px 0px 1px white;
+    box-shadow:inset 0px 0px 0px 1px white;
 }
 
 .wall.l {

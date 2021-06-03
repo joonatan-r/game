@@ -16,7 +16,7 @@ import { movingAIs } from "./mobs.js";
 // NOTE: save and load can handle member functions, currently not needed
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls,
-//       fix inspecting, especially for non turn based
+//       fix inspecting for non turn based
 //       better non-dynamic option replacing
 
 const TURN_BASED = options.TURN_BASED;
@@ -699,8 +699,9 @@ function selectPos(drc) {
             ) {
                 selectPos.currentPos = prevPos;
             }
-            area[prevPos[0]][prevPos[1]].classList.toggle("selected");
-            area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.toggle("selected");
+            area[prevPos[0]][prevPos[1]].classList.remove("selected");
+            area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.add("selected");
+            if (coordsEq(player.pos, selectPos.currentPos)) console.log(area[selectPos.currentPos[0]][selectPos.currentPos[1]].className);
             break;
         case "Enter":
             let msg = "";
