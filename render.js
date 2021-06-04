@@ -13,6 +13,7 @@ export function changeRenderOptions(newOptions) {
     }
     USE_BG_IMG = options.USE_BG_IMG;
     OBJ_BG = options.OBJ_BG;
+    OBJ_IMG = options.OBJ_IMG;
     SHOW_MEMORIZED = options.SHOW_MEMORIZED;
     GRAY_MEMORIZED = options.GRAY_MEMORIZED;
 }
@@ -51,6 +52,7 @@ if (options.USE_DOTS) {
 }
 let USE_BG_IMG = options.USE_BG_IMG;
 let OBJ_BG = options.OBJ_BG;
+let OBJ_IMG = options.OBJ_IMG;
 let SHOW_MEMORIZED = options.SHOW_MEMORIZED;
 let GRAY_MEMORIZED = options.GRAY_MEMORIZED;
 export const render = {
@@ -96,9 +98,11 @@ export const render = {
             }
         }
         if (coordsEq(player.pos, posToRender) && !player.dead) {
-            render.area[player.pos[0]][player.pos[1]].textContent = "@";
-            // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./jee.png\"/>";
-
+            if (OBJ_IMG) {
+                render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./img.png\"/>";
+            } else {
+                render.area[player.pos[0]][player.pos[1]].textContent = "@";
+            }
             if (OBJ_BG) {
                 render.area[player.pos[0]][player.pos[1]].className = "player obj-bg"
             } else {
@@ -108,7 +112,11 @@ export const render = {
         }
         for (let mob of mobs) {
             if (coordsEq(mob.pos, posToRender)) {
-                render.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
+                if (OBJ_IMG) {
+                    render.area[mob.pos[0]][mob.pos[1]].innerHTML = "<img src=\"./img.png\"/>";
+                } else {
+                    render.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
+                }
                 OBJ_BG && (render.area[mob.pos[0]][mob.pos[1]].className = "obj-bg");
                 render.area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
             }
@@ -150,9 +158,9 @@ export const render = {
             for (let j = 0; j < level[0].length; j++) {
                 render.rendered[i][j] = false;
                 render.areaCache[i][j] = render.area[i][j].textContent;
-                // render.area[i][j].firstChild 
-                //     && render.area[i][j].firstChild.tagName === "IMG"
-                //     && render.area[i][j].removeChild(render.area[i][j].firstChild);
+                render.area[i][j].firstChild 
+                    && render.area[i][j].firstChild.tagName === "IMG"
+                    && render.area[i][j].removeChild(render.area[i][j].firstChild);
 
                 if (render.area[i][j].classList.contains("selected")) {
                     selectionPos = [i, j];
@@ -207,9 +215,11 @@ export const render = {
             }
         }
         if (!player.dead) {
-            render.area[player.pos[0]][player.pos[1]].textContent = "@";
-            // render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./jee.png\"/>";
-
+            if (OBJ_IMG) {
+                render.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./img.png\"/>";
+            } else {
+                render.area[player.pos[0]][player.pos[1]].textContent = "@";
+            }
             if (OBJ_BG) {
                 render.area[player.pos[0]][player.pos[1]].className = "player obj-bg"
             } else {
@@ -219,7 +229,11 @@ export const render = {
         }
         for (let mob of mobs) {
             if (render.rendered[mob.pos[0]][mob.pos[1]]) {
-                render.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
+                if (OBJ_IMG) {
+                    render.area[mob.pos[0]][mob.pos[1]].innerHTML = "<img src=\"./img.png\"/>";
+                } else {
+                    render.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
+                }
                 OBJ_BG && (render.area[mob.pos[0]][mob.pos[1]].className = "obj-bg");
                 render.area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
             }
