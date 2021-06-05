@@ -537,12 +537,12 @@ function action(key, ctrl) {
             }
             break;
         case "Escape":
-            showDialog("Menu", ["Resume", "Save", "Load"], idx => {
+            showDialog("Menu", ["Save", "Load"], idx => {
                 switch (idx) {
-                    case 1:
+                    case 0:
                         save();
                         break;
-                    case 2:
+                    case 1:
                         load();
                         break;
                 }
@@ -733,7 +733,7 @@ function selectPos(drc) {
 function showMsg(msg) {
     status.textContent = msg;
     if (!msg) return; // empty string / null
-    msg = msg.trim().replaceAll("\n", "\n\t"); // more readable in history
+    msg = msg.trim().replaceAll("\n", "\n\t\t"); // more readable in history
     msgHistory.unshift(msg);
 }
 

@@ -11,11 +11,21 @@ const events = {
                     showMsg("[" + mob.name + "]: I heard that you talked to that guy in the random house.");
                     break;
                 case 9001:
-                    showDialog("[" + mob.name + "]: Hi! I have over 9 options.\n\nYour answer:", 
-                            ["option 1", "option 2", "option 3", "option 4", "option 5", "option 6", "option 7", 
-                             "option 8", "option 9", "option 10", "option 11", "option 12", "option 13", "option 14", 
-                             "option 15", "option 16", "option 17", "option 18", "option 19", "option 20"], 
-                            idx => showMsg("You selected option " + (idx + 1) + ".")
+                    showDialog("[" + mob.name + "]:\n\nHi! Give me a random number.\n\n[Your answer]:", 
+                            ["No.", "Why?", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", 
+                             "14", "15", "16", "17", "18", "19", "20"], 
+                            idx => {
+                                switch (idx) {
+                                    case 0:
+                                        showMsg("[" + mob.name + "]: Well screw you, too!");
+                                        break;
+                                    case 1:
+                                        showMsg("[" + mob.name + "]: Why not?");
+                                        break;
+                                    default:
+                                        showMsg("[" + mob.name + "]: That's a nice one dude!");
+                                }
+                            }
                     );
                     break;
             }
@@ -40,7 +50,7 @@ const events = {
         "Some guy": function(mob, showMsg, showDialog) {
             switch (mob.state) {
                 case 0:
-                    showDialog("[" + mob.name + "]: Hello there!\n\nYour answer:", 
+                    showDialog("[" + mob.name + "]:\n\nHello there!\n\n[Your answer]:", 
                             ["Hi!", "General Kenobi!", "[Don't answer]"], 
                             idx => {
                                 mob.state = { 0: 1, 1: 2, 2: 0 }[idx];

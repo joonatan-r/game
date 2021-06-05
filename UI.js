@@ -16,7 +16,7 @@ showDialog.msgHistory = [];
 export function showDialog(text, choices, onSelect, allowEsc, skipLog) {
     let choiceGroupIdx = null;
     showDialog.removeListeners();
-    !skipLog && showDialog.msgHistory.unshift(text.trim().replaceAll("\n", "\n\t"));
+    !skipLog && showDialog.msgHistory.unshift(text.trim().replaceAll("\n", "\n\t\t"));
 
     // if there are over 9 possible choices, divide them into groups of 8 (last one being probably
     // shorter) and add an option 9 to go to the next "choice group" (last one has the option to go
@@ -58,7 +58,7 @@ export function showDialog(text, choices, onSelect, allowEsc, skipLog) {
         for (let choice of choiceGroup) {
             const choiceIdx = idx;
             const c = document.createElement("p");
-            c.textContent = "[" + (idx + 1) + "]:\t" + choice;
+            c.textContent = "[" + (idx + 1) + "]:\t\t" + choice;
             dialog.appendChild(c);
             c.onclick = e => {
                 e.stopPropagation();
@@ -77,6 +77,15 @@ export function showDialog(text, choices, onSelect, allowEsc, skipLog) {
                 }
             }
             idx++;
+        }
+        if (allowEsc) {
+            const escP = document.createElement("p");
+            escP.textContent = "[Esc]:\t[Close menu]";
+            dialog.appendChild(escP);
+            escP.onclick = e => {
+                e.stopPropagation();
+                hideDialog();
+            }
         }
     }
     dialogKeyListener = e => {
