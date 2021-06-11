@@ -11,6 +11,10 @@ body {
               user-select: none;
 }
 
+* {
+    touch-action: manipulation;
+}
+
 table {
     border: solid white 1px;
     text-align: center;

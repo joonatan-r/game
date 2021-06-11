@@ -17,6 +17,27 @@ import { movingAIs } from "./mobs.js";
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls
 
+let MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+let listenersActive = false;
+
+// bandaid to enable mobile somehow
+
+if (MOBILE) {
+    const d = document.createElement("div");
+    const t = document.createElement("textarea");
+    d.style.width = "100px";
+    d.style.height = "100px";
+    d.style.overflow = "hidden";
+    t.style.fontSize = "2em";
+    d.appendChild(t);
+    document.body.appendChild(d);
+    t.addEventListener("input", () => {
+        if (!listenersActive) return;
+        handleKeypress(t.value.toLowerCase(), false);
+        t.value = "";
+    });
+}
+
 let TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
 
@@ -788,7 +809,7 @@ function clickListener(e) {
         menu.style.display = "none";
         return;
     }
-    if (!table.contains(e.target)) return;
+    if (MOBILE && e.target.tagName === "TEXTAREA") return;
     showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
@@ -890,6 +911,7 @@ function addListeners() {
     document.addEventListener("click", clickListener);
     document.addEventListener("contextmenu", menuListener);
     document.addEventListener("mousemove", mouseStyleListener);
+    listenersActive = true;
 }
 
 function removeListeners() {
@@ -897,6 +919,7 @@ function removeListeners() {
     document.removeEventListener("click", clickListener);
     document.removeEventListener("contextmenu", menuListener);
     document.removeEventListener("mousemove", mouseStyleListener);
+    listenersActive = false;
 
     // remove currently active key repeats to disable continuing moving
     for (let key of Object.keys(keyIntervals)) {
