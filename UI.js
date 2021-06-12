@@ -1,10 +1,13 @@
 const dialog = document.getElementById("dialog");
+const table = document.getElementById("table");
 let movingDialog = false;
+let moved = false;
 let dialogKeyListener;
 
 function dialogMoveListener(e) {
     dialog.style.left = (e.clientX - 5) + "px";
     dialog.style.top = (e.clientY - 5) + "px";
+    moved = true;
 }
 
 // these have to be initialized before use
@@ -14,6 +17,11 @@ showDialog.addListeners = () => {};
 showDialog.msgHistory = [];
 
 export function showDialog(text, choices, onSelect, allowEsc, skipLog) {
+    if (!moved) {
+        dialog.style.left = table.getBoundingClientRect().left + "px";
+        dialog.style.top = table.getBoundingClientRect().top + "px";
+    }
+
     let choiceGroupIdx = null;
     showDialog.removeListeners();
     !skipLog && showDialog.msgHistory.unshift(text.trim().replaceAll("\n", "\n\t\t"));

@@ -17,6 +17,14 @@ import { movingAIs } from "./mobs.js";
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls
 
+let TURN_BASED = options.TURN_BASED;
+let turnInterval = null;
+
+const table = document.getElementById("table");
+const info = document.getElementById("info");
+const status = document.getElementById("status");
+const menu = document.getElementById("clickMenu");
+
 let MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 let listenersActive = false;
 
@@ -28,9 +36,9 @@ if (MOBILE) {
     d.style.width = "100px";
     d.style.height = "100px";
     d.style.overflow = "hidden";
-    t.style.fontSize = "2em";
+    t.style.fontSize = "2em"; // prevents zooming to input
     d.appendChild(t);
-    document.body.appendChild(d);
+    document.body.insertBefore(d, table);
     t.addEventListener("input", () => {
         if (!listenersActive) return;
         handleKeypress(t.value.toLowerCase(), false);
@@ -38,13 +46,6 @@ if (MOBILE) {
     });
 }
 
-let TURN_BASED = options.TURN_BASED;
-let turnInterval = null;
-
-const table = document.getElementById("table");
-const info = document.getElementById("info");
-const status = document.getElementById("status");
-const menu = document.getElementById("clickMenu");
 const area = [];
 const areaCache = [];
 const rendered = [];
