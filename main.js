@@ -128,21 +128,6 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
         table.style.backgroundColor = "#000";
     }
 });
-document.getElementById("optionsInputFile").addEventListener("change", function() {
-    const fr = new FileReader();
-    fr.onload = () => {
-        const newOptions = JSON.parse(fr.result);
-        changeRenderOptions(newOptions);
-
-        for (let key of Object.keys(newOptions)) {
-            options[key] = newOptions[key];
-        }
-        TURN_BASED = options.TURN_BASED;
-        showStartDialog();
-    };
-    fr.readAsText(this.files[0]);
-    this.value = null;
-});
 showStartDialog();
 
 function showStartDialog() {
@@ -167,7 +152,35 @@ function showStartDialog() {
                 load();
                 break;
             case 2:
-                importOptions();
+                const t = document.createElement("textarea");
+                t.onkeydown = e => e.stopPropagation();
+                document.body.appendChild(t);
+                const optKeys = [...Object.keys(options)];
+                const optList = [...Object.keys(options)];
+                
+                for (let i = 0; i < optList.length; i++) {
+                    optList[i] += ": " + options[optList[i]];
+                }
+                showDialog("Options", ["Cancel", ...optList], idx => {
+                    if (idx !== 0) {
+                        idx--;
+                        let opt = options[optKeys[idx]];
+
+                        if (typeof opt === "number") {
+                            const val = Number(t.value);
+                            if (val > 10) {
+                                options[optKeys[idx]] = val;
+                            }
+                        } else if (typeof opt === "boolean") {
+                            options[optKeys[idx]] = !opt;
+                        }
+                        changeRenderOptions(options);
+                        TURN_BASED = options.TURN_BASED;
+                    }
+                    t.onkeydown = null;
+                    document.body.removeChild(t);
+                    showStartDialog();
+                }, false, true);
                 break;
         }
     }, false, true);
@@ -203,11 +216,9 @@ function save() {
 }
 
 function load() {
+    removeListeners(); // don't trigger click listener here
     document.getElementById("loadInputFile").click();
-}
-
-function importOptions() {
-    document.getElementById("optionsInputFile").click();
+    addListeners();
 }
 
 function posIsValid(pos) {

@@ -60,7 +60,7 @@ p {
     background-color: #777;
 }
 
-#loadInputFile, #optionsInputFile {
+#loadInputFile {
     display: none;
 }
 
