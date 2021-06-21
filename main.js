@@ -1,16 +1,15 @@
-import {infoTable} from "./levelData.js";
+import { infoTable } from "./levelData.js";
 import { createLevels, initialize } from "./level.js";
 import {
     bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
     pixelCoordsToDrc, makeTextFile, projectileFromDrc 
 } from "./util.js";
 import { render, changeRenderOptions } from "./render.js";
-import { trySpawnMob, addMobs } from "./mobs.js";
-import {addItems} from "./items.js";
-import {showDialog} from "./UI.js";
+import { trySpawnMob, addMobs, movingAIs } from "./mobs.js";
+import { addItems } from "./items.js";
+import ui from "./UI.js";
 import events from "./events.js";
 import options from "./options.js";
-import { movingAIs } from "./mobs.js";
 
 // NOTE: all coords are given as (y,x)
 // NOTE: save and load can handle member functions, currently not needed
@@ -67,13 +66,8 @@ let customRenders = []; // for "animations" to not get erased
 let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let autoTravelStack = []; // used to cancel previous autoTravels when there is a new one
-showDialog.removeListeners = removeListeners; // initialize showDialog
-showDialog.addListeners = addListeners;
-showDialog.msgHistory = msgHistory;
-render.area = area; // initialize render
-render.areaCache = areaCache;
-render.rendered = rendered;
-render.edges = edges;
+ui.updateFields(removeListeners, addListeners, msgHistory); // initialize ui
+render.updateFields(area, areaCache, rendered, edges); // initialize render
 initialize(table, levels, area, areaCache, rendered, edges);
 addMobs(levels);
 addItems(levels);
@@ -131,7 +125,7 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
 showStartDialog();
 
 function showStartDialog() {
-    showDialog("Start", ["New game", "Load game", "Options"], idx => {
+    ui.showDialog("Start", ["New game", "Load game", "Options"], idx => {
         switch (idx) {
             case 0:
                 updateInfo();
@@ -161,7 +155,7 @@ function showStartDialog() {
                 for (let i = 0; i < optList.length; i++) {
                     optList[i] += ": " + options[optList[i]];
                 }
-                showDialog("Options", ["Cancel", ...optList], idx => {
+                ui.showDialog("Options", ["Cancel", ...optList], idx => {
                     if (idx !== 0) {
                         idx--;
                         let opt = options[optKeys[idx]];
@@ -244,14 +238,10 @@ function posIsValid(pos) {
 }
 
 function tryFireEvent(type, entity) {
-    events.items = items;
-    events.mobs = mobs;
-    events.levels = levels;
-    events.level = level;
-    events.player = player;
+    events.updateFields(items, mobs, levels, level, player);
 
     if (events[type] && events[type][entity.name]) {
-        events[type][entity.name](entity, showMsg, showDialog);
+        events[type][entity.name](entity, showMsg, ui.showDialog);
     }
 }
 
@@ -570,7 +560,7 @@ function action(key, ctrl) {
             }
             break;
         case "Escape":
-            showDialog("Menu", ["Save", "Load"], idx => {
+            ui.showDialog("Menu", ["Save", "Load"], idx => {
                 switch (idx) {
                     case 0:
                         save();
@@ -590,7 +580,7 @@ function action(key, ctrl) {
             }
             return;
         case "h":
-            if (msgHistory.length) showDialog("Message history:", msgHistory, ()=>{}, true, true);
+            if (msgHistory.length) ui.showDialog("Message history:", msgHistory, ()=>{}, true, true);
             return;
         case "i":
             let contentNames = [];
@@ -598,8 +588,8 @@ function action(key, ctrl) {
             for (let item of player.inventory) contentNames.push(item.name);
 
             if (contentNames.length !== 0) {
-                showDialog("Contents of your inventory:", contentNames, itemIdx => {
-                    showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", 
+                ui.showDialog("Contents of your inventory:", contentNames, itemIdx => {
+                    ui.showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", 
                                ["Drop"], actionIdx => {
                         switch (actionIdx) {
                             case 0:
@@ -641,7 +631,7 @@ function action(key, ctrl) {
                         }
                     }
                     if (itemsHere.length > 1) {
-                        showDialog("What do you want to pick up?", itemNames, idx => {
+                        ui.showDialog("What do you want to pick up?", itemNames, idx => {
                             const removed = items.splice(itemIdxs[idx], 1)[0];
                             player.inventory.push(removed);
                             showMsg("You pick up " + removed.name + ".");

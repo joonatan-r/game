@@ -1,9 +1,11 @@
 const events = {
-    items: [], // { these have to be up to date every time an event is executed
-    mobs: [],
-    levels: {},
-    level: [],
-    player: {}, // }
+    updateFields: function(items, mobs, levels, level, player) {
+        events.items = items;
+        events.mobs = mobs;
+        events.levels = levels;
+        events.level = level;
+        events.player = player;
+    },
     onInteract: {
         "Ukko": function(mob, showMsg, showDialog) {
             switch (mob.state) {

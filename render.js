@@ -29,16 +29,6 @@ function getTileToRender(tile) {
     return tile;
 }
 
-function addWall(level, memorized, i, j, currentTile, addCallback) {
-    if (level[i] && (typeof level[i][j] !== "undefined")
-        && (render.rendered[i][j] || (SHOW_MEMORIZED && memorized[i][j]))
-        && (!isWall(level[i][j]) 
-        || (blocksSight(currentTile) && !blocksSight(level[i][j])))
-    ) {
-        addCallback();
-    }
-}
-
 const tileConversion = {
     ".": "",
     "*w": "",
@@ -55,11 +45,14 @@ let OBJ_BG = options.OBJ_BG;
 let OBJ_IMG = options.OBJ_IMG;
 let SHOW_MEMORIZED = options.SHOW_MEMORIZED;
 let GRAY_MEMORIZED = options.GRAY_MEMORIZED;
+
 export const render = {
-    area: [], // these have to be initialized before use
-    areaCache: [],
-    rendered: [],
-    edges: [],
+    updateFields: function(area, areaCache, rendered, edges) {
+        render.area = area;
+        render.areaCache = areaCache;
+        render.rendered = rendered;
+        render.edges = edges;
+    },
     renderPos: function(posToRender, player, levels, customRenders) {
         let level = levels[levels.currentLvl].level;
         let mobs = levels[levels.currentLvl].mobs;
@@ -76,7 +69,7 @@ export const render = {
         } else if (!render.rendered[posToRender[0]][posToRender[1]] && SHOW_MEMORIZED && memorized[posToRender[0]][posToRender[1]]) {
             render.area[posToRender[0]][posToRender[1]].textContent = getTileToRender(level[posToRender[0]][posToRender[1]]);
 
-            if (!blocksSight(level[posToRender[0]][posToRender[1]])) { // always 
+            if (!blocksSight(level[posToRender[0]][posToRender[1]])) { // always (<-- i have no idea what this comment means)
                 if (GRAY_MEMORIZED) {
                     render.area[posToRender[0]][posToRender[1]].className = "mem";
                 } else {
@@ -140,10 +133,22 @@ export const render = {
         } else {
             classes.push("wall");
         }
-        addWall(level, memorized, posToRender[0] - 1, posToRender[1], level[posToRender[0]][posToRender[1]], () => classes.push("t"));
-        addWall(level, memorized, posToRender[0], posToRender[1] - 1, level[posToRender[0]][posToRender[1]], () => classes.push("l"));
-        addWall(level, memorized, posToRender[0], posToRender[1] + 1, level[posToRender[0]][posToRender[1]], () => classes.push("r"));
-        addWall(level, memorized, posToRender[0] + 1, posToRender[1], level[posToRender[0]][posToRender[1]], () => classes.push("b"));
+        const paramList = [
+            { i: posToRender[0] - 1, j: posToRender[1], side: "t" },
+            { i: posToRender[0], j: posToRender[1] - 1, side: "l" },
+            { i: posToRender[0], j: posToRender[1] + 1, side: "r" },
+            { i: posToRender[0] + 1, j: posToRender[1], side: "b" }
+        ];
+
+        for (let p of paramList) {
+            if (level[p.i] && (typeof level[p.i][p.j] !== "undefined")
+                && (render.rendered[p.i][p.j] || (SHOW_MEMORIZED && memorized[p.i][p.j]))
+                && (!isWall(level[p.i][p.j]) 
+                || (blocksSight(level[posToRender[0]][posToRender[1]]) && !blocksSight(level[p.i][p.j])))
+            ) {
+                classes.push(p.side);
+            }
+        }
         render.area[posToRender[0]][posToRender[1]].classList.add(...classes);
     },
     renderAll: function(player, levels, customRenders) {
@@ -260,10 +265,22 @@ export const render = {
                 } else {
                     classes.push("wall");
                 }
-                addWall(level, memorized, i + 1, j, level[i][j], () => classes.push("b"));
-                addWall(level, memorized, i - 1, j, level[i][j], () => classes.push("t"));
-                addWall(level, memorized, i, j - 1, level[i][j], () => classes.push("l"));
-                addWall(level, memorized, i, j + 1, level[i][j], () => classes.push("r"));
+                const paramList = [
+                    { i: i - 1, j: j, side: "t" },
+                    { i: i, j: j - 1, side: "l" },
+                    { i: i, j: j + 1, side: "r" },
+                    { i: i + 1, j: j, side: "b" }
+                ];
+                
+                for (let p of paramList) {
+                    if (level[p.i] && (typeof level[p.i][p.j] !== "undefined")
+                        && (render.rendered[p.i][p.j] || (SHOW_MEMORIZED && memorized[p.i][p.j]))
+                        && (!isWall(level[p.i][p.j]) 
+                        || (blocksSight(level[i][j]) && !blocksSight(level[p.i][p.j])))
+                    ) {
+                        classes.push(p.side);
+                    }
+                }
                 render.area[i][j].classList.add(...classes);
             }
         }
