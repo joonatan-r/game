@@ -1,30 +1,38 @@
 const dialog = document.getElementById("dialog");
 const table = document.getElementById("table");
-let movingDialog = false;
-let moved = false;
-let dialogKeyListener;
+const status = document.getElementById("status");
 
-function dialogMoveListener(e) {
-    dialog.style.left = (e.clientX - 5) + "px";
-    dialog.style.top = (e.clientY - 5) + "px";
-    moved = true;
-}
+export default class UI {
+    dialogMoved = false;
 
-const ui = {
-    updateFields: function(removeListeners, addListeners, msgHistory) {
-        ui.removeListeners = removeListeners;
-        ui.addListeners = addListeners;
-        ui.msgHistory = msgHistory;
-    },
-    showDialog: function(text, choices, onSelect, allowEsc, skipLog) {
-        if (!moved) {
+    constructor(removeListeners, addListeners, msgHistory) {
+        this.removeListeners = removeListeners;
+        this.addListeners = addListeners;
+        this.msgHistory = msgHistory;
+    }
+
+    dialogMoveListener(e) {
+        dialog.style.left = (e.clientX - 5) + "px";
+        dialog.style.top = (e.clientY - 5) + "px";
+        this.dialogMoved = true;
+    }
+
+    showMsg(msg) {
+        status.textContent = msg;
+        if (!msg) return; // empty string / null
+        msg = msg.trim().replaceAll("\n", "\n\t\t"); // more readable in history
+        this.msgHistory.unshift(msg);
+    }
+
+    showDialog(text, choices, onSelect, allowEsc, skipLog) {
+        if (!this.dialogMoved) {
             dialog.style.left = table.getBoundingClientRect().left + "px";
             dialog.style.top = table.getBoundingClientRect().top + "px";
         }
     
         let choiceGroupIdx = null;
-        ui.removeListeners();
-        !skipLog && ui.msgHistory.unshift(text.trim().replaceAll("\n", "\n\t\t"));
+        this.removeListeners();
+        !skipLog && this.msgHistory.unshift(text.trim().replaceAll("\n", "\n\t\t"));
     
         // if there are over 9 possible choices, divide them into groups of 8 (last one being probably
         // shorter) and add an option 9 to go to the next "choice group" (last one has the option to go
@@ -75,12 +83,12 @@ const ui = {
                         repopulateDialog();
                     } else {
                         let optionNumber = choiceIdx;
-                        !skipLog && ui.msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
+                        !skipLog && this.msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
     
                         if (choiceGroupIdx !== null) {
                             optionNumber += 8 * choiceGroupIdx;
                         }
-                        ui.hideDialog();
+                        this.hideDialog();
                         onSelect(optionNumber);
                     }
                 }
@@ -92,13 +100,13 @@ const ui = {
                 dialog.appendChild(escP);
                 escP.onclick = e => {
                     e.stopPropagation();
-                    ui.hideDialog();
+                    this.hideDialog();
                 }
             }
         }
-        dialogKeyListener = e => {
+        this.dialogKeyListener = e => {
             if (allowEsc && e.key === "Escape") {
-                ui.hideDialog();
+                this.hideDialog();
                 return;
             }
             let pressedNumber = Number(e.key);
@@ -110,16 +118,16 @@ const ui = {
                 repopulateDialog();
             } else {
                 let optionNumber = pressedNumber - 1;
-                !skipLog && ui.msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
+                !skipLog && this.msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
     
                 if (choiceGroupIdx !== null) {
                     optionNumber += 8 * choiceGroupIdx;
                 }
-                ui.hideDialog();
+                this.hideDialog();
                 onSelect(optionNumber);
             }
         };
-        document.addEventListener("keydown", dialogKeyListener);
+        document.addEventListener("keydown", this.dialogKeyListener);
         dialog.style.display = "block";
         const p = document.createElement("p");
         p.setAttribute("id", "dialogText");
@@ -128,21 +136,22 @@ const ui = {
         p.onclick = e => {
             e.stopPropagation();
     
-            if (movingDialog) {
+            if (this.movingDialog) {
                 document.body.style.cursor = "default";
-                document.removeEventListener("mousemove", dialogMoveListener);
+                document.removeEventListener("mousemove", this.dialogMoveListener);
             } else {
                 document.body.style.cursor = "move";
-                document.addEventListener("mousemove", dialogMoveListener);
+                document.addEventListener("mousemove", this.dialogMoveListener);
             }
-            movingDialog = !movingDialog;
+            this.movingDialog = !this.movingDialog;
         }
         repopulateDialog(true);
-    },
-    hideDialog: function() {
+    }
+
+    hideDialog() {
         dialog.style.display = "none";
-        document.removeEventListener("keydown", dialogKeyListener);
-        ui.addListeners();
+        document.removeEventListener("keydown", this.dialogKeyListener);
+        this.addListeners();
     
         while (dialog.firstChild) {
             dialog.firstChild.onclick = null; // just to be safe
@@ -150,5 +159,3 @@ const ui = {
         }
     }
 };
-
-export default ui;

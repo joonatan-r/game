@@ -1,13 +1,12 @@
-import {levelData} from "./levelData.js";
+import { levelData } from "./levelData.js";
 
-export function createLevels() {
+export function initialize(levels, table, area, rendered) {
     const levelCharMap = {
         "w": "*w", // "normal" wall
         "f": "*f", // "fake" wall
         "s": "*s", // "see-through" wall
         "t": "*t" // wall that blocks sight, but shows the wall tile contents
     };
-    let levels = { currentLvl: "" };
     let level = [[]];
     let yIdx = 0;
     let xIdx = 0;
@@ -18,6 +17,8 @@ export function createLevels() {
     let travelName = "";
     let travelCoords = [];
     let escaped = false;
+
+    levels.currentLvl = "";
     
     for (let c of levelData) {
         if (parseStatus === "" && c !== "\n") {
@@ -102,30 +103,21 @@ export function createLevels() {
         escaped = false;
     }
     levels.currentLvl = Object.keys(levels)[1];
-    return levels;
-}
-
-export function initialize(table, levels, area, areaCache, rendered, edges) {
-    let level = levels[levels.currentLvl].level;
+    level = levels[levels.currentLvl].level;
 
     for (let i = 0; i < level.length; i++) {
         const tr = document.createElement("tr");
         table.appendChild(tr);
         area.push([]);
-        areaCache.push([]);
         rendered.push([]);
       
         for (let j = 0; j < level[0].length; j++) {
-            if (i === 0 || j === 0 || i === level.length - 1 || j === level[0].length - 1) {
-                edges.push([i, j]);
-            }
             rendered[i][j] = false;
             const td = document.createElement("td");
             tr.appendChild(td);
             area[i][j] = td;
             area[i][j].customProps = {};
             area[i][j].customProps.coords = [i, j];
-            areaCache[i][j] = "";
         }
     }
     for (let lvl of Object.keys(levels)) {

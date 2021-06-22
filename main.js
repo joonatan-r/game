@@ -1,13 +1,13 @@
 import { infoTable } from "./levelData.js";
-import { createLevels, initialize } from "./level.js";
+import { initialize } from "./level.js";
 import {
     bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
     pixelCoordsToDrc, makeTextFile, projectileFromDrc 
 } from "./util.js";
-import { render, changeRenderOptions } from "./render.js";
 import { trySpawnMob, addMobs, movingAIs } from "./mobs.js";
 import { addItems } from "./items.js";
-import ui from "./UI.js";
+import Renderer from "./render.js";
+import UI from "./UI.js";
 import events from "./events.js";
 import options from "./options.js";
 
@@ -21,7 +21,6 @@ let turnInterval = null;
 
 const table = document.getElementById("table");
 const info = document.getElementById("info");
-const status = document.getElementById("status");
 const menu = document.getElementById("clickMenu");
 
 let MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -46,9 +45,7 @@ if (MOBILE) {
 }
 
 const area = [];
-const areaCache = [];
 const rendered = [];
-const edges = [];
 const msgHistory = [];
 const keyIntervals = {}; // for key repeats when holding key
 let timeTracker = {};
@@ -57,18 +54,20 @@ timeTracker.turnsUntilShoot = 0;
 let player = {};
 player.inventory = [];
 player.pos = [10, 13];
-let levels = createLevels();
+let levels = {};
+
+initialize(levels, table, area, rendered);
+
 let level = levels[levels.currentLvl].level;
-let memorized = levels[levels.currentLvl].memorized;
 let mobs = levels[levels.currentLvl].mobs;
 let items = levels[levels.currentLvl].items;
 let customRenders = []; // for "animations" to not get erased
 let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let autoTravelStack = []; // used to cancel previous autoTravels when there is a new one
-ui.updateFields(removeListeners, addListeners, msgHistory); // initialize ui
-render.updateFields(area, areaCache, rendered, edges); // initialize render
-initialize(table, levels, area, areaCache, rendered, edges);
+const render = new Renderer(area, rendered);
+const ui = new UI(removeListeners, addListeners, msgHistory);
+
 addMobs(levels);
 addItems(levels);
 addListeners();
@@ -101,7 +100,6 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
         level = levels[levels.currentLvl].level;
         mobs = levels[levels.currentLvl].mobs;
         items = levels[levels.currentLvl].items;
-        memorized = levels[levels.currentLvl].memorized;
         player = loadData.player;
         timeTracker = loadData.timeTracker;
         updateInfo();
@@ -168,7 +166,7 @@ function showStartDialog() {
                         } else if (typeof opt === "boolean") {
                             options[optKeys[idx]] = !opt;
                         }
-                        changeRenderOptions(options);
+                        render.changeRenderOptions(options);
                         TURN_BASED = options.TURN_BASED;
                     }
                     t.onkeydown = null;
@@ -238,15 +236,19 @@ function posIsValid(pos) {
 }
 
 function tryFireEvent(type, entity) {
-    events.updateFields(items, mobs, levels, level, player);
-
     if (events[type] && events[type][entity.name]) {
-        events[type][entity.name](entity, showMsg, ui.showDialog);
+        events[type][entity.name](entity, ui, {
+            items: items,
+            mobs: mobs,
+            levels: levels,
+            level: level,
+            player: player
+        });
     }
 }
 
 function gameOver(msg) {
-    showMsg(msg);
+    ui.showMsg(msg);
     !TURN_BASED && clearInterval(turnInterval);
     interruptAutoTravel = true;
     removeListeners();
@@ -365,7 +367,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
             break;
         case "Escape":
             timeTracker.turnsUntilShoot = 0;
-            showMsg("");
+            ui.showMsg("");
             TURN_BASED && addListeners();
             keypressListener.actionType = null;
             clickListener.actionType = null;
@@ -397,7 +399,7 @@ function melee(drc) {
             movePosToDrc(meleePos, drc);
             break;
         case "Escape":
-            showMsg("");
+            ui.showMsg("");
             keypressListener.actionType = null;
             clickListener.actionType = null;
             return;
@@ -412,7 +414,7 @@ function melee(drc) {
 
     for (let i = 0; i < mobs.length; i++) {
         if (coordsEq(meleePos, mobs[i].pos)) {
-            showMsg("You hit " + mobs[i].name + "!");
+            ui.showMsg("You hit " + mobs[i].name + "!");
             mobs.splice(i, 1);
         }
     }
@@ -436,7 +438,7 @@ function interact(drc) {
             movePosToDrc(interactPos, drc);
             break;
         case "Escape":
-            showMsg("");
+            ui.showMsg("");
             keypressListener.actionType = null;
             clickListener.actionType = null;
             return;
@@ -488,7 +490,7 @@ function movePlayer(newPos) {
             } else {
                 msg += "There's " + items[i].name + " here.";
             }
-            showMsg(msg);
+            ui.showMsg(msg);
             return;
         }
     }
@@ -506,7 +508,6 @@ function tryChangeLvl() {
                 player.pos = levels[lvl].travelPoints[levels.currentLvl][idx].slice();
                 mobs = levels[lvl].mobs;
                 items = levels[lvl].items;
-                memorized = levels[lvl].memorized;
                 levels.currentLvl = lvl;
 
                 if (options.USE_BG_IMG) {
@@ -574,7 +575,7 @@ function action(key, ctrl) {
         case "f":
             if (timeTracker.turnsUntilShoot === 0) {
                 timeTracker.turnsUntilShoot = 10;
-                showMsg("In what direction?");
+                ui.showMsg("In what direction?");
                 keypressListener.actionType = "shoot";
                 clickListener.actionType = "chooseDrc";
             }
@@ -596,23 +597,23 @@ function action(key, ctrl) {
                                 let item = player.inventory.splice(itemIdx, 1)[0];
                                 item.pos = player.pos.slice();
                                 items.push(item);
-                                showMsg("You drop \"" + contentNames[itemIdx] + "\".");
+                                ui.showMsg("You drop \"" + contentNames[itemIdx] + "\".");
                                 processTurn();
                                 break;
                         }
                     }, true, true);
                 }, true, true);
             } else {
-                showMsg("Your inventory is empty.");
+                ui.showMsg("Your inventory is empty.");
             }
             return;
         case "r":
-            showMsg("In what direction?");
+            ui.showMsg("In what direction?");
             keypressListener.actionType = "melee";
             clickListener.actionType = "chooseDrc";
             return;
         case "t":
-            showMsg("In what direction?");
+            ui.showMsg("In what direction?");
             keypressListener.actionType = "interact";
             clickListener.actionType = "chooseDrc";
             return;
@@ -634,19 +635,19 @@ function action(key, ctrl) {
                         ui.showDialog("What do you want to pick up?", itemNames, idx => {
                             const removed = items.splice(itemIdxs[idx], 1)[0];
                             player.inventory.push(removed);
-                            showMsg("You pick up " + removed.name + ".");
+                            ui.showMsg("You pick up " + removed.name + ".");
                         }, true, true);
                     } else {
                         const removed = items.splice(i, 1)[0];
                         player.inventory.push(removed);
-                        showMsg("You pick up " + removed.name + ".");
+                        ui.showMsg("You pick up " + removed.name + ".");
                     }
                     break;
                 }
             }
             break;
         case ";":
-            showMsg("Move to a location to inspect. Use enter to select and esc to leave.");
+            ui.showMsg("Move to a location to inspect. Use enter to select and esc to leave.");
             keypressListener.actionType = "selectPos";
             clickListener.actionType = "ignore";
             selectPos.currentPos = player.pos.slice();
@@ -738,10 +739,10 @@ function selectPos(drc) {
                     msg += "No info\n";
                 }
             }
-            showMsg(msg);
+            ui.showMsg(msg);
             break;
         case "Escape":
-            showMsg("");
+            ui.showMsg("");
             area[prevPos[0]][prevPos[1]].classList.toggle("selected");
             keypressListener.actionType = null;
             clickListener.actionType = null;
@@ -751,13 +752,6 @@ function selectPos(drc) {
             clickListener.actionType = "ignore";
             return;
     }
-}
-
-function showMsg(msg) {
-    status.textContent = msg;
-    if (!msg) return; // empty string / null
-    msg = msg.trim().replaceAll("\n", "\n\t\t"); // more readable in history
-    msgHistory.unshift(msg);
 }
 
 function handleKeypress(key, ctrl) {
@@ -801,7 +795,7 @@ function keypressListener(e) {
             keyIntervals[e.key] = "tempVal";
             setKeyRepeat(e);
         }
-        showMsg("");
+        ui.showMsg("");
     }
     handleKeypress(e.key, e.ctrlKey);
 }
@@ -812,7 +806,7 @@ function clickListener(e) {
         return;
     }
     if (MOBILE && e.target.tagName === "TEXTAREA") return;
-    showMsg("");
+    ui.showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
     const x = e.x - (rect.left + rect.width / 2);
@@ -883,7 +877,7 @@ function menuListener(e) {
                 msg += "No info\n";
             }
         }
-        showMsg(msg);
+        ui.showMsg(msg);
     };
 }
 
