@@ -292,7 +292,6 @@ export default class Renderer {
     }
 
     async shotEffect(shotPos, player, levels, customRenders) {
-        const prevSymbols = [null, null, null, null];
         let obj, obj0, obj1, obj2, obj3;
         this.area[shotPos[0]][shotPos[1]].textContent = "x";
         obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
@@ -302,50 +301,50 @@ export default class Renderer {
         
         removeByReference(customRenders, obj);
         this.renderPos(shotPos, player, levels, customRenders);
-        this.area[shotPos[0] - 1] && this.area[shotPos[0] - 1][shotPos[1] - 1]
-            && (prevSymbols[0] = this.area[shotPos[0] - 1][shotPos[1] - 1].textContent);
-        this.area[shotPos[0] - 1] && this.area[shotPos[0] - 1][shotPos[1] + 1] 
-            && (prevSymbols[1] = this.area[shotPos[0] - 1][shotPos[1] + 1].textContent);
-        this.area[shotPos[0] + 1] && this.area[shotPos[0] + 1][shotPos[1] + 1] 
-            && (prevSymbols[2] = this.area[shotPos[0] + 1][shotPos[1] + 1].textContent);
-        this.area[shotPos[0] + 1] && this.area[shotPos[0] + 1][shotPos[1] - 1] 
-            && (prevSymbols[3] = this.area[shotPos[0] + 1][shotPos[1] - 1].textContent);
         
-        if (prevSymbols[0] !== null) {
+        if (this.area[shotPos[0] - 1] && this.area[shotPos[0] - 1][shotPos[1] - 1]
+            && this.rendered[shotPos[0] - 1][shotPos[1] - 1]
+        ) {
             this.area[shotPos[0] - 1][shotPos[1] - 1].textContent = "\\";
             obj0 = { symbol: "\\", pos: [shotPos[0] - 1, shotPos[1] - 1] };
             customRenders.push(obj0);
         }
-        if (prevSymbols[1] !== null) {
+        if (this.area[shotPos[0] - 1] && this.area[shotPos[0] - 1][shotPos[1] + 1]
+            && this.rendered[shotPos[0] - 1][shotPos[1] + 1]
+        ) {
             this.area[shotPos[0] - 1][shotPos[1] + 1].textContent = "/";
             obj1 = { symbol: "/", pos: [shotPos[0] - 1, shotPos[1] + 1] };
             customRenders.push(obj1);
         }
-        if (prevSymbols[2] !== null) {
+        if (this.area[shotPos[0] + 1] && this.area[shotPos[0] + 1][shotPos[1] + 1]
+            && this.rendered[shotPos[0] + 1][shotPos[1] + 1]
+        ) {
             this.area[shotPos[0] + 1][shotPos[1] + 1].textContent = "\\";
             obj2 = { symbol: "\\", pos: [shotPos[0] + 1, shotPos[1] + 1] };
             customRenders.push(obj2);
         }
-        if (prevSymbols[3] !== null) {
+        if (this.area[shotPos[0] + 1] && this.area[shotPos[0] + 1][shotPos[1] - 1]
+            && this.rendered[shotPos[0] + 1][shotPos[1] - 1]
+        ) {
             this.area[shotPos[0] + 1][shotPos[1] - 1].textContent = "/";
             obj3 = { symbol: "/", pos: [shotPos[0] + 1, shotPos[1] - 1] };
             customRenders.push(obj3);
         }
         await new Promise(r => setTimeout(r, 300));
         
-        if (prevSymbols[0] !== null) {
+        if (obj0) {
             removeByReference(customRenders, obj0);
             this.renderPos([shotPos[0] - 1, shotPos[1] - 1], player, levels, customRenders);
         }
-        if (prevSymbols[1] !== null) {
+        if (obj1) {
             removeByReference(customRenders, obj1);
             this.renderPos([shotPos[0] - 1, shotPos[1] + 1], player, levels, customRenders);
         }
-        if (prevSymbols[2] !== null) {
+        if (obj2) {
             removeByReference(customRenders, obj2);
             this.renderPos([shotPos[0] + 1, shotPos[1] + 1], player, levels, customRenders);
         }
-        if (prevSymbols[3] !== null) {
+        if (obj3) {
             removeByReference(customRenders, obj3);
             this.renderPos([shotPos[0] + 1, shotPos[1] - 1], player, levels, customRenders);
         }

@@ -4,11 +4,13 @@ const status = document.getElementById("status");
 
 export default class UI {
     dialogMoved = false;
+    dialogStack = [];
 
     constructor(removeListeners, addListeners, msgHistory) {
         this.removeListeners = removeListeners;
         this.addListeners = addListeners;
         this.msgHistory = msgHistory;
+        this.dialogMoveListener = this.dialogMoveListener.bind(this);
     }
 
     dialogMoveListener(e) {
@@ -24,10 +26,16 @@ export default class UI {
         this.msgHistory.unshift(msg);
     }
 
-    showDialog(text, choices, onSelect, allowEsc, skipLog) {
+    // stackDepth used to enable navigating to the previous dialog, when a choice can open a new dialog.
+    // The first dialog should have 0, the dialog that its choices can open should have 1, etc.
+
+    showDialog(text, choices, onSelect, allowEsc, skipLog, stackDepth) {
         if (!this.dialogMoved) {
             dialog.style.left = table.getBoundingClientRect().left + "px";
             dialog.style.top = table.getBoundingClientRect().top + "px";
+        }
+        if (this.dialogStack.length !== stackDepth) {
+            this.dialogStack = [];
         }
     
         let choiceGroupIdx = null;
@@ -89,10 +97,24 @@ export default class UI {
                             optionNumber += 8 * choiceGroupIdx;
                         }
                         this.hideDialog();
+
+                        if (this.dialogStack.length === stackDepth) {
+                            this.dialogStack.push(arguments);
+                        }
                         onSelect(optionNumber);
                     }
                 }
                 idx++;
+            }
+            if (stackDepth > 0 && this.dialogStack.length === stackDepth) {
+                const backP = document.createElement("p");
+                backP.textContent = "[\u2190]:\t\t[Go back]";
+                dialog.appendChild(backP);
+                backP.onclick = e => {
+                    e.stopPropagation();
+                    this.hideDialog();
+                    this.showDialog(...this.dialogStack.pop());
+                };
             }
             if (allowEsc) {
                 const escP = document.createElement("p");
@@ -101,12 +123,17 @@ export default class UI {
                 escP.onclick = e => {
                     e.stopPropagation();
                     this.hideDialog();
-                }
+                };
             }
         }
         this.dialogKeyListener = e => {
             if (allowEsc && e.key === "Escape") {
                 this.hideDialog();
+                return;
+            }
+            if (stackDepth > 0 && this.dialogStack.length === stackDepth && e.key === "ArrowLeft") {
+                this.hideDialog();
+                this.showDialog(...this.dialogStack.pop());
                 return;
             }
             let pressedNumber = Number(e.key);
@@ -124,6 +151,10 @@ export default class UI {
                     optionNumber += 8 * choiceGroupIdx;
                 }
                 this.hideDialog();
+
+                if (this.dialogStack.length === stackDepth) {
+                    this.dialogStack.push(arguments);
+                }
                 onSelect(optionNumber);
             }
         };

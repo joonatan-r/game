@@ -14,7 +14,8 @@ import options from "./options.js";
 // NOTE: all coords are given as (y,x)
 // NOTE: save and load can handle member functions, currently not needed
 
-// TODO: improve show info, fix mob towards straight line to ignore see-through walls
+// TODO: improve show info, fix mob towards straight line to ignore see-through walls, 
+//       make proper back navigation to start options dialog
 
 let TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
@@ -601,8 +602,8 @@ function action(key, ctrl) {
                                 processTurn();
                                 break;
                         }
-                    }, true, true);
-                }, true, true);
+                    }, true, true, 1);
+                }, true, true, 0);
             } else {
                 ui.showMsg("Your inventory is empty.");
             }
