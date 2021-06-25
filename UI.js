@@ -28,13 +28,15 @@ export default class UI {
 
     // stackDepth used to enable navigating to the previous dialog, when a choice can open a new dialog.
     // The first dialog should have 0, the dialog that its choices can open should have 1, etc.
+    // negative stackDepth can be used to make a dialog use a stack without putting itself in it (can be
+    // useful when the dialog can open up new dialogs that should return to the one before it)
 
     showDialog(text, choices, onSelect, allowEsc, skipLog, stackDepth, startPage) {
         if (!this.dialogMoved) {
             dialog.style.left = table.getBoundingClientRect().left + "px";
             dialog.style.top = table.getBoundingClientRect().top + "px";
         }
-        if (this.dialogStack.length !== stackDepth) {
+        if (this.dialogStack.length !== stackDepth && !(stackDepth < 0)) {
             this.dialogStack = [];
         }
     
@@ -106,7 +108,7 @@ export default class UI {
                 }
                 idx++;
             }
-            if (stackDepth > 0 && this.dialogStack.length === stackDepth) {
+            if ((stackDepth > 0 && this.dialogStack.length === stackDepth) || stackDepth < 0) {
                 const backP = document.createElement("p");
                 backP.textContent = "[\u2190]:\t\t[Go back]";
                 dialog.appendChild(backP);
@@ -132,7 +134,9 @@ export default class UI {
                 this.hideDialog();
                 return;
             }
-            if (stackDepth > 0 && this.dialogStack.length === stackDepth && e.key === "ArrowLeft") {
+            if (e.key === "ArrowLeft"
+                && ((stackDepth > 0 && this.dialogStack.length === stackDepth) || stackDepth < 0)
+            ) {
                 this.hideDialog();
                 this.showDialog(...this.dialogStack.pop());
                 return;

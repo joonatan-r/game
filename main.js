@@ -181,12 +181,8 @@ function showOptionsDialog(startPage) {
         }
         render.changeRenderOptions(options);
         TURN_BASED = options.TURN_BASED;
-        // NOTE: this is a really dirty hack to allow going back to start dialog.
-        //       the stack otherwise gets overridden when options dialog is opened multiple times 
-        //       if an option is selected.
-        ui.dialogStack.pop();
         showOptionsDialog(Math.ceil((idx+1) / 8) - 1); // refresh but show the same page again
-    }, false, true, 1, startPage);
+    }, false, true, -1, startPage);
 }
 
 function save() {
