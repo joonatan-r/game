@@ -125,6 +125,11 @@ showStartDialog();
 
 function showStartDialog() {
     ui.showDialog("Start", ["New game", "Load game", "Options"], idx => {
+        if (showOptionsDialog.inputElem) {
+            showOptionsDialog.inputElem.onkeydown = null;
+            document.body.removeChild(showOptionsDialog.inputElem);
+            showOptionsDialog.inputElem = null;
+        }
         switch (idx) {
             case 0:
                 updateInfo();
@@ -145,38 +150,43 @@ function showStartDialog() {
                 load();
                 break;
             case 2:
-                const t = document.createElement("textarea");
-                t.onkeydown = e => e.stopPropagation();
-                document.body.appendChild(t);
-                const optKeys = [...Object.keys(options)];
-                const optList = [...Object.keys(options)];
-                
-                for (let i = 0; i < optList.length; i++) {
-                    optList[i] += ": " + options[optList[i]];
+                if (!showOptionsDialog.inputElem) {
+                    showOptionsDialog.inputElem = document.createElement("textarea");
+                    showOptionsDialog.inputElem.onkeydown = e => e.stopPropagation();
+                    document.body.appendChild(showOptionsDialog.inputElem);
                 }
-                ui.showDialog("Options", ["Cancel", ...optList], idx => {
-                    if (idx !== 0) {
-                        idx--;
-                        let opt = options[optKeys[idx]];
-
-                        if (typeof opt === "number") {
-                            const val = Number(t.value);
-                            if (val > 10) {
-                                options[optKeys[idx]] = val;
-                            }
-                        } else if (typeof opt === "boolean") {
-                            options[optKeys[idx]] = !opt;
-                        }
-                        render.changeRenderOptions(options);
-                        TURN_BASED = options.TURN_BASED;
-                    }
-                    t.onkeydown = null;
-                    document.body.removeChild(t);
-                    showStartDialog();
-                }, false, true);
+                showOptionsDialog();
                 break;
         }
-    }, false, true);
+    }, false, true, 0);
+}
+
+function showOptionsDialog(startPage) {
+    const optKeys = [...Object.keys(options)];
+    const optList = [...Object.keys(options)];
+    
+    for (let i = 0; i < optList.length; i++) {
+        optList[i] += ": " + options[optList[i]];
+    }
+    ui.showDialog("Options", optList, idx => {
+        let opt = options[optKeys[idx]];
+
+        if (typeof opt === "number") {
+            const val = Number(showOptionsDialog.inputElem.value);
+            if (val > 10) {
+                options[optKeys[idx]] = val;
+            }
+        } else if (typeof opt === "boolean") {
+            options[optKeys[idx]] = !opt;
+        }
+        render.changeRenderOptions(options);
+        TURN_BASED = options.TURN_BASED;
+        // NOTE: this is a really dirty hack to allow going back to start dialog.
+        //       the stack otherwise gets overridden when options dialog is opened multiple times 
+        //       if an option is selected.
+        ui.dialogStack.pop();
+        showOptionsDialog(Math.ceil((idx+1) / 8) - 1); // refresh but show the same page again
+    }, false, true, 1, startPage);
 }
 
 function save() {
@@ -258,6 +268,14 @@ function gameOver(msg) {
     for (let key of Object.keys(keyIntervals)) {
         clearInterval(keyIntervals[key]);
         delete keyIntervals[key];
+    }
+}
+
+function showMsgHistory(startPage) {
+    if (msgHistory.length) {
+        ui.showDialog("Message history:", msgHistory, idx => {
+            showMsgHistory(Math.ceil((idx+1) / 8) - 1); // don't do anything but show the history on the same page
+        }, true, true, null, startPage);
     }
 }
 
@@ -582,7 +600,7 @@ function action(key, ctrl) {
             }
             return;
         case "h":
-            if (msgHistory.length) ui.showDialog("Message history:", msgHistory, ()=>{}, true, true);
+            showMsgHistory();
             return;
         case "i":
             let contentNames = [];

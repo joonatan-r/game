@@ -29,7 +29,7 @@ export default class UI {
     // stackDepth used to enable navigating to the previous dialog, when a choice can open a new dialog.
     // The first dialog should have 0, the dialog that its choices can open should have 1, etc.
 
-    showDialog(text, choices, onSelect, allowEsc, skipLog, stackDepth) {
+    showDialog(text, choices, onSelect, allowEsc, skipLog, stackDepth, startPage) {
         if (!this.dialogMoved) {
             dialog.style.left = table.getBoundingClientRect().left + "px";
             dialog.style.top = table.getBoundingClientRect().top + "px";
@@ -126,6 +126,7 @@ export default class UI {
                 };
             }
         }
+        // i guess this doesnt need to be bound because it uses arrow function?
         this.dialogKeyListener = e => {
             if (allowEsc && e.key === "Escape") {
                 this.hideDialog();
@@ -176,7 +177,13 @@ export default class UI {
             }
             this.movingDialog = !this.movingDialog;
         }
-        repopulateDialog(true);
+        if (startPage > 0) {
+            for (let i = 0; i < startPage; i++) {
+                repopulateDialog();
+            }
+        } else {
+            repopulateDialog(true);
+        }
     }
 
     hideDialog() {
