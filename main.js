@@ -181,7 +181,7 @@ function showOptionsDialog(startPage) {
         }
         render.changeRenderOptions(options);
         TURN_BASED = options.TURN_BASED;
-        showOptionsDialog(Math.ceil((idx+1) / 8) - 1); // refresh but show the same page again
+        showOptionsDialog(Math.ceil((idx+1) / 9) - 1); // refresh but show the same page again
     }, false, true, -1, startPage);
 }
 
@@ -270,7 +270,7 @@ function gameOver(msg) {
 function showMsgHistory(startPage) {
     if (msgHistory.length) {
         ui.showDialog("Message history:", msgHistory, idx => {
-            showMsgHistory(Math.ceil((idx+1) / 8) - 1); // don't do anything but show the history on the same page
+            showMsgHistory(Math.ceil((idx+1) / 9) - 1); // don't do anything but show the history on the same page
         }, true, true, null, startPage);
     }
 }

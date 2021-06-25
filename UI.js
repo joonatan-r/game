@@ -44,9 +44,8 @@ export default class UI {
         this.removeListeners();
         !skipLog && this.msgHistory.unshift(text.trim().replaceAll("\n", "\n\t\t"));
     
-        // if there are over 9 possible choices, divide them into groups of 8 (last one being probably
-        // shorter) and add an option 9 to go to the next "choice group" (last one has the option to go
-        // back to start), this way number keys 1-9 can be still be used to select a choice
+        // if there are over 9 possible choices, divide them into groups of 9 (last one being probably
+        // shorter), there are controls to navigate between the groups
     
         if (choices.length > 9) {
             const choicesCopy = choices.slice();
@@ -57,22 +56,20 @@ export default class UI {
             while (choicesCopy.length) {
                 choices.push([]);
     
-                for (let i = 0; i < 8 && choicesCopy.length; i++) {
+                for (let i = 0; i < 9 && choicesCopy.length; i++) {
                     choices[currIdx].push(choicesCopy.shift());
-                }
-                if (choicesCopy.length) {
-                    choices[currIdx].push("[Show more]");
-                } else {
-                    choices[currIdx].push("[Back to start]");
                 }
                 currIdx++;
             }
         }
         let choiceGroup = choiceGroupIdx !== null ? choices[choiceGroupIdx] : choices;
     
-        const repopulateDialog = noGroupUpdate => {
-            if (!noGroupUpdate) {
+        const repopulateDialog = modifier => {
+            if (modifier === 1) {
                 choiceGroupIdx = choiceGroupIdx < choices.length - 1 ? choiceGroupIdx + 1 : 0;
+                choiceGroup = choices[choiceGroupIdx];
+            } else if (modifier === -1) {
+                choiceGroupIdx = choiceGroupIdx === 0 ? choices.length - 1 : choiceGroupIdx - 1;
                 choiceGroup = choices[choiceGroupIdx];
             }
             let idx = 0;
@@ -89,24 +86,40 @@ export default class UI {
                 c.onclick = e => {
                     e.stopPropagation();
         
-                    if (choiceGroupIdx !== null && choiceIdx === choiceGroup.length - 1) {
-                        repopulateDialog();
-                    } else {
-                        let optionNumber = choiceIdx;
-                        !skipLog && this.msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
-    
-                        if (choiceGroupIdx !== null) {
-                            optionNumber += 8 * choiceGroupIdx;
-                        }
-                        this.hideDialog();
+                    let optionNumber = choiceIdx;
+                    !skipLog && this.msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
 
-                        if (this.dialogStack.length === stackDepth) {
-                            this.dialogStack.push(arguments);
-                        }
-                        onSelect(optionNumber);
+                    if (choiceGroupIdx !== null) {
+                        optionNumber += 9 * choiceGroupIdx;
                     }
+                    this.hideDialog();
+
+                    if (this.dialogStack.length === stackDepth) {
+                        this.dialogStack.push(arguments);
+                    }
+                    onSelect(optionNumber);
                 }
                 idx++;
+            }
+            if (choiceGroupIdx !== null) {
+                if (choiceGroupIdx > 0) {
+                    const prevP = document.createElement("p");
+                    prevP.textContent = "[\u2191]:\t\t[Show previous]";
+                    dialog.appendChild(prevP);
+                    prevP.onclick = e => {
+                        e.stopPropagation();
+                        repopulateDialog(-1);
+                    };
+                }
+                if (choiceGroupIdx < choices.length - 1) {
+                    const nextP = document.createElement("p");
+                    nextP.textContent = "[\u2193]:\t\t[Show next]";
+                    dialog.appendChild(nextP);
+                    nextP.onclick = e => {
+                        e.stopPropagation();
+                        repopulateDialog(1);
+                    };
+                }
             }
             if ((stackDepth > 0 && this.dialogStack.length === stackDepth) || stackDepth < 0) {
                 const backP = document.createElement("p");
@@ -141,27 +154,31 @@ export default class UI {
                 this.showDialog(...this.dialogStack.pop());
                 return;
             }
+            if (e.key === "ArrowUp" && choiceGroupIdx > 0) {
+                repopulateDialog(-1);
+                return;
+            }
+            if (e.key === "ArrowDown" && choiceGroupIdx < choices.length - 1) {
+                repopulateDialog(1);
+                return;
+            }
             let pressedNumber = Number(e.key);
     
             if (isNaN(pressedNumber) || pressedNumber > choiceGroup.length || pressedNumber <= 0) {
                 return;
             }
-            if (choiceGroupIdx !== null && pressedNumber === choiceGroup.length) {
-                repopulateDialog();
-            } else {
-                let optionNumber = pressedNumber - 1;
-                !skipLog && this.msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
-    
-                if (choiceGroupIdx !== null) {
-                    optionNumber += 8 * choiceGroupIdx;
-                }
-                this.hideDialog();
+            let optionNumber = pressedNumber - 1;
+            !skipLog && this.msgHistory.unshift("[You chose: \"" + choiceGroup[optionNumber] + "\"]");
 
-                if (this.dialogStack.length === stackDepth) {
-                    this.dialogStack.push(arguments);
-                }
-                onSelect(optionNumber);
+            if (choiceGroupIdx !== null) {
+                optionNumber += 9 * choiceGroupIdx;
             }
+            this.hideDialog();
+
+            if (this.dialogStack.length === stackDepth) {
+                this.dialogStack.push(arguments);
+            }
+            onSelect(optionNumber);
         };
         document.addEventListener("keydown", this.dialogKeyListener);
         dialog.style.display = "block";
@@ -183,10 +200,10 @@ export default class UI {
         }
         if (startPage > 0) {
             for (let i = 0; i < startPage; i++) {
-                repopulateDialog();
+                repopulateDialog(1);
             }
         } else {
-            repopulateDialog(true);
+            repopulateDialog(0);
         }
     }
 
