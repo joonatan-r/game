@@ -293,15 +293,21 @@ export default class Renderer {
 
     async shotEffect(shotPos, player, levels, customRenders) {
         let obj, obj0, obj1, obj2, obj3;
-        this.area[shotPos[0]][shotPos[1]].textContent = "x";
-        obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
-        customRenders.push(obj);
-    
+
+        if (this.rendered[shotPos[0]][shotPos[1]]) {
+            this.area[shotPos[0]][shotPos[1]].textContent = "x";
+            obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
+            customRenders.push(obj);
+        }
         await new Promise(r => setTimeout(r, 300));
         
         removeByReference(customRenders, obj);
-        this.renderPos(shotPos, player, levels, customRenders);
         
+        if (this.rendered[shotPos[0]][shotPos[1]]) {
+            this.renderPos(shotPos, player, levels, customRenders);
+        } else if (obj) {
+            this.area[shotPos[0]][shotPos[1]].textContent = "";
+        }
         if (this.area[shotPos[0] - 1] && this.area[shotPos[0] - 1][shotPos[1] - 1]
             && this.rendered[shotPos[0] - 1][shotPos[1] - 1]
         ) {

@@ -260,6 +260,7 @@ function gameOver(msg) {
     interruptAutoTravel = true;
     removeListeners();
     player.dead = true;
+    render.renderAll(player, levels, customRenders);
 
     for (let key of Object.keys(keyIntervals)) {
         clearInterval(keyIntervals[key]);
@@ -289,20 +290,6 @@ function processTurn() {
     timeTracker.timer++;
     if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
     updateInfo();
-
-    for (let mob of mobs) {
-        if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
-            gameOver(mob.name + " hits you! You die...");
-            break;
-        }
-        movingAIs[mob.movingFunction](mob, posIsValid, level, rendered);
-
-        if (mob.isShooter && mob.straightLineToTargetDrc) {
-            shoot(mob.pos, mob.straightLineToTargetDrc, true);
-        } else {
-            mob.pos = [mob.target[0], mob.target[1]];
-        }
-    }
     render.renderAll(player, levels, customRenders);
 
     if (options.INTERRUPT_AUTOTRAVEL_IF_MOBS) {
@@ -320,6 +307,19 @@ function processTurn() {
         //       must be done with "refer()" for saving to work properly
         mob.huntingTarget = refer(player);
         mobs.push(mob);
+    }
+    for (let mob of mobs) {
+        if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
+            gameOver(mob.name + " hits you! You die...");
+            break;
+        }
+        movingAIs[mob.movingFunction](mob, posIsValid, level, rendered);
+
+        if (mob.isShooter && mob.straightLineToTargetDrc) {
+            shoot(mob.pos, mob.straightLineToTargetDrc, true);
+        } else {
+            mob.pos = [mob.target[0], mob.target[1]];
+        }
     }
 }
 
@@ -343,7 +343,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
             const icon = projectileFromDrc[drc];
             
             while (1) {
-                render.renderPos(bulletPos, player, levels, customRenders);
+                if (rendered[bulletPos[0]][bulletPos[1]]) render.renderPos(bulletPos, player, levels, customRenders);
                 movePosToDrc(bulletPos, drc);
 
                 if (!level[bulletPos[0]] || typeof level[bulletPos[0]][bulletPos[1]] === "undefined" 
@@ -351,16 +351,17 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 ) {
                     break;
                 }
-                if (rendered[bulletPos[0]][bulletPos[1]]) area[bulletPos[0]][bulletPos[1]].textContent = icon;
-                obj = { symbol: icon, pos: [bulletPos[0], bulletPos[1]] };
-                customRenders.push(obj);
-        
+                if (rendered[bulletPos[0]][bulletPos[1]]) {
+                    area[bulletPos[0]][bulletPos[1]].textContent = icon;
+                    obj = { symbol: icon, pos: [bulletPos[0], bulletPos[1]] };
+                    customRenders.push(obj);
+                }
                 await new Promise(r => setTimeout(r, 30));
                 
                 if (coordsEq(bulletPos, player.pos)) {
                     gameOver("A bullet hits you! You die...");
                     removeByReference(customRenders, obj);
-                    render.renderPos(bulletPos, player, levels, customRenders);
+                    if (rendered[bulletPos[0]][bulletPos[1]]) render.renderPos(bulletPos, player, levels, customRenders);
                     render.shotEffect(bulletPos, player, levels, customRenders);
                     return;
                 }
@@ -369,11 +370,11 @@ async function shoot(fromPos, drc, mobIsShooting) {
                         // delete all properties of mov, so that all references to it are affected
                         for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
                         mobs.splice(i, 1);
-                        TURN_BASED && addListeners();
+                        !player.dead && TURN_BASED && addListeners();
                         keypressListener.actionType = null;
                         clickListener.actionType = null;
                         removeByReference(customRenders, obj);
-                        render.renderPos(bulletPos, player, levels, customRenders);
+                        if (rendered[bulletPos[0]][bulletPos[1]]) render.renderPos(bulletPos, player, levels, customRenders);
                         render.shotEffect(bulletPos, player, levels, customRenders);
                         !mobIsShooting && processTurn();
                         return;
@@ -385,17 +386,17 @@ async function shoot(fromPos, drc, mobIsShooting) {
         case "Escape":
             timeTracker.turnsUntilShoot = 0;
             ui.showMsg("");
-            TURN_BASED && addListeners();
+            !player.dead && TURN_BASED && addListeners();
             keypressListener.actionType = null;
             clickListener.actionType = null;
             return;
         default:
-            TURN_BASED && addListeners();
+            !player.dead && TURN_BASED && addListeners();
             keypressListener.actionType = "shoot";
             clickListener.actionType = "chooseDrc";
             return;
     }
-    TURN_BASED && addListeners();
+    !player.dead && TURN_BASED && addListeners();
     keypressListener.actionType = null;
     clickListener.actionType = null;
     !mobIsShooting && processTurn();
