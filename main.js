@@ -1,7 +1,6 @@
 import { infoTable } from "./levelData.js";
-import { initialize } from "./level.js";
 import {
-    bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
+    initialize, bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
     pixelCoordsToDrc, makeTextFile, projectileFromDrc 
 } from "./util.js";
 import { trySpawnMob, addMobs, movingAIs } from "./mobs.js";
@@ -15,7 +14,8 @@ import options from "./options.js";
 // NOTE: save and load can handle member functions, currently not needed
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls, 
-//       make proper back navigation to start options dialog
+//       take multiple pages into account in pickup dialog, fix inspect indicator
+//       if exiting inspection on player position
 
 let TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
@@ -366,6 +366,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 }
                 for (let i = 0; i < mobs.length; i++) {
                     if (coordsEq(bulletPos, mobs[i].pos)) {
+                        // delete all properties of mov, so that all references to it are affected
+                        for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
                         mobs.splice(i, 1);
                         TURN_BASED && addListeners();
                         keypressListener.actionType = null;
@@ -430,6 +432,7 @@ function melee(drc) {
     for (let i = 0; i < mobs.length; i++) {
         if (coordsEq(meleePos, mobs[i].pos)) {
             ui.showMsg("You hit " + mobs[i].name + "!");
+            for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
             mobs.splice(i, 1);
         }
     }
@@ -507,6 +510,37 @@ function movePlayer(newPos) {
             }
             ui.showMsg(msg);
             return;
+        }
+    }
+}
+
+function pickup(alwaysDialog) {
+    for (let i = 0; i < items.length; i++) {
+        if (coordsEq(player.pos, items[i].pos)) {
+            let itemsHere = [];
+            let itemNames = [];
+            let itemIdxs = [];
+
+            for (let j = 0; j < items.length; j++) {
+                if (coordsEq(items[i].pos, items[j].pos) && !items[j].hidden) {
+                    itemsHere.push(items[j]); // i is also included here
+                    itemNames.push(items[j].name);
+                    itemIdxs.push(j);
+                }
+            }
+            if (itemsHere.length > 1 || alwaysDialog) {
+                ui.showDialog("What do you want to pick up?", itemNames, idx => {
+                    const removed = items.splice(itemIdxs[idx], 1)[0];
+                    player.inventory.push(removed);
+                    ui.showMsg("You pick up " + removed.name + ".");
+                    pickup(true); // allow picking up several items from the "same" dialog
+                }, true, true);
+            } else {
+                const removed = items.splice(i, 1)[0];
+                player.inventory.push(removed);
+                ui.showMsg("You pick up " + removed.name + ".");
+            }
+            break;
         }
     }
 }
@@ -633,33 +667,7 @@ function action(key, ctrl) {
             clickListener.actionType = "chooseDrc";
             return;
         case ",":
-            for (let i = 0; i < items.length; i++) {
-                if (coordsEq(player.pos, items[i].pos)) {
-                    let itemsHere = [];
-                    let itemNames = [];
-                    let itemIdxs = [];
-
-                    for (let j = 0; j < items.length; j++) {
-                        if (coordsEq(items[i].pos, items[j].pos) && !items[j].hidden) {
-                            itemsHere.push(items[j]); // i is included here
-                            itemNames.push(items[j].name);
-                            itemIdxs.push(j);
-                        }
-                    }
-                    if (itemsHere.length > 1) {
-                        ui.showDialog("What do you want to pick up?", itemNames, idx => {
-                            const removed = items.splice(itemIdxs[idx], 1)[0];
-                            player.inventory.push(removed);
-                            ui.showMsg("You pick up " + removed.name + ".");
-                        }, true, true);
-                    } else {
-                        const removed = items.splice(i, 1)[0];
-                        player.inventory.push(removed);
-                        ui.showMsg("You pick up " + removed.name + ".");
-                    }
-                    break;
-                }
-            }
+            pickup();
             break;
         case ";":
             ui.showMsg("Move to a location to inspect. Use enter to select and esc to leave.");

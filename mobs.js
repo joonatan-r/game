@@ -121,14 +121,16 @@ export const movingAIs = {
         }
     },
     Make: (mob, posIsValid, level, rendered) => {
-        if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget) { // if player can see mob, mob can see player
+        if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget && mob.huntingTarget.pos) { // if player can see mob, mob can see player
             movingAIs.towardsPos(mob, mob.huntingTarget.pos, posIsValid, level);
         } else {
             movingAIs.random(mob, posIsValid);
         }
     },
     Pekka: (mob, posIsValid, level, rendered) => {
-        if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget) {
+        mob.straightLineToTargetDrc = null;
+
+        if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget && mob.huntingTarget.pos) {
             movingAIs.towardsStraightLineFromPos(mob, mob.huntingTarget.pos, posIsValid, level);
         } else {
             movingAIs.static(mob);

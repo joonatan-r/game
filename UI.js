@@ -30,6 +30,9 @@ export default class UI {
     // The first dialog should have 0, the dialog that its choices can open should have 1, etc.
     // negative stackDepth can be used to make a dialog use a stack without putting itself in it (can be
     // useful when the dialog can open up new dialogs that should return to the one before it)
+    // startPage can be used to have dialogs that stay open after selecting a choice by opening again on
+    // the same page. The implementation is made like this so that the dialog can also update its contents
+    // before opening again.
 
     showDialog(text, choices, onSelect, allowEsc, skipLog, stackDepth, startPage) {
         if (!this.dialogMoved) {
