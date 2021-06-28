@@ -290,6 +290,20 @@ function processTurn() {
     timeTracker.timer++;
     if (timeTracker.turnsUntilShoot > 0) timeTracker.turnsUntilShoot--;
     updateInfo();
+
+    for (let mob of mobs) {
+        if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
+            gameOver(mob.name + " hits you! You die...");
+            break;
+        }
+        movingAIs[mob.movingFunction](mob, posIsValid, level, rendered);
+
+        if (mob.isShooter && mob.straightLineToTargetDrc) {
+            shoot(mob.pos, mob.straightLineToTargetDrc, true);
+        } else {
+            mob.pos = [mob.target[0], mob.target[1]];
+        }
+    }
     render.renderAll(player, levels, customRenders);
 
     if (options.INTERRUPT_AUTOTRAVEL_IF_MOBS) {
@@ -307,19 +321,6 @@ function processTurn() {
         //       must be done with "refer()" for saving to work properly
         mob.huntingTarget = refer(player);
         mobs.push(mob);
-    }
-    for (let mob of mobs) {
-        if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
-            gameOver(mob.name + " hits you! You die...");
-            break;
-        }
-        movingAIs[mob.movingFunction](mob, posIsValid, level, rendered);
-
-        if (mob.isShooter && mob.straightLineToTargetDrc) {
-            shoot(mob.pos, mob.straightLineToTargetDrc, true);
-        } else {
-            mob.pos = [mob.target[0], mob.target[1]];
-        }
     }
 }
 
@@ -343,7 +344,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
             const icon = projectileFromDrc[drc];
             
             while (1) {
-                if (rendered[bulletPos[0]][bulletPos[1]]) render.renderPos(bulletPos, player, levels, customRenders);
+                render.renderAll(player, levels, customRenders);
                 movePosToDrc(bulletPos, drc);
 
                 if (!level[bulletPos[0]] || typeof level[bulletPos[0]][bulletPos[1]] === "undefined" 
@@ -353,15 +354,16 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 }
                 if (rendered[bulletPos[0]][bulletPos[1]]) {
                     area[bulletPos[0]][bulletPos[1]].textContent = icon;
-                    obj = { symbol: icon, pos: [bulletPos[0], bulletPos[1]] };
-                    customRenders.push(obj);
                 }
+                obj = { symbol: icon, pos: [bulletPos[0], bulletPos[1]] };
+                customRenders.push(obj);
+                
                 await new Promise(r => setTimeout(r, 30));
                 
                 if (coordsEq(bulletPos, player.pos)) {
                     gameOver("A bullet hits you! You die...");
                     removeByReference(customRenders, obj);
-                    if (rendered[bulletPos[0]][bulletPos[1]]) render.renderPos(bulletPos, player, levels, customRenders);
+                    render.renderAll(player, levels, customRenders);
                     render.shotEffect(bulletPos, player, levels, customRenders);
                     return;
                 }
@@ -374,7 +376,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                         keypressListener.actionType = null;
                         clickListener.actionType = null;
                         removeByReference(customRenders, obj);
-                        if (rendered[bulletPos[0]][bulletPos[1]]) render.renderPos(bulletPos, player, levels, customRenders);
+                        render.renderAll(player, levels, customRenders);
                         render.shotEffect(bulletPos, player, levels, customRenders);
                         !mobIsShooting && processTurn();
                         return;

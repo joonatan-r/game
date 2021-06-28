@@ -248,7 +248,9 @@ export default class Renderer {
             }
         }
         for (let obj of customRenders) {
-            this.area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
+            if (this.rendered[obj.pos[0]][obj.pos[1]]) {
+                this.area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
+            }
         }
     
         // add walls last to check where to put them by what tiles are rendered
@@ -296,9 +298,10 @@ export default class Renderer {
 
         if (this.rendered[shotPos[0]][shotPos[1]]) {
             this.area[shotPos[0]][shotPos[1]].textContent = "x";
-            obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
-            customRenders.push(obj);
         }
+        obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
+        customRenders.push(obj);
+        
         await new Promise(r => setTimeout(r, 300));
         
         removeByReference(customRenders, obj);
@@ -338,21 +341,10 @@ export default class Renderer {
         }
         await new Promise(r => setTimeout(r, 300));
         
-        if (obj0) {
-            removeByReference(customRenders, obj0);
-            this.renderPos([shotPos[0] - 1, shotPos[1] - 1], player, levels, customRenders);
-        }
-        if (obj1) {
-            removeByReference(customRenders, obj1);
-            this.renderPos([shotPos[0] - 1, shotPos[1] + 1], player, levels, customRenders);
-        }
-        if (obj2) {
-            removeByReference(customRenders, obj2);
-            this.renderPos([shotPos[0] + 1, shotPos[1] + 1], player, levels, customRenders);
-        }
-        if (obj3) {
-            removeByReference(customRenders, obj3);
-            this.renderPos([shotPos[0] + 1, shotPos[1] - 1], player, levels, customRenders);
-        }
+        removeByReference(customRenders, obj0);
+        removeByReference(customRenders, obj1);
+        removeByReference(customRenders, obj2);
+        removeByReference(customRenders, obj3);
+        this.renderAll(player, levels, customRenders);
     }
 };
