@@ -831,6 +831,7 @@ function clickListener(e) {
         menu.style.display = "none";
         return;
     }
+    if (e.target.id === "status") return;
     if (MOBILE && e.target.tagName === "TEXTAREA") return;
     ui.showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
@@ -930,7 +931,7 @@ function mouseStyleListener(e) {
 
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
-    document.addEventListener("click", clickListener);
+    document.addEventListener("mousedown", clickListener);
     document.addEventListener("contextmenu", menuListener);
     document.addEventListener("mousemove", mouseStyleListener);
     listenersActive = true;
@@ -938,7 +939,7 @@ function addListeners() {
 
 function removeListeners() {
     document.removeEventListener("keydown", keypressListener);
-    document.removeEventListener("click", clickListener);
+    document.removeEventListener("mousedown", clickListener);
     document.removeEventListener("contextmenu", menuListener);
     document.removeEventListener("mousemove", mouseStyleListener);
     listenersActive = false;

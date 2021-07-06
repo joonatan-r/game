@@ -14,7 +14,7 @@ export const infoTable = {
     "Jorma": "[J]: Jorma, a hostile human",
 };
 
-// for special meanings see levelCharMap in level.js
+// for characters' special meanings see levelCharMap in util.js
 // all characters' special meaning can be escaped using preceding "e"
 
 export const levelData = `

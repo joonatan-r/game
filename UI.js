@@ -1,9 +1,11 @@
 const dialog = document.getElementById("dialog");
 const table = document.getElementById("table");
+const msgBox = document.getElementById("msgBox");
 const status = document.getElementById("status");
 
 export default class UI {
     dialogMoved = false;
+    msgMoved = false;
     dialogStack = [];
 
     constructor(removeListeners, addListeners, msgHistory) {
@@ -11,6 +13,20 @@ export default class UI {
         this.addListeners = addListeners;
         this.msgHistory = msgHistory;
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
+        this.msgMoveListener = this.msgMoveListener.bind(this);
+
+        msgBox.onclick = e => {
+            e.stopPropagation();
+    
+            if (this.movingMsg) {
+                document.body.style.cursor = "default";
+                document.removeEventListener("mousemove", this.msgMoveListener);
+            } else {
+                document.body.style.cursor = "move";
+                document.addEventListener("mousemove", this.msgMoveListener);
+            }
+            this.movingMsg = !this.movingMsg;
+        };
     }
 
     dialogMoveListener(e) {
@@ -19,9 +35,29 @@ export default class UI {
         this.dialogMoved = true;
     }
 
+    msgMoveListener(e) {
+        msgBox.style.left = (e.clientX - 5) + "px";
+        msgBox.style.top = (e.clientY - 5) + "px";
+        this.msgMoved = true;
+    }
+
     showMsg(msg) {
+        if (!this.msgMoved) {
+            const tableRect = table.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(document.getElementById("info")); 
+            let infoHeight = document.getElementById("info").clientHeight;
+            infoHeight += parseInt(computedStyle.marginTop, 10);
+            infoHeight += parseInt(computedStyle.marginBottom, 10);
+            msgBox.style.left = tableRect.left + "px";
+            msgBox.style.top = tableRect.top + tableRect.height + infoHeight + "px";
+        }
+        msgBox.style.display = "block";
         status.textContent = msg;
-        if (!msg) return; // empty string / null
+
+        if (!msg) {
+            msgBox.style.display = "none";
+            return;
+        }
         msg = msg.trim().replaceAll("\n", "\n\t\t"); // more readable in history
         this.msgHistory.unshift(msg);
     }

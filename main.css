@@ -44,14 +44,14 @@ p {
     white-space: pre-wrap;
 }
 
-#clickMenu, #dialog {
+#clickMenu, #dialog, #msgBox {
     display: none;
     position: absolute;
     background-color: #333;
     border: 1px solid white;
 }
 
-#clickMenu p, #dialog p {
+#clickMenu p, #dialog p, #msgBox p {
     padding: 10px;
     margin: 0;
 }

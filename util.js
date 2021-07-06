@@ -5,7 +5,7 @@ export function initialize(levels, table, area, rendered) {
         "w": "*w", // "normal" wall
         "f": "*f", // "fake" wall
         "s": "*s", // "see-through" wall
-        "t": "*t" // wall that blocks sight, but shows the wall tile contents
+        "t": "*t" // wall that blocks sight, but shows the background of the wall tile
     };
     let level = [[]];
     let yIdx = 0;
@@ -221,22 +221,22 @@ export function removeByReference(arr, obj) {
 export function pixelCoordsToDrc(y, x) {
     if (x === 0) {
         if (y > 0) return "2"; // b
-        else return "8"; // t
+        return "8"; // t
     } else {
         let val = y/x;
 
         if (val > -0.4142 && val < 0.4142) {
             if (x > 0) return "6"; // r
-            else return "4"; // l
+            return "4"; // l
         } else if (val > -2.4142 && val < -0.4142) {
             if (x > 0) return "9"; // tr
-            else return "1"; // bl
+            return "1"; // bl
         } else if (val > 0.4142 && val < 2.4142) {
             if (x > 0) return "3"; // br
-            else return "7"; // tl
+            return "7"; // tl
         } else {
             if (y > 0) return "2"; // b
-            else return "8"; // t
+            return "8"; // t
         }
     }
 }

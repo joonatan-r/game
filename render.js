@@ -54,105 +54,6 @@ export default class Renderer {
         }
     }
 
-    renderPos(posToRender, player, levels, customRenders) {
-        let level = levels[levels.currentLvl].level;
-        let mobs = levels[levels.currentLvl].mobs;
-        let items = levels[levels.currentLvl].items;
-        let memorized = levels[levels.currentLvl].memorized;
-        
-        this.area[posToRender[0]][posToRender[1]].className = "hidden";
-    
-        if (!this.rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
-            this.area[posToRender[0]][posToRender[1]].textContent = "";
-            return;
-        } else if (this.rendered[posToRender[0]][posToRender[1]] && !memorized[posToRender[0]][posToRender[1]]) {
-            memorized[posToRender[0]][posToRender[1]] = true;
-        } else if (!this.rendered[posToRender[0]][posToRender[1]] && options.SHOW_MEMORIZED && memorized[posToRender[0]][posToRender[1]]) {
-            this.area[posToRender[0]][posToRender[1]].textContent = this.getTileToRender(level[posToRender[0]][posToRender[1]]);
-
-            if (!blocksSight(level[posToRender[0]][posToRender[1]])) { // always (<-- i have no idea what this comment means)
-                if (options.GRAY_MEMORIZED) {
-                    this.area[posToRender[0]][posToRender[1]].className = "mem";
-                } else {
-                    this.area[posToRender[0]][posToRender[1]].className = "";
-                }
-            }
-            return;
-        }
-        this.area[posToRender[0]][posToRender[1]].textContent = this.getTileToRender(level[posToRender[0]][posToRender[1]]);
-        this.area[posToRender[0]][posToRender[1]].customProps.infoKeys.unshift(level[posToRender[0]][posToRender[1]]);
-        !blocksSight(level[posToRender[0]][posToRender[1]]) && (this.area[posToRender[0]][posToRender[1]].className = "shown");
-        this.rendered[posToRender[0]][posToRender[1]] = true;
-    
-        for (let item of items) {
-            if (coordsEq(item.pos, posToRender) && !item.hidden) {
-                this.area[item.pos[0]][item.pos[1]].textContent = item.symbol;
-                options.OBJ_BG && (this.area[item.pos[0]][item.pos[1]].className = "obj-bg");
-                this.area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
-            }
-        }
-        if (coordsEq(player.pos, posToRender) && !player.dead) {
-            if (options.OBJ_IMG) {
-                this.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./img.png\"/>";
-            } else {
-                this.area[player.pos[0]][player.pos[1]].textContent = "@";
-            }
-            if (options.OBJ_BG) {
-                this.area[player.pos[0]][player.pos[1]].className = "player obj-bg"
-            } else {
-                this.area[player.pos[0]][player.pos[1]].className = "player";
-            }
-            this.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
-        }
-        for (let mob of mobs) {
-            if (coordsEq(mob.pos, posToRender)) {
-                if (options.OBJ_IMG) {
-                    this.area[mob.pos[0]][mob.pos[1]].innerHTML = "<img src=\"./img.png\"/>";
-                } else {
-                    this.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
-                }
-                options.OBJ_BG && (this.area[mob.pos[0]][mob.pos[1]].className = "obj-bg");
-                this.area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
-            }
-        }
-        for (let obj of customRenders) {
-            if (coordsEq(obj.pos, posToRender)) {
-                this.area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
-            }
-        }
-        if (!isWall(level[posToRender[0]][posToRender[1]])) {
-            return;
-        }
-        const classes = [];
-
-        if (!blocksSight(level[posToRender[0]][posToRender[1]])) {
-            if (options.USE_BG_IMG) {
-                classes.push("wall-s-bg");
-            } else {
-                classes.push("wall-s");
-            }
-        } else {
-            classes.push("wall");
-        }
-        const paramList = [
-            { i: posToRender[0] - 1, j: posToRender[1], side: "t" },
-            { i: posToRender[0], j: posToRender[1] - 1, side: "l" },
-            { i: posToRender[0], j: posToRender[1] + 1, side: "r" },
-            { i: posToRender[0] + 1, j: posToRender[1], side: "b" }
-        ];
-
-        for (let p of paramList) {
-            if (level[p.i] && (typeof level[p.i][p.j] !== "undefined")
-                && (this.rendered[p.i][p.j] || (options.SHOW_MEMORIZED && memorized[p.i][p.j]))
-                && (!isWall(level[p.i][p.j]) 
-                || (blocksSight(level[posToRender[0]][posToRender[1]]) && !blocksSight(level[p.i][p.j])))
-            ) {
-                classes.push(p.side);
-            }
-        }
-        this.area[posToRender[0]][posToRender[1]].classList.add(...classes);
-    }
-
     renderAll(player, levels, customRenders) {
         let level = levels[levels.currentLvl].level;
         let mobs = levels[levels.currentLvl].mobs;
@@ -305,12 +206,8 @@ export default class Renderer {
         await new Promise(r => setTimeout(r, 300));
         
         removeByReference(customRenders, obj);
-        
-        if (this.rendered[shotPos[0]][shotPos[1]]) {
-            this.renderPos(shotPos, player, levels, customRenders);
-        } else if (obj) {
-            this.area[shotPos[0]][shotPos[1]].textContent = "";
-        }
+        this.renderAll(player, levels, customRenders);
+
         if (this.area[shotPos[0] - 1] && this.area[shotPos[0] - 1][shotPos[1] - 1]
             && this.rendered[shotPos[0] - 1][shotPos[1] - 1]
         ) {
