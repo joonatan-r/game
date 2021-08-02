@@ -69,9 +69,8 @@ let autoTravelStack = []; // used to cancel previous autoTravels when there is a
 const render = new Renderer(area, rendered);
 const ui = new UI(removeListeners, addListeners, msgHistory);
 
-addMobs(levels);
-addItems(levels);
 addListeners();
+showStartDialog();
 
 // added separately because never removed
 document.addEventListener("keyup", function(e) {
@@ -103,13 +102,16 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
         items = levels[levels.currentLvl].items;
         player = loadData.player;
         timeTracker = loadData.timeTracker;
-        updateInfo();
-        render.renderAll(player, levels, customRenders);
+        start();
     };
     fr.readAsText(this.files[0]);
     this.value = null;
-    
-    !TURN_BASED && turnInterval === null && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
+});
+
+function start() {
+    updateInfo();
+    render.renderAll(player, levels, customRenders);
+    !TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
 
     if (options.USE_BG_IMG) {
         if (levels[levels.currentLvl].bg.startsWith("#")) {
@@ -120,11 +122,10 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
     } else {
         table.style.backgroundColor = "#000";
     }
-});
-showStartDialog();
+}
 
 function showStartDialog() {
-    ui.showDialog("Start", ["New game", "Load game", "Options"], idx => {
+    ui.showDialog("Start", ["New game", "Load game", "Options", "Controls"], idx => {
         if (showOptionsDialog.inputElem) {
             showOptionsDialog.inputElem.onkeydown = null;
             document.body.removeChild(showOptionsDialog.inputElem);
@@ -132,19 +133,9 @@ function showStartDialog() {
         }
         switch (idx) {
             case 0:
-                updateInfo();
-                render.renderAll(player, levels, customRenders);
-                !TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
-    
-                if (options.USE_BG_IMG) {
-                    if (levels[levels.currentLvl].bg.startsWith("#")) {
-                        table.style.backgroundColor = levels[levels.currentLvl].bg;
-                    } else {
-                        table.style.backgroundImage = levels[levels.currentLvl].bg;
-                    }
-                } else {
-                    table.style.backgroundColor = "#000";
-                }
+                addMobs(levels);
+                addItems(levels);
+                start();
                 break;
             case 1:
                 load();
@@ -156,6 +147,9 @@ function showStartDialog() {
                     document.body.appendChild(showOptionsDialog.inputElem);
                 }
                 showOptionsDialog();
+                break;
+            case 3:
+                showControlsDialog();
                 break;
         }
     }, false, true, 0);
@@ -182,6 +176,18 @@ function showOptionsDialog(startPage) {
         render.changeRenderOptions(options);
         TURN_BASED = options.TURN_BASED;
         showOptionsDialog(Math.ceil((idx+1) / 9) - 1); // refresh but show the same page again
+    }, false, true, -1, startPage);
+}
+
+function showControlsDialog(startPage) {
+    const optKeys = [...Object.keys(options.CONTROLS)];
+    const optList = [...Object.keys(options.CONTROLS)];
+    
+    for (let i = 0; i < optList.length; i++) {
+        optList[i] += ": \"" + options.CONTROLS[optList[i]] + "\"";
+    }
+    ui.showDialog("Controls", optList, idx => {
+        showControlsDialog(Math.ceil((idx+1) / 9) - 1);
     }, false, true, -1, startPage);
 }
 
@@ -385,7 +391,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 removeByReference(customRenders, obj);
             }
             break;
-        case "Escape":
+        case options.CONTROLS.ESC:
             timeTracker.turnsUntilShoot = 0;
             ui.showMsg("");
             !player.dead && TURN_BASED && addListeners();
@@ -418,7 +424,7 @@ function melee(drc) {
         case "3":
             movePosToDrc(meleePos, drc);
             break;
-        case "Escape":
+        case options.CONTROLS.ESC:
             ui.showMsg("");
             keypressListener.actionType = null;
             clickListener.actionType = null;
@@ -458,7 +464,7 @@ function interact(drc) {
         case "3":
             movePosToDrc(interactPos, drc);
             break;
-        case "Escape":
+        case options.CONTROLS.ESC:
             ui.showMsg("");
             keypressListener.actionType = null;
             clickListener.actionType = null;
@@ -605,14 +611,14 @@ function action(key, ctrl) {
                 movePlayer(newPos);
             }
             break;
-        case "Enter":
+        case options.CONTROLS.ENTER:
             if (level[player.pos[0]][player.pos[1]] === ">" || level[player.pos[0]][player.pos[1]] === "<") {
                 tryChangeLvl();
             } else {
                 return;
             }
             break;
-        case "Escape":
+        case options.CONTROLS.ESC:
             ui.showDialog("Menu", ["Save", "Load"], idx => {
                 switch (idx) {
                     case 0:
@@ -624,7 +630,7 @@ function action(key, ctrl) {
                 }
             }, true, true);
             return;
-        case "f":
+        case options.CONTROLS.SHOOT:
             if (timeTracker.turnsUntilShoot === 0) {
                 timeTracker.turnsUntilShoot = 10;
                 ui.showMsg("In what direction?");
@@ -632,10 +638,10 @@ function action(key, ctrl) {
                 clickListener.actionType = "chooseDrc";
             }
             return;
-        case "h":
+        case options.CONTROLS.HISTORY:
             showMsgHistory();
             return;
-        case "i":
+        case options.CONTROLS.INVENTORY:
             let contentNames = [];
             
             for (let item of player.inventory) contentNames.push(item.name);
@@ -659,20 +665,20 @@ function action(key, ctrl) {
                 ui.showMsg("Your inventory is empty.");
             }
             return;
-        case "r":
+        case options.CONTROLS.MELEE:
             ui.showMsg("In what direction?");
             keypressListener.actionType = "melee";
             clickListener.actionType = "chooseDrc";
             return;
-        case "t":
+        case options.CONTROLS.INTERACT:
             ui.showMsg("In what direction?");
             keypressListener.actionType = "interact";
             clickListener.actionType = "chooseDrc";
             return;
-        case ",":
+        case options.CONTROLS.PICKUP:
             pickup();
             break;
-        case ";":
+        case options.CONTROLS.INSPECT:
             ui.showMsg("Move to a location to inspect. Use enter to select and esc to leave.");
             keypressListener.actionType = "selectPos";
             clickListener.actionType = "ignore";
@@ -751,7 +757,7 @@ function selectPos(drc) {
             area[prevPos[0]][prevPos[1]].classList.remove("selected");
             area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.add("selected");
             break;
-        case "Enter":
+        case options.CONTROLS.ENTER:
             let msg = "";
             let infoKeys = area[selectPos.currentPos[0]][selectPos.currentPos[1]].customProps.infoKeys;
     
@@ -767,7 +773,7 @@ function selectPos(drc) {
             }
             ui.showMsg(msg);
             break;
-        case "Escape":
+        case options.CONTROLS.ESC:
             ui.showMsg("");
             area[prevPos[0]][prevPos[1]].classList.toggle("selected");
             keypressListener.actionType = null;
@@ -792,7 +798,7 @@ function handleKeypress(key, ctrl) {
             interact(key);
             break;
         case "autoMove":
-            if (key === "Escape") interruptAutoTravel = true;
+            if (key === options.CONTROLS.ESC) interruptAutoTravel = true;
             break;
         case "selectPos":
             selectPos(key);

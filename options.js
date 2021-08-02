@@ -11,7 +11,18 @@ const options = {
     INTERRUPT_AUTOTRAVEL_IF_MOBS: true, // interrupt autotravel if any hostile mobs are displayed / not
     TRAVEL_REPEAT_START_DELAY: 100, // milliseconds for the delay before holding a key to move starts repeating
     TRAVEL_REPEAT_DELAY: 70, // milliseconds between each move when holding a moving key
-    AUTOTRAVEL_REPEAT_DELAY: 50 // milliseconds between each move when autotraveling
+    AUTOTRAVEL_REPEAT_DELAY: 50, // milliseconds between each move when autotraveling
+    CONTROLS: {
+        ESC: "Escape",
+        ENTER: "Enter",
+        SHOOT: "f",
+        HISTORY: "h",
+        INVENTORY: "i",
+        MELEE: "r",
+        INTERACT: "t",
+        PICKUP: ",",
+        INSPECT: ";",
+    },
 };
 
 export default options;

@@ -1,3 +1,5 @@
+import options from "./options.js";
+
 const dialog = document.getElementById("dialog");
 const table = document.getElementById("table");
 const msgBox = document.getElementById("msgBox");
@@ -182,7 +184,7 @@ export default class UI {
         }
         // i guess this doesnt need to be bound because it uses arrow function?
         this.dialogKeyListener = e => {
-            if (allowEsc && e.key === "Escape") {
+            if (allowEsc && e.key === options.CONTROLS.ESC) {
                 this.hideDialog();
                 return;
             }
@@ -197,7 +199,7 @@ export default class UI {
                 repopulateDialog(-1);
                 return;
             }
-            if (e.key === "ArrowDown" && choiceGroupIdx < choices.length - 1) {
+            if (e.key === "ArrowDown" && choiceGroupIdx !== null && choiceGroupIdx < choices.length - 1) {
                 repopulateDialog(1);
                 return;
             }
