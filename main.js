@@ -72,6 +72,18 @@ const ui = new UI(removeListeners, addListeners, msgHistory);
 addListeners();
 showStartDialog();
 
+const defaultOptions = localStorage.getItem("gameDefaultOptions");
+
+if (defaultOptions) {
+    const newOptions = JSON.parse(defaultOptions);
+
+    for (let key of Object.keys(newOptions)) {
+        options[key] = newOptions[key];
+    }
+    render.changeRenderOptions(options);
+    TURN_BASED = options.TURN_BASED;
+}
+
 // added separately because never removed
 document.addEventListener("keyup", function(e) {
     clearInterval(keyIntervals[e.key]);
@@ -125,7 +137,7 @@ function start() {
 }
 
 function showStartDialog() {
-    ui.showDialog("Start", ["New game", "Load game", "Options", "Controls"], idx => {
+    ui.showDialog("Start", ["New game", "Load game", "Options", "Controls", "Save configs as default"], idx => {
         if (showOptionsDialog.inputElem) {
             showOptionsDialog.inputElem.onkeydown = null;
             document.body.removeChild(showOptionsDialog.inputElem);
@@ -151,13 +163,19 @@ function showStartDialog() {
             case 3:
                 showControlsDialog();
                 break;
+            case 4:
+                localStorage.setItem("gameDefaultOptions", JSON.stringify(options));
+                ui.showMsg("Saved default options");
+                showStartDialog();
+                break;
         }
     }, false, true, 0);
 }
 
 function showOptionsDialog(startPage) {
     const optKeys = [...Object.keys(options)];
-    const optList = [...Object.keys(options)];
+    removeByReference(optKeys, "CONTROLS");
+    const optList = [...optKeys];
     
     for (let i = 0; i < optList.length; i++) {
         optList[i] += ": " + options[optList[i]];
@@ -187,7 +205,26 @@ function showControlsDialog(startPage) {
         optList[i] += ": \"" + options.CONTROLS[optList[i]] + "\"";
     }
     ui.showDialog("Controls", optList, idx => {
-        showControlsDialog(Math.ceil((idx+1) / 9) - 1);
+        const changeInput = e => {
+            ui.showMsg("");
+
+            for (let [key, val] of Object.entries(options.CONTROLS)) {
+                if (val === e.key && key !== optKeys[idx]) {
+                    document.removeEventListener("keydown", changeInput);
+                    addListeners();
+                    ui.showMsg("Error, \"" + val + "\" is already in use");
+                    showControlsDialog(Math.ceil((idx+1) / 9) - 1);
+                    return;
+                }
+            }
+            options.CONTROLS[optKeys[idx]] = e.key;
+            document.removeEventListener("keydown", changeInput);
+            addListeners();
+            showControlsDialog(Math.ceil((idx+1) / 9) - 1);
+        };
+        removeListeners();
+        document.addEventListener("keydown", changeInput);
+        ui.showMsg("Press the new input for \"" + optKeys[idx] + "\"");
     }, false, true, -1, startPage);
 }
 

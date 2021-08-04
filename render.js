@@ -163,7 +163,7 @@ export default class Renderer {
                 }
                 const classes = [];
 
-                if (!blocksSight(level[i][j])) {
+                if (!blocksSight(level[i][j]) && level[i][j] !== "*t") {
                     if (options.USE_BG_IMG) {
                         classes.push("wall-s-bg");
                     } else {
