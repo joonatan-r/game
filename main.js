@@ -138,11 +138,6 @@ function start() {
 
 function showStartDialog() {
     ui.showDialog("Start", ["New game", "Load game", "Options", "Controls", "Save configs as default"], idx => {
-        if (showOptionsDialog.inputElem) {
-            showOptionsDialog.inputElem.onkeydown = null;
-            document.body.removeChild(showOptionsDialog.inputElem);
-            showOptionsDialog.inputElem = null;
-        }
         switch (idx) {
             case 0:
                 addMobs(levels);
@@ -153,11 +148,6 @@ function showStartDialog() {
                 load();
                 break;
             case 2:
-                if (!showOptionsDialog.inputElem) {
-                    showOptionsDialog.inputElem = document.createElement("textarea");
-                    showOptionsDialog.inputElem.onkeydown = e => e.stopPropagation();
-                    document.body.appendChild(showOptionsDialog.inputElem);
-                }
                 showOptionsDialog();
                 break;
             case 3:
@@ -184,16 +174,39 @@ function showOptionsDialog(startPage) {
         let opt = options[optKeys[idx]];
 
         if (typeof opt === "number") {
-            const val = Number(showOptionsDialog.inputElem.value);
-            if (val > 10) {
-                options[optKeys[idx]] = val;
-            }
+            let input = "";
+            const inputListener = e => {
+                if (e.key === "Escape") {
+                    input = "";
+                    document.removeEventListener("keydown", inputListener);
+                    addListeners();
+                    ui.showMsg("");
+                    showOptionsDialog(Math.ceil((idx+1) / 9) - 1); // refresh but show the same page again
+                } else if (e.key === "Enter") {
+                    const val = Number(input);
+
+                    if (val > 10) {
+                        options[optKeys[idx]] = val;
+                    }
+                    input = "";
+                    document.removeEventListener("keydown", inputListener);
+                    addListeners();
+                    ui.showMsg("");
+                    showOptionsDialog(Math.ceil((idx+1) / 9) - 1);
+                } else {
+                    input += e.key;
+                    ui.showMsg("New value: " + input);
+                }
+            };
+            removeListeners();
+            document.addEventListener("keydown", inputListener);
+            ui.showMsg("Type the new value. Enter to accept and escape to cancel.");
         } else if (typeof opt === "boolean") {
             options[optKeys[idx]] = !opt;
+            showOptionsDialog(Math.ceil((idx+1) / 9) - 1);
         }
         render.changeRenderOptions(options);
         TURN_BASED = options.TURN_BASED;
-        showOptionsDialog(Math.ceil((idx+1) / 9) - 1); // refresh but show the same page again
     }, false, true, -1, startPage);
 }
 
