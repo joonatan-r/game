@@ -22,6 +22,14 @@ const options = {
         INTERACT: "t",
         PICKUP: ",",
         INSPECT: ";",
+        BOTTOM_LEFT: "1",
+        BOTTOM: "2",
+        BOTTOM_RIGHT: "3",
+        LEFT: "4",
+        RIGHT: "6",
+        TOP_LEFT: "7",
+        TOP: "8",
+        TOP_RIGHT: "9",
     },
 };
 

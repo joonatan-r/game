@@ -13,11 +13,12 @@ import options from "./options.js";
 // NOTE: all coords are given as (y,x)
 // NOTE: save and load can handle member functions, currently not needed
 
+// TODO: numbers 1-9 (excluding 5) can't be used for anything other than moving
+
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls, 
 //       take multiple pages into account in pickup dialog, fix inspect indicator
 //       if exiting inspection on player position
 
-let TURN_BASED = options.TURN_BASED;
 let turnInterval = null;
 
 const table = document.getElementById("table");
@@ -81,7 +82,6 @@ if (defaultOptions) {
         options[key] = newOptions[key];
     }
     render.changeRenderOptions(options);
-    TURN_BASED = options.TURN_BASED;
 }
 
 // added separately because never removed
@@ -123,7 +123,7 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
 function start() {
     updateInfo();
     render.renderAll(player, levels, customRenders);
-    !TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
+    !options.TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
 
     if (options.USE_BG_IMG) {
         if (levels[levels.currentLvl].bg.startsWith("#")) {
@@ -206,7 +206,6 @@ function showOptionsDialog(startPage) {
             showOptionsDialog(Math.ceil((idx+1) / 9) - 1);
         }
         render.changeRenderOptions(options);
-        TURN_BASED = options.TURN_BASED;
     }, false, true, -1, startPage);
 }
 
@@ -222,10 +221,11 @@ function showControlsDialog(startPage) {
             ui.showMsg("");
 
             for (let [key, val] of Object.entries(options.CONTROLS)) {
-                if (val === e.key && key !== optKeys[idx]) {
+                // TODO improve to allow numbers to other than moving
+                if ((val === e.key && key !== optKeys[idx]) || "12346789".indexOf(e.key) !== -1) {
                     document.removeEventListener("keydown", changeInput);
                     addListeners();
-                    ui.showMsg("Error, \"" + val + "\" is already in use");
+                    ui.showMsg("Error, \"" + e.key + "\" is already in use");
                     showControlsDialog(Math.ceil((idx+1) / 9) - 1);
                     return;
                 }
@@ -312,7 +312,7 @@ function tryFireEvent(type, entity) {
 
 function gameOver(msg) {
     ui.showMsg(msg);
-    !TURN_BASED && clearInterval(turnInterval);
+    !options.TURN_BASED && clearInterval(turnInterval);
     interruptAutoTravel = true;
     removeListeners();
     player.dead = true;
@@ -383,8 +383,8 @@ function processTurn() {
 async function shoot(fromPos, drc, mobIsShooting) {
     let bulletPos = fromPos.slice();
     let obj;
-    TURN_BASED && (interruptAutoTravel = true);
-    TURN_BASED && removeListeners();
+    options.TURN_BASED && (interruptAutoTravel = true);
+    options.TURN_BASED && removeListeners();
     keypressListener.actionType = null;
     clickListener.actionType = null;
 
@@ -428,7 +428,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                         // delete all properties of mov, so that all references to it are affected
                         for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
                         mobs.splice(i, 1);
-                        !player.dead && TURN_BASED && addListeners();
+                        !player.dead && options.TURN_BASED && addListeners();
                         keypressListener.actionType = null;
                         clickListener.actionType = null;
                         removeByReference(customRenders, obj);
@@ -444,17 +444,17 @@ async function shoot(fromPos, drc, mobIsShooting) {
         case options.CONTROLS.ESC:
             timeTracker.turnsUntilShoot = 0;
             ui.showMsg("");
-            !player.dead && TURN_BASED && addListeners();
+            !player.dead && options.TURN_BASED && addListeners();
             keypressListener.actionType = null;
             clickListener.actionType = null;
             return;
         default:
-            !player.dead && TURN_BASED && addListeners();
+            !player.dead && options.TURN_BASED && addListeners();
             keypressListener.actionType = "shoot";
             clickListener.actionType = "chooseDrc";
             return;
     }
-    !player.dead && TURN_BASED && addListeners();
+    !player.dead && options.TURN_BASED && addListeners();
     keypressListener.actionType = null;
     clickListener.actionType = null;
     !mobIsShooting && processTurn();
@@ -737,7 +737,7 @@ function action(key, ctrl) {
         default:
             return;
     }
-    if (TURN_BASED) {
+    if (options.TURN_BASED) {
         processTurn();
     } else {
         render.renderAll(player, levels, customRenders);
@@ -774,7 +774,7 @@ async function autoTravel(coords) {
         }
         movePlayer(coord);
         
-        if (TURN_BASED) {
+        if (options.TURN_BASED) {
             processTurn();
         } else {
             render.renderAll(player, levels, customRenders);
@@ -837,24 +837,54 @@ function selectPos(drc) {
 }
 
 function handleKeypress(key, ctrl) {
-    switch (keypressListener.actionType) {
-        case "shoot":
-            shoot(player.pos, key);
+    let keyToUse;
+
+    switch (key) {
+        case options.CONTROLS.BOTTOM_LEFT:
+            keyToUse = "1";
             break;
-        case "melee":
-            melee(key);
+        case options.CONTROLS.BOTTOM:
+            keyToUse = "2";
             break;
-        case "interact":
-            interact(key);
+        case options.CONTROLS.BOTTOM_RIGHT:
+            keyToUse = "3";
             break;
-        case "autoMove":
-            if (key === options.CONTROLS.ESC) interruptAutoTravel = true;
+        case options.CONTROLS.LEFT:
+            keyToUse = "4";
             break;
-        case "selectPos":
-            selectPos(key);
+        case options.CONTROLS.RIGHT:
+            keyToUse = "6";
+            break;
+        case options.CONTROLS.TOP_LEFT:
+            keyToUse = "7";
+            break;
+        case options.CONTROLS.TOP:
+            keyToUse = "8";
+            break;
+        case options.CONTROLS.TOP_RIGHT:
+            keyToUse = "9";
             break;
         default:
-            action(key, ctrl);
+            keyToUse = key;
+    }
+    switch (keypressListener.actionType) {
+        case "shoot":
+            shoot(player.pos, keyToUse);
+            break;
+        case "melee":
+            melee(keyToUse);
+            break;
+        case "interact":
+            interact(keyToUse);
+            break;
+        case "autoMove":
+            if (keyToUse === options.CONTROLS.ESC) interruptAutoTravel = true;
+            break;
+        case "selectPos":
+            selectPos(keyToUse);
+            break;
+        default:
+            action(keyToUse, ctrl);
     }
 }
 
@@ -871,8 +901,12 @@ function keypressListener(e) {
     if (Object.keys(keyIntervals).indexOf(e.key) !== -1) {
         return;
     }
-    if ("12346789".indexOf(e.key) !== -1) {
-        // enabble key repeating only for moving
+    const moveKeyList = [options.CONTROLS.BOTTOM_LEFT, options.CONTROLS.BOTTOM, options.CONTROLS.BOTTOM_RIGHT,
+                         options.CONTROLS.LEFT, options.CONTROLS.RIGHT, options.CONTROLS.TOP_LEFT, 
+                         options.CONTROLS.TOP, options.CONTROLS.TOP_RIGHT];
+
+    if (moveKeyList.indexOf(e.key) !== -1) {
+        // enable key repeating only for moving
         if (!keypressListener.actionType) {
             keyIntervals[e.key] = "tempVal";
             setKeyRepeat(e);
@@ -928,7 +962,7 @@ function clickListener(e) {
                 movePosToDrc(newPos, drc);
                 movePlayer(newPos);
                 
-                if (TURN_BASED) {
+                if (options.TURN_BASED) {
                     processTurn();
                 } else {
                     render.renderAll(player, levels, customRenders);
