@@ -151,7 +151,7 @@ export const movingAIs = {
 
             if (drc === 5) drc = 9;
 
-            movePosToDrc(mob.target, "" + drc);
+            movePosToDrc(mob.target, drc);
 
             if (!posIsValid(mob.target)) {
                 mob.target = [prevTarget[0], prevTarget[1]];
@@ -215,7 +215,7 @@ export const movingAIs = {
 
         // find closest pos where straight line to target
 
-        for (let drc of "12346789") {
+        for (let drc of [1, 2, 3, 4, 6, 7, 8, 9]) {
             const lineDrawPos = fromPos.slice();
             let distanceToMob = null;
             let prevDistance = null;

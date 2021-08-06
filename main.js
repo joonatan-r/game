@@ -221,8 +221,7 @@ function showControlsDialog(startPage) {
             ui.showMsg("");
 
             for (let [key, val] of Object.entries(options.CONTROLS)) {
-                // TODO improve to allow numbers to other than moving
-                if ((val === e.key && key !== optKeys[idx]) || "12346789".indexOf(e.key) !== -1) {
+                if ((val === e.key && key !== optKeys[idx])) {
                     document.removeEventListener("keydown", changeInput);
                     addListeners();
                     ui.showMsg("Error, \"" + e.key + "\" is already in use");
@@ -389,14 +388,14 @@ async function shoot(fromPos, drc, mobIsShooting) {
     clickListener.actionType = null;
 
     switch (drc) {
-        case "4":
-        case "6":
-        case "8":
-        case "2":
-        case "7":
-        case "1":
-        case "9":
-        case "3":
+        case 4:
+        case 6:
+        case 8:
+        case 2:
+        case 7:
+        case 1:
+        case 9:
+        case 3:
             const icon = projectileFromDrc[drc];
             
             while (1) {
@@ -464,14 +463,14 @@ function melee(drc) {
     let meleePos = player.pos.slice();
 
     switch (drc) {
-        case "4":
-        case "6":
-        case "8":
-        case "2":
-        case "7":
-        case "1":
-        case "9":
-        case "3":
+        case 4:
+        case 6:
+        case 8:
+        case 2:
+        case 7:
+        case 1:
+        case 9:
+        case 3:
             movePosToDrc(meleePos, drc);
             break;
         case options.CONTROLS.ESC:
@@ -504,14 +503,14 @@ function interact(drc) {
     let interactPos = player.pos.slice();
 
     switch (drc) {
-        case "4":
-        case "6":
-        case "8":
-        case "2":
-        case "7":
-        case "1":
-        case "9":
-        case "3":
+        case 4:
+        case 6:
+        case 8:
+        case 2:
+        case 7:
+        case 1:
+        case 9:
+        case 3:
             movePosToDrc(interactPos, drc);
             break;
         case options.CONTROLS.ESC:
@@ -637,14 +636,15 @@ function tryChangeLvl() {
 
 function action(key, ctrl) {
     switch (key) {
-        case "4":
-        case "6":
-        case "8":
-        case "2":
-        case "7":
-        case "1":
-        case "9":
-        case "3":
+        case options.CONTROLS.BOTTOM_LEFT:
+        case options.CONTROLS.BOTTOM:
+        case options.CONTROLS.BOTTOM_RIGHT:
+        case options.CONTROLS.LEFT:
+        case options.CONTROLS.RIGHT:
+        case options.CONTROLS.TOP_LEFT:
+        case options.CONTROLS.TOP:
+        case options.CONTROLS.TOP_RIGHT:
+            const drc = inputToDrc(key);
             let newPos = player.pos.slice();
             let prevPos = null;
 
@@ -653,11 +653,11 @@ function action(key, ctrl) {
                         && (!isWall(level[newPos[0]][newPos[1]]) || level[newPos[0]][newPos[1]] === "*f")
                 ) {
                     prevPos = newPos.slice();
-                    movePosToDrc(newPos, key);
+                    movePosToDrc(newPos, drc);
                 }
                 prevPos && autoTravel(prevPos); // last ok position
             } else {
-                movePosToDrc(newPos, key);
+                movePosToDrc(newPos, drc);
                 movePlayer(newPos);
             }
             break;
@@ -789,14 +789,14 @@ function selectPos(drc) {
     let prevPos = selectPos.currentPos.slice();
 
     switch (drc) {
-        case "4":
-        case "6":
-        case "8":
-        case "2":
-        case "7":
-        case "1":
-        case "9":
-        case "3":
+        case 4:
+        case 6:
+        case 8:
+        case 2:
+        case 7:
+        case 1:
+        case 9:
+        case 3:
             movePosToDrc(selectPos.currentPos, drc);
 
             if (!level[selectPos.currentPos[0]] 
@@ -836,55 +836,59 @@ function selectPos(drc) {
     }
 }
 
-function handleKeypress(key, ctrl) {
-    let keyToUse;
+function inputToDrc(input) {
+    let drc;
 
-    switch (key) {
+    switch (input) {
         case options.CONTROLS.BOTTOM_LEFT:
-            keyToUse = "1";
+            drc = 1;
             break;
         case options.CONTROLS.BOTTOM:
-            keyToUse = "2";
+            drc = 2;
             break;
         case options.CONTROLS.BOTTOM_RIGHT:
-            keyToUse = "3";
+            drc = 3;
             break;
         case options.CONTROLS.LEFT:
-            keyToUse = "4";
+            drc = 4;
             break;
         case options.CONTROLS.RIGHT:
-            keyToUse = "6";
+            drc = 6;
             break;
         case options.CONTROLS.TOP_LEFT:
-            keyToUse = "7";
+            drc = 7;
             break;
         case options.CONTROLS.TOP:
-            keyToUse = "8";
+            drc = 8;
             break;
         case options.CONTROLS.TOP_RIGHT:
-            keyToUse = "9";
+            drc = 9;
             break;
         default:
-            keyToUse = key;
+            drc = input;
     }
+    return drc;
+}
+
+function handleKeypress(key, ctrl) {
     switch (keypressListener.actionType) {
         case "shoot":
-            shoot(player.pos, keyToUse);
+            shoot(player.pos, inputToDrc(key));
             break;
         case "melee":
-            melee(keyToUse);
+            melee(inputToDrc(key));
             break;
         case "interact":
-            interact(keyToUse);
+            interact(inputToDrc(key));
             break;
         case "autoMove":
-            if (keyToUse === options.CONTROLS.ESC) interruptAutoTravel = true;
+            if (key === options.CONTROLS.ESC) interruptAutoTravel = true;
             break;
         case "selectPos":
-            selectPos(keyToUse);
+            selectPos(inputToDrc(key));
             break;
         default:
-            action(keyToUse, ctrl);
+            action(key, ctrl);
     }
 }
 
@@ -1005,14 +1009,14 @@ function mouseStyleListener(e) {
         const y = e.y - (rect.top + rect.height / 2);
         const drc = pixelCoordsToDrc(y, x);
         document.body.style.cursor = {
-            "1": "sw-resize",
-            "2": "s-resize",
-            "3": "se-resize",
-            "4": "w-resize",
-            "6": "e-resize",
-            "7": "nw-resize",
-            "8": "n-resize",
-            "9": "ne-resize",
+            1: "sw-resize",
+            2: "s-resize",
+            3: "se-resize",
+            4: "w-resize",
+            6: "e-resize",
+            7: "nw-resize",
+            8: "n-resize",
+            9: "ne-resize",
         }[drc];
     } else if (document.body.style.cursor !== "default") {
         document.body.style.cursor = "default";

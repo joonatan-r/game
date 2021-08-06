@@ -220,23 +220,23 @@ export function removeByReference(arr, obj) {
 
 export function pixelCoordsToDrc(y, x) {
     if (x === 0) {
-        if (y > 0) return "2"; // b
-        return "8"; // t
+        if (y > 0) return 2; // b
+        return 8; // t
     } else {
         let val = y/x;
 
         if (val > -0.4142 && val < 0.4142) {
-            if (x > 0) return "6"; // r
-            return "4"; // l
+            if (x > 0) return 6; // r
+            return 4; // l
         } else if (val > -2.4142 && val < -0.4142) {
-            if (x > 0) return "9"; // tr
-            return "1"; // bl
+            if (x > 0) return 9; // tr
+            return 1; // bl
         } else if (val > 0.4142 && val < 2.4142) {
-            if (x > 0) return "3"; // br
-            return "7"; // tl
+            if (x > 0) return 3; // br
+            return 7; // tl
         } else {
-            if (y > 0) return "2"; // b
-            return "8"; // t
+            if (y > 0) return 2; // b
+            return 8; // t
         }
     }
 }
@@ -280,31 +280,31 @@ export function coordsEq(coord1, coord2) {
 
 export function movePosToDrc(posToMove, drc) {
     switch (drc) {
-        case "4":
+        case 4:
             posToMove[1]--;
             break;
-        case "6":
+        case 6:
             posToMove[1]++;
             break;
-        case "8":
+        case 8:
             posToMove[0]--;
             break;
-        case "2":
+        case 2:
             posToMove[0]++;
             break;
-        case "7":
+        case 7:
             posToMove[1]--;
             posToMove[0]--;
             break;
-        case "1":
+        case 1:
             posToMove[1]--;
             posToMove[0]++;
             break;
-        case "9":
+        case 9:
             posToMove[1]++;
             posToMove[0]--;
             break;
-        case "3":
+        case 3:
             posToMove[1]++;
             posToMove[0]++;
             break;
@@ -312,25 +312,25 @@ export function movePosToDrc(posToMove, drc) {
 }
 
 export const oppositeDrcs = {
-    "1": "9",
-    "2": "8",
-    "3": "7",
-    "4": "6",
-    "6": "4",
-    "7": "3",
-    "8": "2",
-    "9": "1",
+    1: 9,
+    2: 8,
+    3: 7,
+    4: 6,
+    6: 4,
+    7: 3,
+    8: 2,
+    9: 1,
 };
 
 export const projectileFromDrc = {
-    "1": "/",
-    "2": "|",
-    "3": "\\",
-    "4": "\u2014",
-    "6": "\u2014",
-    "7": "\\",
-    "8": "|",
-    "9": "/",
+    1: "/",
+    2: "|",
+    3: "\\",
+    4: "\u2014",
+    6: "\u2014",
+    7: "\\",
+    8: "|",
+    9: "/",
 };
 
 export function isWall(tile) {
