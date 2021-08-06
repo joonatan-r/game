@@ -4,6 +4,7 @@ const dialog = document.getElementById("dialog");
 const table = document.getElementById("table");
 const msgBox = document.getElementById("msgBox");
 const status = document.getElementById("status");
+const info = document.getElementById("info");
 
 export default class UI {
     dialogMoved = false;
@@ -46,12 +47,8 @@ export default class UI {
     showMsg(msg) {
         if (!this.msgMoved) {
             const tableRect = table.getBoundingClientRect();
-            const computedStyle = window.getComputedStyle(document.getElementById("info")); 
-            let infoHeight = document.getElementById("info").clientHeight;
-            infoHeight += parseInt(computedStyle.marginTop, 10);
-            infoHeight += parseInt(computedStyle.marginBottom, 10);
-            msgBox.style.left = tableRect.left + "px";
-            msgBox.style.top = tableRect.top + tableRect.height + infoHeight + "px";
+            msgBox.style.top = (tableRect.top + tableRect.height + 5) + "px";
+            msgBox.style.left = (info.clientWidth + 25) + "px";
         }
         msgBox.style.display = "block";
         status.textContent = msg;

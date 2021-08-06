@@ -60,6 +60,13 @@ p {
     background-color: #777;
 }
 
+#info {
+    display: inline-block;
+    border: 1px solid white;
+    padding: 10px;
+    margin-top: 5px;
+}
+
 #loadInputFile {
     display: none;
 }
