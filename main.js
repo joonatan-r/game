@@ -30,20 +30,45 @@ let listenersActive = false;
 
 // bandaid to enable mobile somehow
 
+const t = document.createElement("textarea");
+
 if (MOBILE) {
+    const c = document.createElement("div");
     const d = document.createElement("div");
-    const t = document.createElement("textarea");
+    const enterD = document.createElement("div");
+    const escD = document.createElement("div");
+    enterD.style.backgroundColor = "#333";
+    enterD.style.textAlign = "center";
+    enterD.style.float = "left";
+    enterD.style.width = "100px";
+    enterD.style.height = "60px";
+    enterD.style.margin = "5px 15px 15px 5px";
+    escD.style.backgroundColor = "#333";
+    escD.style.textAlign = "center";
+    escD.style.float = "left";
+    escD.style.width = "100px";
+    escD.style.height = "60px";
+    escD.style.margin = "5px 15px 15px 5px";
     d.style.width = "100px";
-    d.style.height = "100px";
+    d.style.height = "60px";
     d.style.overflow = "hidden";
+    d.style.margin = "5px 15px 15px 5px";
     t.style.fontSize = "2em"; // prevents zooming to input
+    c.style.overflow = "hidden";
     d.appendChild(t);
-    document.body.insertBefore(d, table);
+    c.appendChild(enterD);
+    c.appendChild(escD);
+    c.appendChild(d);
+    document.body.insertBefore(c, table);
     t.addEventListener("input", () => {
         if (!listenersActive) return;
         handleKeypress(t.value.toLowerCase(), false);
         t.value = "";
     });
+    enterD.onclick = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    enterD.innerHTML = "<p>ENTER</p>";
+    escD.onclick = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    escD.innerHTML = "<p>ESC</p>";
 }
 
 const area = [];
@@ -234,8 +259,32 @@ function showControlsDialog(startPage) {
             addListeners();
             showControlsDialog(Math.ceil((idx+1) / 9) - 1);
         };
+        const mobileChangeInput = () => {
+            ui.showMsg("");
+
+            for (let [key, val] of Object.entries(options.CONTROLS)) {
+                if ((val === t.value && key !== optKeys[idx])) {
+                    t.removeEventListener("input", mobileChangeInput);
+                    addListeners();
+                    ui.showMsg("Error, \"" + t.value + "\" is already in use");
+                    t.value = "";
+                    showControlsDialog(Math.ceil((idx+1) / 9) - 1);
+                    return;
+                }
+            }
+            options.CONTROLS[optKeys[idx]] = t.value.toLowerCase();
+            t.removeEventListener("input", mobileChangeInput);
+            addListeners();
+            t.value = "";
+            showControlsDialog(Math.ceil((idx+1) / 9) - 1);
+        };
         removeListeners();
-        document.addEventListener("keydown", changeInput);
+
+        if (MOBILE) {
+            t.addEventListener("input", mobileChangeInput);
+        } else {
+            document.addEventListener("keydown", changeInput);
+        }
         ui.showMsg("Press the new input for \"" + optKeys[idx] + "\"");
     }, false, true, -1, startPage);
 }
