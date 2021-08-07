@@ -65,9 +65,15 @@ if (MOBILE) {
         handleKeypress(t.value.toLowerCase(), false);
         t.value = "";
     });
-    enterD.onclick = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    enterD.ontouchstart = () => {
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+        return false;
+    };
     enterD.innerHTML = "<p data-ignore-click='true'>ENTER</p>";
-    escD.onclick = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    escD.ontouchstart = () => {
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+        return false;
+    };
     escD.innerHTML = "<p data-ignore-click='true'>ESC</p>";
     enterD.dataset.ignoreClick = true;
     escD.dataset.ignoreClick = true;
