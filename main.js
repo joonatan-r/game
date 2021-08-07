@@ -66,9 +66,14 @@ if (MOBILE) {
         t.value = "";
     });
     enterD.onclick = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
-    enterD.innerHTML = "<p>ENTER</p>";
+    enterD.innerHTML = "<p data-ignore-click='true'>ENTER</p>";
     escD.onclick = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    escD.innerHTML = "<p>ESC</p>";
+    escD.innerHTML = "<p data-ignore-click='true'>ESC</p>";
+    enterD.dataset.ignoreClick = true;
+    escD.dataset.ignoreClick = true;
+    c.dataset.ignoreClick = true;
+    d.dataset.ignoreClick = true;
+    t.dataset.ignoreClick = true;
 }
 
 const area = [];
@@ -975,7 +980,7 @@ function clickListener(e) {
         return;
     }
     if (e.target.id === "status") return;
-    if (MOBILE && e.target.tagName === "TEXTAREA") return;
+    if (e.target.dataset.ignoreClick) return;
     ui.showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
