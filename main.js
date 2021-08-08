@@ -13,8 +13,6 @@ import options from "./options.js";
 // NOTE: all coords are given as (y,x)
 // NOTE: save and load can handle member functions, currently not needed
 
-// TODO: numbers 1-9 (excluding 5) can't be used for anything other than moving
-
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls, 
 //       take multiple pages into account in pickup dialog, fix inspect indicator
 //       if exiting inspection on player position

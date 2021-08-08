@@ -127,7 +127,7 @@ export function initialize(levels, table, area, rendered) {
             levels[lvl].memorized.push([]);
     
             for (let j = 0; j < level[0].length; j++) {
-                levels[lvl].memorized[i][j] = false;
+                levels[lvl].memorized[i][j] = "";
             }
         }
     }

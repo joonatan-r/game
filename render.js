@@ -1,9 +1,6 @@
 import { bresenham, coordsEq, isWall, removeByReference } from "./util.js";
 import options from "./options.js";
 
-// NOTE: with current implementation, if a memorized level tile is changed, 
-// it would be seen even if it's not rendered
-
 function blocksSight(tile) {
     return tile === "*w" || tile === "*f";
 }
@@ -100,12 +97,12 @@ export default class Renderer {
         }
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
-                if (this.rendered[i][j] && !memorized[i][j]) {
-                    memorized[i][j] = true;
-                } else if (!this.rendered[i][j] && options.SHOW_MEMORIZED && memorized[i][j]) {
-                    this.area[i][j].textContent = this.getTileToRender(level[i][j]);
+                if (this.rendered[i][j] && (memorized[i][j] === "" || memorized[i][j] !== level[i][j])) {
+                    memorized[i][j] = level[i][j];
+                } else if (!this.rendered[i][j] && options.SHOW_MEMORIZED && memorized[i][j] !== "") {
+                    this.area[i][j].textContent = this.getTileToRender(memorized[i][j]);
 
-                    if (!blocksSight(level[i][j])) {
+                    if (!blocksSight(memorized[i][j])) {
                         if (options.GRAY_MEMORIZED) {
                             this.area[i][j].className = "mem";
                         } else {
