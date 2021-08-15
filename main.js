@@ -14,8 +14,7 @@ import options from "./options.js";
 // NOTE: save and load can handle member functions, currently not needed
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls, 
-//       take multiple pages into account in pickup dialog, fix inspect indicator
-//       if exiting inspection on player position
+//       take multiple pages into account in pickup dialog
 
 let turnInterval = null;
 
@@ -438,10 +437,6 @@ function processTurn() {
 }
 
 async function shoot(fromPos, drc, mobIsShooting) {
-    let bulletPos = fromPos.slice();
-    let obj;
-    options.TURN_BASED && (interruptAutoTravel = true);
-    options.TURN_BASED && removeListeners();
     keypressListener.actionType = null;
     clickListener.actionType = null;
 
@@ -455,6 +450,11 @@ async function shoot(fromPos, drc, mobIsShooting) {
         case 9:
         case 3:
             const icon = projectileFromDrc[drc];
+            let bulletPos = fromPos.slice();
+            let obj;
+            options.TURN_BASED && (interruptAutoTravel = true);
+            options.TURN_BASED && removeListeners();
+            !mobIsShooting && (timeTracker.turnsUntilShoot = 10);
             
             while (1) {
                 render.renderAll(player, levels, customRenders);
@@ -463,7 +463,9 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 if (!level[bulletPos[0]] || typeof level[bulletPos[0]][bulletPos[1]] === "undefined" 
                     || level[bulletPos[0]][bulletPos[1]] === "*w"
                 ) {
-                    break;
+                    !player.dead && options.TURN_BASED && addListeners();
+                    !mobIsShooting && processTurn();
+                    return;
                 }
                 if (rendered[bulletPos[0]][bulletPos[1]]) {
                     area[bulletPos[0]][bulletPos[1]].textContent = icon;
@@ -482,43 +484,33 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 }
                 for (let i = 0; i < mobs.length; i++) {
                     if (coordsEq(bulletPos, mobs[i].pos)) {
-                        // delete all properties of mov, so that all references to it are affected
+                        // delete all properties of mob, so all references to it recognize deletion
                         for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
                         mobs.splice(i, 1);
-                        !player.dead && options.TURN_BASED && addListeners();
-                        keypressListener.actionType = null;
-                        clickListener.actionType = null;
                         removeByReference(customRenders, obj);
                         render.renderAll(player, levels, customRenders);
                         render.shotEffect(bulletPos, player, levels, customRenders);
+                        !player.dead && options.TURN_BASED && addListeners();
                         !mobIsShooting && processTurn();
                         return;
                     }
                 }
                 removeByReference(customRenders, obj);
             }
-            break;
+            return;
         case options.CONTROLS.ESC:
-            timeTracker.turnsUntilShoot = 0;
             ui.showMsg("");
-            !player.dead && options.TURN_BASED && addListeners();
-            keypressListener.actionType = null;
-            clickListener.actionType = null;
             return;
         default:
-            !player.dead && options.TURN_BASED && addListeners();
             keypressListener.actionType = "shoot";
             clickListener.actionType = "chooseDrc";
             return;
     }
-    !player.dead && options.TURN_BASED && addListeners();
-    keypressListener.actionType = null;
-    clickListener.actionType = null;
-    !mobIsShooting && processTurn();
 }
 
 function melee(drc) {
-    let meleePos = player.pos.slice();
+    keypressListener.actionType = null;
+    clickListener.actionType = null;
 
     switch (drc) {
         case 4:
@@ -529,32 +521,29 @@ function melee(drc) {
         case 1:
         case 9:
         case 3:
+            let meleePos = player.pos.slice();
             movePosToDrc(meleePos, drc);
-            break;
+            processTurn(); // takes an extra turn
+            
+            if (player.dead) return;
+        
+            for (let i = 0; i < mobs.length; i++) {
+                if (coordsEq(meleePos, mobs[i].pos)) {
+                    ui.showMsg("You hit " + mobs[i].name + "!");
+                    for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
+                    mobs.splice(i, 1);
+                }
+            }
+            processTurn();
+            return;
         case options.CONTROLS.ESC:
             ui.showMsg("");
-            keypressListener.actionType = null;
-            clickListener.actionType = null;
             return;
         default:
             keypressListener.actionType = "melee";
             clickListener.actionType = "chooseDrc";
             return;
     }
-    processTurn(); // takes an extra turn
-    
-    if (player.dead) return;
-
-    for (let i = 0; i < mobs.length; i++) {
-        if (coordsEq(meleePos, mobs[i].pos)) {
-            ui.showMsg("You hit " + mobs[i].name + "!");
-            for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
-            mobs.splice(i, 1);
-        }
-    }
-    keypressListener.actionType = null;
-    clickListener.actionType = null;
-    processTurn();
 }
 
 function interact(drc) {
@@ -740,7 +729,6 @@ function action(key, ctrl) {
             return;
         case options.CONTROLS.SHOOT:
             if (timeTracker.turnsUntilShoot === 0) {
-                timeTracker.turnsUntilShoot = 10;
                 ui.showMsg("In what direction?");
                 keypressListener.actionType = "shoot";
                 clickListener.actionType = "chooseDrc";
@@ -883,7 +871,7 @@ function selectPos(drc) {
             break;
         case options.CONTROLS.ESC:
             ui.showMsg("");
-            area[prevPos[0]][prevPos[1]].classList.toggle("selected");
+            area[prevPos[0]][prevPos[1]].classList.remove("selected");
             keypressListener.actionType = null;
             clickListener.actionType = null;
             return;
@@ -983,8 +971,7 @@ function clickListener(e) {
         menu.style.display = "none";
         return;
     }
-    if (e.target.id === "status") return;
-    if (e.target.dataset.ignoreClick) return;
+    if (e.target.id === "status" || e.target.dataset.ignoreClick || e.button !== 0) return;
     ui.showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
@@ -1042,8 +1029,8 @@ function menuListener(e) {
 
     const travelButton = document.getElementById("travelButton");
     const showInfoButton = document.getElementById("showInfoButton");
-    travelButton.onclick = () => autoTravel(e.target.customProps.coords);
-    showInfoButton.onclick = () => {
+    travelButton.onmousedown = () => autoTravel(e.target.customProps.coords);
+    showInfoButton.onmousedown = () => {
         let msg = "";
 
         if (!e.target.customProps.infoKeys.length) {
