@@ -88,7 +88,6 @@ export default class Renderer {
                 if (this.getTileToRender(level[y][x]) !== this.areaCache[y][x]) {
                     this.area[y][x].textContent = this.getTileToRender(level[y][x]);
                 }
-    
                 this.area[y][x].customProps.infoKeys.unshift(level[y][x]);
                 !blocksSight(level[y][x]) && (this.area[y][x].className = "shown");
                 this.rendered[y][x] = true;

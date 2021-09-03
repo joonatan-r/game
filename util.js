@@ -21,86 +21,88 @@ export function initialize(levels, table, area, rendered) {
     levels.currentLvl = "";
     
     for (let c of levelData) {
-        if (parseStatus === "" && c !== "\n") {
-            parseStatus = "name";
-        }
-        if (parseStatus === "name") {
-            if (c === "\n") {
-                parseStatus = "bg";
-                continue;
-            }
-            lvlName += c;
-            continue;
-        }
-        if (parseStatus === "bg") {
-            if (c === "\n") {
-                parseStatus = "travel";
-                continue;
-            }
-            bg += c;
-            continue;
-        }
-        if (parseStatus === "travel") {
-            if (c === "\n") {
-                if (travelName.length === 0) {
-                    parseStatus = "lvl";
-                } else {
-                    travelNames.push(travelName);
-                    travelName = "";
+        switch (parseStatus) {
+            case "":
+                if (c === "\n") {
+                    continue;
                 }
-            } else {
-                travelName += c;
-            }
-            continue;
+                parseStatus = "name";
+                // fall through
+            case "name":
+                if (c === "\n") {
+                    parseStatus = "bg";
+                } else {
+                    lvlName += c;
+                }
+                break;
+            case "bg":
+                if (c === "\n") {
+                    parseStatus = "travel";
+                } else {
+                    bg += c;
+                }
+                break;
+            case "travel":
+                if (c === "\n") {
+                    if (travelName.length === 0) {
+                        parseStatus = "lvl";
+                    } else {
+                        travelNames.push(travelName);
+                        travelName = "";
+                    }
+                } else {
+                    travelName += c;
+                }
+                break;
+            case "lvl":
+                if (!escaped && c === "e") {
+                    escaped = true;
+                } else if (escaped) {
+                    level[yIdx][xIdx] = c;
+                    xIdx++;
+                    escaped = false;
+                } else if (c === ";") {
+                    levels[lvlName] = {
+                        level: level,
+                        bg: bg,
+                        mobs: [],
+                        items: [],
+                        memorized: [],
+                        spawnRate: 0,
+                        spawnDistribution: {},
+                        travelPoints: {}
+                    };
+                    // NOTE: currently if multiple passages between two lvls, they are always connected
+                    // in the order they appear in the lvls
+                    for (let name of travelNames) {
+                        if (!levels[lvlName].travelPoints[name]) levels[lvlName].travelPoints[name] = [];
+                        levels[lvlName].travelPoints[name].push(travelCoords.shift());
+                    }
+                    level = [[]];
+                    yIdx = 0;
+                    xIdx = 0;
+                    parseStatus = "";
+                    lvlName = "";
+                    bg = "";
+                    travelName = "";
+                    travelNames = [];
+                    travelCoords = [];
+                } else if (c === "\n") {
+                    level.push([]);
+                    xIdx = 0;
+                    yIdx++;
+                } else {
+                    if (Object.keys(levelCharMap).indexOf(c) !== -1) {
+                        c = levelCharMap[c];
+                    }
+                    if (c === ">" || c === "<" || c === "^") travelCoords.push([yIdx, xIdx]);
+                    level[yIdx][xIdx] = c;
+                    xIdx++;
+                }
+                break;
+            default:
+                // continue
         }
-        if (parseStatus !== "lvl") {
-            continue;
-        }
-        if (!escaped && c === "e") {
-            escaped = true;
-            continue;
-        }
-        if (!escaped && c === ";") {
-            levels[lvlName] = {
-                level: level,
-                bg: bg,
-                mobs: [],
-                items: [],
-                memorized: [],
-                spawnRate: 0,
-                spawnDistribution: {},
-                travelPoints: {}
-            };
-            // NOTE: currently if multiple passages between two lvls, they are always connected
-            // in the order they appear in the lvls
-            for (let name of travelNames) {
-                if (!levels[lvlName].travelPoints[name]) levels[lvlName].travelPoints[name] = [];
-                levels[lvlName].travelPoints[name].push(travelCoords.shift());
-            }
-            level = [[]];
-            yIdx = 0;
-            xIdx = 0;
-            parseStatus = "";
-            lvlName = "";
-            bg = "";
-            travelName = "";
-            travelNames = [];
-            travelCoords = [];
-            continue;
-        }
-        if (!escaped && c === "\n") {
-            level.push([]);
-            xIdx = 0;
-            yIdx++;
-            continue;
-        }
-        if (!escaped && Object.keys(levelCharMap).indexOf(c) !== -1) {
-            c = levelCharMap[c];
-        }
-        if (!escaped && (c === ">" || c === "<" || c === "^")) travelCoords.push([yIdx, xIdx]);
-        level[yIdx][xIdx] = c;
-        xIdx++;
-        escaped = false;
     }
     levels.currentLvl = Object.keys(levels)[1];
     level = levels[levels.currentLvl].level;

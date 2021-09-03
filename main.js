@@ -93,6 +93,8 @@ let levels = {};
 
 initialize(levels, table, area, rendered);
 
+// NOTE: all references within "levels", "player", or "timeTracker" to other objects included
+//       in each other must be done with "refer()" for saving to work properly
 let level = levels[levels.currentLvl].level;
 let mobs = levels[levels.currentLvl].mobs;
 let items = levels[levels.currentLvl].items;
@@ -429,8 +431,6 @@ function processTurn() {
     let mob = trySpawnMob(levels, rendered);
 
     if (mob !== null) {
-        // NOTE: all references within "levels", "player", or "timeTracker" to other objects within
-        //       must be done with "refer()" for saving to work properly
         mob.huntingTarget = refer(player);
         mobs.push(mob);
     }
