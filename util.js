@@ -20,6 +20,7 @@ export function initialize(levels, table, area, rendered) {
     let escaped = false;
 
     levels.currentLvl = "";
+    levels.generatedIdx = 0;
     
     for (let c of levelData) {
         switch (parseStatus) {
@@ -105,7 +106,7 @@ export function initialize(levels, table, area, rendered) {
                 // continue
         }
     }
-    levels.currentLvl = Object.keys(levels)[1];
+    levels.currentLvl = Object.keys(levels)[2];
     level = levels[levels.currentLvl].level;
 
     for (let i = 0; i < level.length; i++) {
@@ -124,7 +125,7 @@ export function initialize(levels, table, area, rendered) {
         }
     }
     for (let lvl of Object.keys(levels)) {
-        if (lvl === "currentLvl") continue;
+        if (lvl === "currentLvl" || lvl === "generatedIdx") continue;
     
         for (let i = 0; i < level.length; i++) {
             levels[lvl].memorized.push([]);

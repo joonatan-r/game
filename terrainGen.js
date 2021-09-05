@@ -4,9 +4,9 @@ const SIZE_Y = 25;
 const SIZE_X = 40;
 const SIDE_X_MAX = SIZE_X / 8;
 const SIDE_Y_MAX = SIZE_Y / 4;
-const level = [];
-const rects = [];
-const visitedWalls = [0, 0, 0, 0];
+let level = [];
+let rects = [];
+let visitedWalls = [0, 0, 0, 0];
 let toBeFilledQueue = [];
 let edgesToBeFilledQueue = [];
 let filling = ".";
@@ -217,6 +217,20 @@ function addRect() {
 }
 
 export function generateLevel(startPoint) {
+    level = [];
+    rects = [];
+    visitedWalls = [0, 0, 0, 0];
+    toBeFilledQueue = [];
+    edgesToBeFilledQueue = [];
+    filling = ".";
+    
+    for (let i = 0; i < SIZE_Y; i++) {
+        level.push([]);
+      
+        for (let j = 0; j < SIZE_X; j++) {
+            level[i][j] = "w";
+        }
+    }
     let startDir;
 
     if (startPoint[0] === 0) {
