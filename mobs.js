@@ -27,6 +27,33 @@ export function addMobs(levels) {
     };
 }
 
+export function createRandomMobSpawning() {
+    const mobs = [Make, Pekka, Jorma];
+    const spawningMobs = [];
+    const probs = [];
+    const distribution = {};
+    let probsSum = 0;
+
+    for (const mob of mobs) {
+        if (Math.random() < 2 / mobs.length) {
+            const spawnProb = Math.random();
+            spawningMobs.push(mob);
+            probs.push(spawnProb);
+            probsSum += spawnProb;
+        }
+    }
+    for (let i = 0; i < spawningMobs.length; i++) {
+        distribution[spawningMobs[i].name] = {
+            mob: spawningMobs[i],
+            prob: probs[i] / probsSum
+        };
+    }
+    return {
+        rate: spawningMobs.length === 0 ? 0 : Math.random() * 0.2,
+        distribution: distribution
+    };
+}
+
 export function trySpawnMob(levels, rendered) {
     let spawnPos = null;
     let notRenderedNbr = 1;

@@ -4,7 +4,7 @@ import {
     pixelCoordsToDrc, makeTextFile, projectileFromDrc, levelCharMap
 } from "./util.js";
 import { generateLevel } from "./terrainGen.js";
-import { trySpawnMob, addMobs, movingAIs } from "./mobs.js";
+import { trySpawnMob, addMobs, movingAIs, createRandomMobSpawning } from "./mobs.js";
 import { addItems } from "./items.js";
 import Renderer from "./render.js";
 import UI from "./UI.js";
@@ -713,14 +713,16 @@ function createNewLvl() {
     } else {
         name = "" + levels.generatedIdx;
     }
+    const spawns = createRandomMobSpawning();
+    console.log(spawns)
     levels[name] = {
         level: generatedLvl,
         bg: "#282828",
         mobs: [],
         items: [],
         memorized: newMemorized,
-        spawnRate: 0,
-        spawnDistribution: {},
+        spawnRate: spawns.rate,
+        spawnDistribution: spawns.distribution,
         travelPoints: travelPoints
     };
     levels.generatedIdx++;
