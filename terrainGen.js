@@ -139,10 +139,9 @@ class Rect {
                 }
                 if (i === height - 1 && j === width - 1
                     && level[coords[0]][coords[1]] === "."
-                    // && Math.random() < 0.5
                 ) {
-                    // if this rect would end up in another rect, chance
-                    // to instead put wall there. edges will never be walls to prevent
+                    // if this rect would end up in another rect, 
+                    // instead put wall there. edges will never add walls to prevent
                     // unreachable areas
                     filling = "w";
                 }
@@ -156,8 +155,11 @@ class Rect {
         for (const coords of toBeFilledQueue) {
             level[coords[0]][coords[1]] = filling;
         }
-        for (const coords of edgesToBeFilledQueue) {
-            level[coords[0]][coords[1]] = ".";
+        if (filling !== "w") {
+            // don't fill edges if the rect adds walls
+            for (const coords of edgesToBeFilledQueue) {
+                level[coords[0]][coords[1]] = ".";
+            }
         }
         toBeFilledQueue = [];
         edgesToBeFilledQueue = [];
