@@ -651,12 +651,21 @@ function pickup(alwaysDialog) {
     }
 }
 
+function tryAddTravelPoint(openEdges, startPos) {
+    for (const pos of openEdges) {
+        if (pos[0] !== startPos[0] && pos[1] !== startPos[1] && Math.random() < 1 / openEdges.length) {
+            return pos;
+        }
+    }
+    return null;
+}
+
 function createNewLvl() {
     // NOTE: currently the travel point to the generated lvl must be on lvl edge
 
     const startPos = [];
     let name = "";
-    let addedTravelPoint = false;
+    let newTravelPos = null;
 
     if (player.pos[0] === 0) {
         startPos[0] = level.length - 1;
@@ -675,6 +684,7 @@ function createNewLvl() {
     generatedLvl[startPos[0]][startPos[1]] = "^";
     const newMemorized = [];
     const travelPoints = {};
+    const openEdges = [];
     travelPoints[levels.currentLvl] = [startPos];
 
     for (let i = 0; i < level.length; i++) {
@@ -687,15 +697,17 @@ function createNewLvl() {
                 generatedLvl[i][j] = levelCharMap[generatedLvl[i][j]];
             }
             if ((i === 0 || j === 0 || i === level.length - 1 || j === level[0].length - 1)
-                && generatedLvl[i][j] === "." && !addedTravelPoint && Math.random() < 0.1
+                && generatedLvl[i][j] === "."
             ) {
-                // travel point to next to-be-generated lvl
-                travelPoints["" + (levels.generatedIdx + 1)] = [[i, j]];
-                generatedLvl[i][j] = "^";
-                addedTravelPoint = true;
+                openEdges.push([i, j]);
             }
         }
     }
+    // travel point to next to-be-generated lvl
+    while (newTravelPos === null) newTravelPos = tryAddTravelPoint(openEdges, startPos);
+    travelPoints["" + (levels.generatedIdx + 1)] = [[newTravelPos[0], newTravelPos[1]]];
+    generatedLvl[newTravelPos[0]][newTravelPos[1]] = "^";
+
     if (levels.generatedIdx === 0) {
         name = "Cave or something";
     } else {
