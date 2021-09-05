@@ -1,8 +1,9 @@
 import { infoTable } from "./levelData.js";
 import {
     initialize, bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
-    pixelCoordsToDrc, makeTextFile, projectileFromDrc 
+    pixelCoordsToDrc, makeTextFile, projectileFromDrc, levelCharMap
 } from "./util.js";
+import { generateLevel } from "./terrainGen.js";
 import { trySpawnMob, addMobs, movingAIs } from "./mobs.js";
 import { addItems } from "./items.js";
 import Renderer from "./render.js";
@@ -658,6 +659,53 @@ function tryChangeLvl() {
 
         for (let coords of tps[lvl]) {
             if (coordsEq(coords, player.pos)) {
+                if (typeof levels[lvl] === "undefined") {
+                    const startPos = [];
+
+                    // generate lvl
+                    // NOTE: currently the travel point to the generated lvl must be on lvl edge
+
+                    if (player.pos[0] === 0) {
+                        startPos[0] = level.length - 1;
+                        startPos[1] = player.pos[1];
+                    } else if (player.pos[0] === level.length - 1) {
+                        startPos[0] = 0;
+                        startPos[1] = player.pos[1];
+                    } else if (player.pos[1] === 0) {
+                        startPos[0] = player.pos[0];
+                        startPos[1] = level[0].length - 1;
+                    } else if (player.pos[1] === level[0].length - 1) {
+                        startPos[0] = player.pos[0];
+                        startPos[1] = 0;
+                    }
+                    const generatedLvl = generateLevel(startPos);
+                    const travelPoints = {};
+                    const newMemorized = [];
+                    travelPoints[levels.currentLvl] = [startPos];
+                    generatedLvl[startPos[0]][startPos[1]] = "^";
+
+                    for (let i = 0; i < level.length; i++) {
+                        newMemorized.push([]);
+                
+                        for (let j = 0; j < level[0].length; j++) {
+                            newMemorized[i][j] = "";
+
+                            if (Object.keys(levelCharMap).indexOf(generatedLvl[i][j]) !== -1) {
+                                generatedLvl[i][j] = levelCharMap[generatedLvl[i][j]];
+                            }
+                        }
+                    }
+                    levels["Cave or something"] = {
+                        level: generatedLvl,
+                        bg: "#282828",
+                        mobs: [],
+                        items: [],
+                        memorized: newMemorized,
+                        spawnRate: 0,
+                        spawnDistribution: {},
+                        travelPoints: travelPoints
+                    };
+                }
                 level = levels[lvl].level;
                 player.pos = levels[lvl].travelPoints[levels.currentLvl][idx].slice();
                 mobs = levels[lvl].mobs;

@@ -1,12 +1,13 @@
 import { levelData } from "./levelData.js";
 
+export const levelCharMap = {
+    "w": "*w", // "normal" wall
+    "f": "*f", // "fake" wall
+    "s": "*s", // "see-through" wall
+    "t": "*t" // wall that blocks sight, but shows the background of the wall tile
+};
+
 export function initialize(levels, table, area, rendered) {
-    const levelCharMap = {
-        "w": "*w", // "normal" wall
-        "f": "*f", // "fake" wall
-        "s": "*s", // "see-through" wall
-        "t": "*t" // wall that blocks sight, but shows the background of the wall tile
-    };
     let level = [[]];
     let yIdx = 0;
     let xIdx = 0;
