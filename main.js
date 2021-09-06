@@ -714,7 +714,6 @@ function createNewLvl() {
         name = "" + levels.generatedIdx;
     }
     const spawns = createRandomMobSpawning();
-    console.log(spawns)
     levels[name] = {
         level: generatedLvl,
         bg: "#282828",

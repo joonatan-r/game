@@ -41,7 +41,7 @@ const OppositeDrcs = {
 class Rect {
     edges = [];
 
-    constructor(height, width, pos, dir, side) {
+    constructor(height, width, pos, dir, side, version) {
         this.height = height;
         this.width = width;
         this.pos = pos; // corner, start pos for rect
@@ -152,55 +152,54 @@ class Rect {
                 }
             }
         }
-        for (const coords of toBeFilledQueue) {
-            level[coords[0]][coords[1]] = filling;
-        }
-        if (filling !== "w") {
-            // don't fill edges if the rect adds walls
-            for (const coords of edgesToBeFilledQueue) {
-                level[coords[0]][coords[1]] = ".";
+        if (version !== 0 || filling !== "w") {
+            for (const coords of toBeFilledQueue) {
+                level[coords[0]][coords[1]] = filling;
             }
+        }
+        // edges will always be open to prevent unreachable areas
+        for (const coords of edgesToBeFilledQueue) {
+            level[coords[0]][coords[1]] = ".";
         }
         toBeFilledQueue = [];
         edgesToBeFilledQueue = [];
     }
 }
 
-function tryGetStartPos(force) {
-    const rect = rects[0]; // TODO clean up (now always selects the most recent one)
+function tryGetStartPos(force, version) {
+    const rect = rects[0]; // always uses the most recent rect as source
+    const arr = version === 1
+        ? rect.edges
+        : rect.edges
+            .map((value) => ({ value, sort: Math.random() }))
+            .sort((a, b) => a.sort - b.sort)
+            .map(({ value }) => value); // shuffle
 
-    // let rectChooseProb = 1 / rects.length;
-
-    // for (const rect of rects) {
-    //     // choose whether to use this rect for start point
-    //     if (Math.random() < rectChooseProb) {
-            for (const edge of rect.edges) {
-                if (Math.random() < 1 / rect.edges.length || force) {
-                    if (edge.dir === OppositeDrcs[rect.dir] && !force) {
-                        return null;
-                    }
-                    return {
-                        pos: edge.pos,
-                        dir: rect.dir,
-                        edgeDir: edge.dir,
-                    };
-                }
+    for (const edge of arr) {
+        if ((version === 0 && edge.dir === rect.dir)
+            || Math.random() < 1 / rect.edges.length 
+            || force
+        ) {
+            if (edge.dir === OppositeDrcs[rect.dir] && !force) {
+                return null;
             }
-            return null;
-    //     } else {
-    //         rectChooseProb /= 2;
-    //     }
-    // }
-    // return null;
+            return {
+                pos: edge.pos,
+                dir: rect.dir,
+                edgeDir: edge.dir,
+            };
+        }
+    }
+    return null;
 }
 
-function addRect() {
+function addRect(version) {
     let startInfo = null;
     // let dir = RI(0,3);
     let side = getRandomInt(0,1);
     let maxIters = 1000;
 
-    while (startInfo === null) startInfo = tryGetStartPos(--maxIters < 1);
+    while (startInfo === null) startInfo = tryGetStartPos(--maxIters < 1, version);
     // ensure new rect never goes opposite to its source rect's dir 
     // or the source edge's dir (i.e. inside the source rect)
     // while (dir === OppositeDrcs[startInfo.dir]
@@ -233,7 +232,9 @@ export function generateLevel(startPoint) {
             level[i][j] = "w";
         }
     }
+    let version = Math.random() < 0.7 ? 0 : 1;
     let startDir;
+    console.log(version)
 
     if (startPoint[0] === 0) {
         startDir = Directions.down;
@@ -252,12 +253,13 @@ export function generateLevel(startPoint) {
         startPoint,
         startDir,
         getRandomInt(0,1),
+        version,
     );
     rects.unshift(startRect);
     let doLoop = true;
 
     while (doLoop) {
-        addRect();
+        addRect(version);
 
         let sum = 0;
 
