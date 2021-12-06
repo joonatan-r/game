@@ -106,7 +106,7 @@ export function initialize(levels, table, area, rendered) {
                 // continue
         }
     }
-    levels.currentLvl = Object.keys(levels)[2];
+    levels.currentLvl = Object.keys(levels)[9];
     level = levels[levels.currentLvl].level;
 
     for (let i = 0; i < level.length; i++) {

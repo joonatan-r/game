@@ -89,7 +89,7 @@ timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
 let player = {};
 player.inventory = [];
-player.pos = [10, 13];
+player.pos = [10, 37];
 let levels = {};
 
 initialize(levels, table, area, rendered);

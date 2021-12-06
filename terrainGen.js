@@ -2,8 +2,8 @@ import { getRandomInt } from "./util.js";
 
 const SIZE_Y = 25;
 const SIZE_X = 40;
-const SIDE_X_MAX = SIZE_X / 8;
-const SIDE_Y_MAX = SIZE_Y / 4;
+const SIDE_X_MAX = SIZE_X / 6;
+const SIDE_Y_MAX = SIZE_Y / 10;
 let level = [];
 let rects = [];
 let visitedWalls = [0, 0, 0, 0];
@@ -139,6 +139,7 @@ class Rect {
                 }
                 if (i === height - 1 && j === width - 1
                     && level[coords[0]][coords[1]] === "."
+                    && version === 1
                 ) {
                     // if this rect would end up in another rect, 
                     // instead put wall there. edges will never add walls to prevent
@@ -234,7 +235,7 @@ export function generateLevel(startPoint) {
     }
     let version = Math.random() < 0.7 ? 0 : 1;
     let startDir;
-    console.log(version)
+    // console.log(version)
 
     if (startPoint[0] === 0) {
         startDir = Directions.down;
@@ -256,6 +257,7 @@ export function generateLevel(startPoint) {
         version,
     );
     rects.unshift(startRect);
+    let wallNbr = 0;
     let doLoop = true;
 
     while (doLoop) {
@@ -269,6 +271,17 @@ export function generateLevel(startPoint) {
         if (sum > 3) {
             doLoop = false;
         }
+    }
+    for (let i = 0; i < SIZE_Y; i++) {
+        for (let j = 0; j < SIZE_X; j++) {
+            if (level[i][j] === "w") {
+                wallNbr++;
+            }
+        }
+    }
+    // too open level, retry (NOTE: a bit inefficient)
+    if (wallNbr < 0.4*SIZE_Y*SIZE_X) {
+        return generateLevel(startPoint);
     }
     return level;
 }
