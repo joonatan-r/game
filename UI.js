@@ -11,9 +11,12 @@ export default class UI {
     msgMoved = false;
     dialogStack = [];
 
-    constructor(removeListeners, addListeners, msgHistory) {
+    // Pause may be called before calling showDialog if wanted.
+    // Unpause is always called automatically when done with the dialog.
+    constructor(removeListeners, addListeners, unpause, msgHistory) {
         this.removeListeners = removeListeners;
         this.addListeners = addListeners;
+        this.unpause = unpause;
         this.msgHistory = msgHistory;
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
         this.msgMoveListener = this.msgMoveListener.bind(this);
@@ -249,6 +252,7 @@ export default class UI {
         dialog.style.display = "none";
         document.removeEventListener("keydown", this.dialogKeyListener);
         this.addListeners();
+        this.unpause();
     
         while (dialog.firstChild) {
             dialog.firstChild.onclick = null; // just to be safe

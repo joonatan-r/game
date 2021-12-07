@@ -104,7 +104,7 @@ let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let autoTravelStack = []; // used to cancel previous autoTravels when there is a new one
 const render = new Renderer(area, rendered);
-const ui = new UI(removeListeners, addListeners, msgHistory);
+const ui = new UI(removeListeners, addListeners, () => setPause(false), msgHistory);
 
 addListeners();
 showStartDialog();
@@ -796,6 +796,7 @@ function action(key, ctrl) {
             }
             break;
         case options.CONTROLS.ESC:
+            setPause(true);
             ui.showDialog("Menu", ["Save", "Load"], idx => {
                 switch (idx) {
                     case 0:
@@ -1097,6 +1098,19 @@ function clickListener(e) {
                     render.renderAll(player, levels, customRenders);
                 }
             }
+    }
+}
+
+function setPause(val) {
+    if (val && !setPause.paused) {
+        // wait a turn first so no abuse
+        setTimeout(() => {
+            clearInterval(turnInterval);
+            setPause.paused = true;
+        }, options.TURN_DELAY);
+    } else if (setPause.paused) {
+        turnInterval = setInterval(() => processTurn(), options.TURN_DELAY);
+        setPause.paused = false;
     }
 }
 
