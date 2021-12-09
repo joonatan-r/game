@@ -456,8 +456,33 @@ async function shoot(fromPos, drc, mobIsShooting) {
             options.TURN_BASED && (interruptAutoTravel = true);
             options.TURN_BASED && removeListeners();
             !mobIsShooting && (timeTracker.turnsUntilShoot = 10);
+
+            const checkHits = (checkPos) => {
+                if (coordsEq(checkPos, player.pos)) {
+                    gameOver("A bullet hits you! You die...");
+                    removeByReference(customRenders, obj);
+                    render.renderAll(player, levels, customRenders);
+                    render.shotEffect(checkPos, player, levels, customRenders);
+                    return true;
+                }
+                for (let i = 0; i < mobs.length; i++) {
+                    if (coordsEq(checkPos, mobs[i].pos)) {
+                        // delete all properties of mob, so all references to it recognize deletion
+                        for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
+                        mobs.splice(i, 1);
+                        removeByReference(customRenders, obj);
+                        render.renderAll(player, levels, customRenders);
+                        render.shotEffect(checkPos, player, levels, customRenders);
+                        !player.dead && options.TURN_BASED && addListeners();
+                        !mobIsShooting && processTurn();
+                        return true;
+                    }
+                }
+                return false;
+            };
             
             while (1) {
+                const prevPos = coordsEq(bulletPos, fromPos) ? [] : bulletPos.slice();
                 render.renderAll(player, levels, customRenders);
                 movePosToDrc(bulletPos, drc);
 
@@ -476,26 +501,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 
                 await new Promise(r => setTimeout(r, 30));
                 
-                if (coordsEq(bulletPos, player.pos)) {
-                    gameOver("A bullet hits you! You die...");
-                    removeByReference(customRenders, obj);
-                    render.renderAll(player, levels, customRenders);
-                    render.shotEffect(bulletPos, player, levels, customRenders);
-                    return;
-                }
-                for (let i = 0; i < mobs.length; i++) {
-                    if (coordsEq(bulletPos, mobs[i].pos)) {
-                        // delete all properties of mob, so all references to it recognize deletion
-                        for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
-                        mobs.splice(i, 1);
-                        removeByReference(customRenders, obj);
-                        render.renderAll(player, levels, customRenders);
-                        render.shotEffect(bulletPos, player, levels, customRenders);
-                        !player.dead && options.TURN_BASED && addListeners();
-                        !mobIsShooting && processTurn();
-                        return;
-                    }
-                }
+                // if not checking previous position, mobs can sometimes walk "through" bullets
+                if (checkHits(bulletPos) || checkHits(prevPos)) return;
                 removeByReference(customRenders, obj);
             }
             return;
@@ -797,7 +804,7 @@ function action(key, ctrl) {
             break;
         case options.CONTROLS.ESC:
             setPause(true);
-            ui.showDialog("Menu", ["Save", "Load"], idx => {
+            ui.showDialog("Pause Menu", ["Save", "Load"], idx => {
                 switch (idx) {
                     case 0:
                         save();
