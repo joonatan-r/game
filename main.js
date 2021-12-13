@@ -16,6 +16,7 @@ import options from "./options.js";
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls, 
 //       take multiple pages into account in pickup dialog
+// NOTE: now keypressListener actionTypes for shoot, melee, interact no longer used.
 
 let turnInterval = null;
 
@@ -392,7 +393,8 @@ function showMsgHistory(startPage) {
 }
 
 function updateInfo() {
-    info.textContent = levels.currentLvl + "\nTurn " + timeTracker.timer + "\n";
+    info.textContent = levels.currentLvl + "\nTurn " + timeTracker.timer 
+                       + "\nSelected action: " + action.actType + "\n";
 
     if (timeTracker.turnsUntilShoot > 0) {
         info.textContent += timeTracker.turnsUntilShoot + " turns until you can shoot";
@@ -438,8 +440,8 @@ function processTurn() {
 }
 
 async function shoot(fromPos, drc, mobIsShooting) {
-    keypressListener.actionType = null;
-    clickListener.actionType = null;
+    // keypressListener.actionType = null;
+    // clickListener.actionType = null;
 
     switch (drc) {
         case 4:
@@ -506,19 +508,19 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 removeByReference(customRenders, obj);
             }
             return;
-        case options.CONTROLS.ESC:
-            ui.showMsg("");
-            return;
-        default:
-            keypressListener.actionType = "shoot";
-            clickListener.actionType = "chooseDrc";
-            return;
+        // case options.CONTROLS.ESC:
+        //     ui.showMsg("");
+        //     return;
+        // default:
+        //     keypressListener.actionType = "shoot";
+        //     clickListener.actionType = "chooseDrc";
+        //     return;
     }
 }
 
 function melee(drc) {
-    keypressListener.actionType = null;
-    clickListener.actionType = null;
+    // keypressListener.actionType = null;
+    // clickListener.actionType = null;
 
     switch (drc) {
         case 4:
@@ -544,13 +546,13 @@ function melee(drc) {
             }
             processTurn();
             return;
-        case options.CONTROLS.ESC:
-            ui.showMsg("");
-            return;
-        default:
-            keypressListener.actionType = "melee";
-            clickListener.actionType = "chooseDrc";
-            return;
+        // case options.CONTROLS.ESC:
+        //     ui.showMsg("");
+        //     return;
+        // default:
+        //     keypressListener.actionType = "melee";
+        //     clickListener.actionType = "chooseDrc";
+        //     return;
     }
 }
 
@@ -568,15 +570,15 @@ function interact(drc) {
         case 3:
             movePosToDrc(interactPos, drc);
             break;
-        case options.CONTROLS.ESC:
-            ui.showMsg("");
-            keypressListener.actionType = null;
-            clickListener.actionType = null;
-            return;
-        default:
-            keypressListener.actionType = "interact";
-            clickListener.actionType = "chooseDrc";
-            return;
+        // case options.CONTROLS.ESC:
+        //     ui.showMsg("");
+        //     keypressListener.actionType = null;
+        //     clickListener.actionType = null;
+        //     return;
+        // default:
+        //     keypressListener.actionType = "interact";
+        //     clickListener.actionType = "chooseDrc";
+        //     return;
     }
     for (let mob of mobs) {
         if (coordsEq(interactPos, mob.pos)) tryFireEvent("onInteract", mob);
@@ -584,8 +586,8 @@ function interact(drc) {
     for (let item of items) {
         if (coordsEq(interactPos, item.pos)) tryFireEvent("onInteract", item);
     }
-    keypressListener.actionType = null;
-    clickListener.actionType = null;
+    // keypressListener.actionType = null;
+    // clickListener.actionType = null;
     processTurn();
 }
 
@@ -768,6 +770,8 @@ function tryChangeLvl() {
     }
 }
 
+action.actType = "shoot";
+
 function action(key, ctrl) {
     switch (key) {
         case options.CONTROLS.BOTTOM_LEFT:
@@ -795,6 +799,30 @@ function action(key, ctrl) {
                 movePlayer(newPos);
             }
             break;
+        case options.CONTROLS.ACT_BOTTOM_LEFT:
+        case options.CONTROLS.ACT_BOTTOM:
+        case options.CONTROLS.ACT_BOTTOM_RIGHT:
+        case options.CONTROLS.ACT_LEFT:
+        case options.CONTROLS.ACT_RIGHT:
+        case options.CONTROLS.ACT_TOP_LEFT:
+        case options.CONTROLS.ACT_TOP:
+        case options.CONTROLS.ACT_TOP_RIGHT:
+            const actDrc = inputToDrc(key);
+
+            switch (action.actType) {
+                case "shoot":
+                    if (timeTracker.turnsUntilShoot === 0) {
+                        shoot(player.pos, actDrc);
+                    }
+                    break;
+                case "melee":
+                    melee(actDrc);
+                    break;
+                case "interact":
+                    interact(actDrc);
+                    break;
+            }
+            return;
         case options.CONTROLS.ENTER:
             if (level[player.pos[0]][player.pos[1]] === ">" || level[player.pos[0]][player.pos[1]] === "<") {
                 tryChangeLvl();
@@ -816,11 +844,13 @@ function action(key, ctrl) {
             }, true, true);
             return;
         case options.CONTROLS.SHOOT:
-            if (timeTracker.turnsUntilShoot === 0) {
-                ui.showMsg("In what direction?");
-                keypressListener.actionType = "shoot";
-                clickListener.actionType = "chooseDrc";
-            }
+            // if (timeTracker.turnsUntilShoot === 0) {
+            //     ui.showMsg("In what direction?");
+            //     keypressListener.actionType = "shoot";
+            //     clickListener.actionType = "chooseDrc";
+            // }
+            action.actType = "shoot";
+            ui.showMsg("Action type set to shoot.");
             return;
         case options.CONTROLS.HISTORY:
             showMsgHistory();
@@ -850,14 +880,18 @@ function action(key, ctrl) {
             }
             return;
         case options.CONTROLS.MELEE:
-            ui.showMsg("In what direction?");
-            keypressListener.actionType = "melee";
-            clickListener.actionType = "chooseDrc";
+            // ui.showMsg("In what direction?");
+            // keypressListener.actionType = "melee";
+            // clickListener.actionType = "chooseDrc";
+            action.actType = "melee";
+            ui.showMsg("Action type set to melee.");
             return;
         case options.CONTROLS.INTERACT:
-            ui.showMsg("In what direction?");
-            keypressListener.actionType = "interact";
-            clickListener.actionType = "chooseDrc";
+            // ui.showMsg("In what direction?");
+            // keypressListener.actionType = "interact";
+            // clickListener.actionType = "chooseDrc";
+            action.actType = "interact";
+            ui.showMsg("Action type set to interact.");
             return;
         case options.CONTROLS.PICKUP:
             pickup();
@@ -971,35 +1005,24 @@ function selectPos(drc) {
 }
 
 function inputToDrc(input) {
-    let drc;
+    let drc = input;
 
-    switch (input) {
-        case options.CONTROLS.BOTTOM_LEFT:
-            drc = 1;
-            break;
-        case options.CONTROLS.BOTTOM:
-            drc = 2;
-            break;
-        case options.CONTROLS.BOTTOM_RIGHT:
-            drc = 3;
-            break;
-        case options.CONTROLS.LEFT:
-            drc = 4;
-            break;
-        case options.CONTROLS.RIGHT:
-            drc = 6;
-            break;
-        case options.CONTROLS.TOP_LEFT:
-            drc = 7;
-            break;
-        case options.CONTROLS.TOP:
-            drc = 8;
-            break;
-        case options.CONTROLS.TOP_RIGHT:
-            drc = 9;
-            break;
-        default:
-            drc = input;
+    if (input === options.CONTROLS.BOTTOM_LEFT || input === options.CONTROLS.ACT_BOTTOM_LEFT) {
+        drc = 1;
+    } else if (input === options.CONTROLS.BOTTOM || input === options.CONTROLS.ACT_BOTTOM) {
+        drc = 2;
+    } else if (input === options.CONTROLS.BOTTOM_RIGHT || input === options.CONTROLS.ACT_BOTTOM_RIGHT) {
+        drc = 3;
+    } else if (input === options.CONTROLS.LEFT || input === options.CONTROLS.ACT_LEFT) {
+        drc = 4;
+    } else if (input === options.CONTROLS.RIGHT || input === options.CONTROLS.ACT_RIGHT) {
+        drc = 6;
+    } else if (input === options.CONTROLS.TOP_LEFT || input === options.CONTROLS.ACT_TOP_LEFT) {
+        drc = 7;
+    } else if (input === options.CONTROLS.TOP || input === options.CONTROLS.ACT_TOP) {
+        drc = 8;
+    } else if (input === options.CONTROLS.TOP_RIGHT || input === options.CONTROLS.ACT_TOP_RIGHT) {
+        drc = 9;
     }
     return drc;
 }
@@ -1114,6 +1137,7 @@ function setPause(val) {
         setTimeout(() => {
             clearInterval(turnInterval);
             setPause.paused = true;
+            interruptAutoTravel = true;
         }, options.TURN_DELAY);
     } else if (setPause.paused) {
         turnInterval = setInterval(() => processTurn(), options.TURN_DELAY);

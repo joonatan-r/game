@@ -30,6 +30,14 @@ const options = {
         TOP_LEFT: "7",
         TOP: "8",
         TOP_RIGHT: "9",
+        ACT_BOTTOM_LEFT: "z",
+        ACT_BOTTOM: "s",
+        ACT_BOTTOM_RIGHT: "c",
+        ACT_LEFT: "a",
+        ACT_RIGHT: "d",
+        ACT_TOP_LEFT: "q",
+        ACT_TOP: "w",
+        ACT_TOP_RIGHT: "e"
     },
 };
 
