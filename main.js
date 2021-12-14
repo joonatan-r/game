@@ -89,6 +89,7 @@ let timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
 let player = {};
+player.health = 4;
 player.inventory = [];
 player.pos = [10, 37];
 let levels = {};
@@ -370,6 +371,15 @@ function tryFireEvent(type, entity) {
     }
 }
 
+function changePlayerHealth(amount) {
+    let newHealth = player.health + amount;
+    if (newHealth < 1) {
+        gameOver("You take a fatal hit. You die...");
+        return;
+    }
+    player.health = newHealth;
+}
+
 function gameOver(msg) {
     ui.showMsg(msg);
     !options.TURN_BASED && clearInterval(turnInterval);
@@ -393,8 +403,8 @@ function showMsgHistory(startPage) {
 }
 
 function updateInfo() {
-    info.textContent = levels.currentLvl + "\nTurn " + timeTracker.timer 
-                       + "\nSelected action: " + action.actType + "\n";
+    info.textContent = "Level: " + levels.currentLvl + "\nTurn: " + timeTracker.timer 
+                       + "\nHealth: " + player.health + "\nSelected action: " + action.actType + "\n";
 
     if (timeTracker.turnsUntilShoot > 0) {
         info.textContent += timeTracker.turnsUntilShoot + " turns until you can shoot";
@@ -409,6 +419,9 @@ function processTurn() {
     updateInfo();
 
     for (let mob of mobs) {
+        if (!options.TURN_BASED && timeTracker.timer % mob.speedModulus === 0) {
+            continue;
+        }
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
             gameOver(mob.name + " hits you! You die...");
             break;
@@ -461,7 +474,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
 
             const checkHits = (checkPos) => {
                 if (coordsEq(checkPos, player.pos)) {
-                    gameOver("A bullet hits you! You die...");
+                    // gameOver("A bullet hits you! You die...");
+                    changePlayerHealth(-1);
                     removeByReference(customRenders, obj);
                     render.renderAll(player, levels, customRenders);
                     render.shotEffect(checkPos, player, levels, customRenders);

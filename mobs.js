@@ -11,6 +11,7 @@ function createMobOfType(mobType) {
         symbol: mobType.symbol,
         isHostile: mobType.isHostile,
         isShooter: mobType.isShooter,
+        speedModulus: mobType.speedModulus,
         movingFunction: mobType.movingFunction
     };
 }
@@ -131,12 +132,14 @@ const Pekka = {
     symbol: "P",
     isHostile: true,
     isShooter: true,
+    speedModulus: 2,
     movingFunction: "Pekka"
 };
 const Jorma = {
     name: "Jorma",
     symbol: "J",
     isHostile: true,
+    speedModulus: 2,
     movingFunction: "random"
 };
 export const movingAIs = {
