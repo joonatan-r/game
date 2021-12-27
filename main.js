@@ -406,10 +406,8 @@ function updateInfo() {
     info.textContent = "Level: " + levels.currentLvl + "\nTurn: " + timeTracker.timer 
                        + "\nHealth: " + player.health + "\nSelected action: " + action.actType + "\n";
 
-    if (timeTracker.turnsUntilShoot > 0) {
-        info.textContent += timeTracker.turnsUntilShoot + " turns until you can shoot";
-    } else {
-        info.textContent += "You can shoot";
+    if (timeTracker.turnsUntilShoot > 0 && action.actType === "shoot") {
+        info.textContent += "Cooldown: " + timeTracker.turnsUntilShoot;
     }
 }
 
@@ -465,6 +463,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
         case 1:
         case 9:
         case 3:
+            const currLvl = levels.currentLvl;
             const icon = projectileFromDrc[drc];
             let bulletPos = fromPos.slice();
             let obj;
@@ -505,8 +504,10 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 if (!level[bulletPos[0]] || typeof level[bulletPos[0]][bulletPos[1]] === "undefined" 
                     || level[bulletPos[0]][bulletPos[1]] === "*w"
                 ) {
-                    !player.dead && options.TURN_BASED && addListeners();
-                    !mobIsShooting && processTurn();
+                    if (options.TURN_BASED) {
+                        !player.dead && addListeners();
+                        !mobIsShooting && processTurn();
+                    }       
                     return;
                 }
                 if (rendered[bulletPos[0]][bulletPos[1]]) {
@@ -516,6 +517,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 customRenders.push(obj);
                 
                 await new Promise(r => setTimeout(r, 30));
+                if (levels.currentLvl !== currLvl) return;
                 
                 // if not checking previous position, mobs can sometimes walk "through" bullets
                 if (checkHits(bulletPos) || checkHits(prevPos)) return;
@@ -766,6 +768,7 @@ function tryChangeLvl() {
                 mobs = levels[lvl].mobs;
                 items = levels[lvl].items;
                 levels.currentLvl = lvl;
+                customRenders = [];
 
                 if (options.USE_BG_IMG) {
                     if (levels[levels.currentLvl].bg.startsWith("#")) {

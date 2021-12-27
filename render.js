@@ -191,6 +191,7 @@ export default class Renderer {
     }
 
     async shotEffect(shotPos, player, levels, customRenders) {
+        const currLvl = levels.currentLvl;
         let obj, obj0, obj1, obj2, obj3;
 
         if (this.rendered[shotPos[0]][shotPos[1]]) {
@@ -200,6 +201,7 @@ export default class Renderer {
         customRenders.push(obj);
         
         await new Promise(r => setTimeout(r, 300));
+        if (levels.currentLvl !== currLvl) return;
         
         removeByReference(customRenders, obj);
         this.renderAll(player, levels, customRenders);
