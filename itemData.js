@@ -1,19 +1,24 @@
 export function addItems(levels) {
-    levels["Village"].items.push({
+    levels["Guard house"].items.push({
         name: "a chest",
         symbol: "(",
         blocksTravel: true,
         state: 0,
-        pos: [9, 22]
+        pos: [11, 10]
     });
-    levels["Wilderness"].items.push({
+    levels["Start of uncharted"].items.push({
         name: "a key",
         symbol: "\u00A3",
-        pos: [12, 27]
+        hidden: true,
+        pos: [17, 28]
     }, {
         name: "a weird object",
         symbol: "?",
-        hidden: true,
-        pos: [3, 8]
+        pos: [8, 8]
+    }, {
+        name: "a gate",
+        symbol: "|",
+        blocksTravel: true,
+        pos: [11, 17]
     });
 }

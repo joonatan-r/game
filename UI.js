@@ -11,12 +11,9 @@ export default class UI {
     msgMoved = false;
     dialogStack = [];
 
-    // Pause may be called before calling showDialog if wanted.
-    // Unpause is always called automatically when done with the dialog.
-    constructor(removeListeners, addListeners, unpause, msgHistory) {
+    constructor(removeListeners, addListeners, msgHistory) {
         this.removeListeners = removeListeners;
         this.addListeners = addListeners;
-        this.unpause = unpause;
         this.msgHistory = msgHistory;
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
         this.msgMoveListener = this.msgMoveListener.bind(this);
@@ -64,6 +61,7 @@ export default class UI {
         this.msgHistory.unshift(msg);
     }
 
+    // If the dialog is closed with escape (when allowed), onSelect is called with -1. 
     // stackDepth used to enable navigating to the previous dialog, when a choice can open a new dialog.
     // The first dialog should have 0, the dialog that its choices can open should have 1, etc.
     // negative stackDepth can be used to make a dialog use a stack without putting itself in it (can be
@@ -178,6 +176,7 @@ export default class UI {
                 dialog.appendChild(escP);
                 escP.onclick = e => {
                     e.stopPropagation();
+                    onSelect(-1);
                     this.hideDialog();
                 };
             }
@@ -185,6 +184,7 @@ export default class UI {
         // i guess this doesnt need to be bound because it uses arrow function?
         this.dialogKeyListener = e => {
             if (allowEsc && e.key === options.CONTROLS.ESC) {
+                onSelect(-1);
                 this.hideDialog();
                 return;
             }
@@ -252,7 +252,6 @@ export default class UI {
         dialog.style.display = "none";
         document.removeEventListener("keydown", this.dialogKeyListener);
         this.addListeners();
-        this.unpause();
     
         while (dialog.firstChild) {
             dialog.firstChild.onclick = null; // just to be safe

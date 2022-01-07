@@ -1,38 +1,15 @@
 export function addMobs(levels) {
-    levels["Village"].mobs.push(Shady_Guy);
-    levels["Ukko's House"].mobs.push(Ukko);
-    levels["Random House"].mobs.push(Some_Guy);
-    levels["Wilderness"].spawnRate = 0.1;
-    levels["Wilderness"].spawnDistribution = {
-        "Make": { mob: Make, prob: 0.2 },
-        "Pekka": { mob: Pekka, prob: 0.2 },
-        "Jorma": { mob: Jorma, prob: 0.6 }
-    };
+    levels["Start of uncharted"].mobs.push(Scared_Traveller);
 }
 
-const Shady_Guy = {
-    name: "Shady guy",
+const Scared_Traveller = {
+    name: "Scared Traveller",
     symbol: "@",
     isHostile: false,
     state: 0,
-    pos: [23, 30],
-    movingFunction: "static"
-};
-const Ukko = {
-    name: "Ukko",
-    symbol: "@",
-    isHostile: false,
-    state: 9001,
-    pos: [11, 13],
-    movingFunction: "Ukko"
-};
-const Some_Guy = {
-    name: "Some guy",
-    symbol: "@",
-    isHostile: false,
-    state: 0,
-    pos: [13, 18],
-    movingFunction: "static"
+    pos: [18, 6],
+    speedModulus: 1.1,
+    movingFunction: "random"
 };
 const Make = {
     name: "Make",

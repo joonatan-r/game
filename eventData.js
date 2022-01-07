@@ -1,74 +1,60 @@
+import { removeByReference } from "./util.js";
+
 const events = {
     onInteract: {
-        "Ukko": function(mob, ui, currentState) {
+        "Scared Traveller": function(mob, ui, currentState) {
             switch (mob.state) {
                 case 0:
-                    ui.showMsg("[" + mob.name + "]: I heard that you talked to that guy in the random house.");
+                    ui.showMsg("[" + mob.name + "]: Why are you here? Turn back while you still can!");
+                    mob.state = 1;
                     break;
-                case 9001:
-                    ui.showDialog("[" + mob.name + "]:\n\nHi! Give me a random number.\n\n[Your answer]:", 
-                            ["No.", "Why?", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", 
-                             "14", "15", "16", "17", "18", "19", "20"], 
+                case 1:
+                    ui.showDialog("[" + mob.name + "]:\n\nSince you seem bent on going on, would you like to know something?\n\n[Your answer]:", 
+                            ["Sure.", "No."], 
                             idx => {
                                 switch (idx) {
                                     case 0:
-                                        ui.showMsg("[" + mob.name + "]: Well screw you, too!");
+                                        ui.showMsg("[" + mob.name + "]: I think there's something hidden in the area past the gate.");
+                                        mob.state = 2;
                                         break;
                                     case 1:
-                                        ui.showMsg("[" + mob.name + "]: Why not?");
+                                        ui.showMsg("[" + mob.name + "]: Fair enough.");
+                                        mob.state = 2;
                                         break;
-                                    default:
-                                        ui.showMsg("[" + mob.name + "]: That's a nice one dude!");
                                 }
                             }
                     );
-                    break;
-            }
-        },
-        "Shady guy": function(mob, ui, currentState) {
-            switch (mob.state) {
-                case 0:
-                    ui.showMsg("[" + mob.name + "]: Hey man, I heard there's some money hidden behind Ukko's house!");
-                    mob.state = 1;
-                    currentState.items.push({
-                        name: "some money",
-                        symbol: "$",
-                        hidden: true,
-                        pos: [0, 4]
-                    });
-                    break;
-                case 1:
-                    ui.showMsg("[" + mob.name + "]: Did you check the place?");
-                    break;
-            }
-        },
-        "Some guy": function(mob, ui, currentState) {
-            switch (mob.state) {
-                case 0:
-                    ui.showDialog("[" + mob.name + "]:\n\nHello there!\n\n[Your answer]:", 
-                            ["Hi!", "General Kenobi!", "[Don't answer]"], 
-                            idx => {
-                                mob.state = { 0: 1, 1: 2, 2: 0 }[idx];
-
-                                if (mob.state !== 0) {
-                                    for (let mob of currentState.levels["Ukko's House"].mobs) {
-                                        if (mob.name === "Ukko") {
-                                            mob.state = 0;
-                                            break;
-                                        }
-                                    }
-                                    // call again to talk immediately
-                                    events.onInteract["Some guy"](mob, ui, currentState);
-                                }
-                            }
-                    );
-                    break;
-                case 1:
-                    ui.showMsg("[" + mob.name + "]: So uncivilized!");
                     break;
                 case 2:
-                    ui.showMsg("[" + mob.name + "]: You are strong and wise, and I'm very proud of you!");
+                    ui.showMsg("[" + mob.name + "]: I gotta get out of here...");
                     break;
+            }
+        },
+        "a gate": function(item, ui, currentState) {
+            let playerHasObject = false;
+            let obj = null;
+
+            for (let invItem of currentState.player.inventory) {
+                if (invItem.name === "a weird object") {
+                    playerHasObject = true;
+                    obj = invItem;
+                    break;
+                }
+            }
+            if (playerHasObject) {
+                ui.showMsg("The weird object in your hands glows brightly and disintegrates, and the gate opens!");
+                // removeByReference(currentState.player.inventory, obj);
+                removeByReference(currentState.levels["Start of uncharted"].items, item);
+                
+                // TODO: player can currently pick up all items, so could pick up the opened gate too.
+                
+                // currentState.levels["Start of uncharted"].items.push({
+                //     name: "an opened gate",
+                //     symbol: "#",
+                //     pos: [11, 17]
+                // });
+            } else {
+                ui.showMsg("You seem to need something to open this gate.");
             }
         },
         "a chest": function(item, ui, currentState) {

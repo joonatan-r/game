@@ -92,7 +92,7 @@ timeTracker.turnsUntilShoot = 0;
 let player = {};
 player.health = 4;
 player.inventory = [];
-player.pos = [10, 37];
+player.pos = [9, 5];
 let levels = {};
 
 initialize(levels, table, area, rendered);
@@ -107,7 +107,7 @@ let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let autoTravelStack = []; // used to cancel previous autoTravels when there is a new one
 const render = new Renderer(area, rendered);
-const ui = new UI(removeListeners, addListeners, () => setPause(false), msgHistory);
+const ui = new UI(removeListeners, addListeners, msgHistory);
 
 addListeners();
 showStartDialog();
@@ -398,6 +398,7 @@ function gameOver(msg) {
 function showMsgHistory(startPage) {
     if (msgHistory.length) {
         ui.showDialog("Message history:", msgHistory, idx => {
+            if (idx < 0) return;
             showMsgHistory(Math.ceil((idx+1) / 9) - 1); // don't do anything but show the history on the same page
         }, true, true, null, startPage);
     }
@@ -418,7 +419,7 @@ function processTurn() {
     updateInfo();
 
     for (let mob of mobs) {
-        if (!options.TURN_BASED && timeTracker.timer % mob.speedModulus === 0) {
+        if (!options.TURN_BASED && timeTracker.timer % mob.speedModulus < 1) {
             continue;
         }
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
@@ -662,6 +663,7 @@ function pickup(alwaysDialog) {
             }
             if (itemsHere.length > 1 || alwaysDialog) {
                 ui.showDialog("What do you want to pick up?", itemNames, idx => {
+                    if (idx < 0) return;
                     const removed = items.splice(itemIdxs[idx], 1)[0];
                     player.inventory.push(removed);
                     ui.showMsg("You pick up " + removed.name + ".");
@@ -859,6 +861,7 @@ function action(key, ctrl) {
                         load();
                         break;
                 }
+                setPause(false);
             }, true, true);
             return;
         case options.CONTROLS.SHOOT:
@@ -880,6 +883,7 @@ function action(key, ctrl) {
 
             if (contentNames.length !== 0) {
                 ui.showDialog("Contents of your inventory:", contentNames, itemIdx => {
+                    if (itemIdx < 0) return;
                     ui.showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", 
                                ["Drop"], actionIdx => {
                         switch (actionIdx) {
