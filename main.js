@@ -1,5 +1,5 @@
 import { infoTable } from "./levelData.js";
-import { addMobs, createRandomMobSpawning } from "./mobData.js";
+import { addMobs } from "./mobData.js";
 import { addItems } from "./itemData.js";
 import events from "./eventData.js";
 import {
@@ -7,7 +7,7 @@ import {
     pixelCoordsToDrc, makeTextFile, projectileFromDrc, levelCharMap
 } from "./util.js";
 import { generateLevel } from "./terrainGen.js";
-import { trySpawnMob, movingAIs } from "./mobs.js";
+import { trySpawnMob, createRandomMobSpawning, movingAIs } from "./mobs.js";
 import Renderer from "./render.js";
 import UI from "./UI.js";
 import options from "./options.js";

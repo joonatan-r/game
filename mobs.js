@@ -2,17 +2,33 @@ import {
     bresenham, coordsEq, getCoordsNextTo, getSecondBestDirections, 
     getRandomInt, isWall, movePosToDrc, oppositeDrcs 
 } from "./util.js";
+import { hostileMobTypes } from "./mobData.js";
 
 // NOTE: with current implementation, movingAIs towards* can't be directly used by a mob
 
-function createMobOfType(mobType) {
+export function createRandomMobSpawning() {
+    const spawningMobs = [];
+    const probs = [];
+    const distribution = {};
+    let probsSum = 0;
+
+    for (const mob of hostileMobTypes) {
+        if (Math.random() < 2 / hostileMobTypes.length) {
+            const spawnProb = Math.random();
+            spawningMobs.push(mob);
+            probs.push(spawnProb);
+            probsSum += spawnProb;
+        }
+    }
+    for (let i = 0; i < spawningMobs.length; i++) {
+        distribution[spawningMobs[i].name] = {
+            mob: spawningMobs[i],
+            prob: probs[i] / probsSum
+        };
+    }
     return {
-        name: mobType.name,
-        symbol: mobType.symbol,
-        isHostile: mobType.isHostile,
-        isShooter: mobType.isShooter,
-        speedModulus: mobType.speedModulus,
-        movingFunction: mobType.movingFunction
+        rate: spawningMobs.length === 0 ? 0 : Math.random() * 0.2,
+        distribution: distribution
     };
 }
 
@@ -56,6 +72,17 @@ export function trySpawnMob(levels, rendered) {
     }
     mob.pos = spawnPos;
     return mob;
+}
+
+function createMobOfType(mobType) {
+    return {
+        name: mobType.name,
+        symbol: mobType.symbol,
+        isHostile: mobType.isHostile,
+        isShooter: mobType.isShooter,
+        speedModulus: mobType.speedModulus,
+        movingFunction: mobType.movingFunction
+    };
 }
 
 export const movingAIs = {
