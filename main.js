@@ -1,14 +1,15 @@
 import { infoTable } from "./levelData.js";
+import { addMobs, createRandomMobSpawning } from "./mobData.js";
+import { addItems } from "./itemData.js";
+import events from "./eventData.js";
 import {
     initialize, bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
     pixelCoordsToDrc, makeTextFile, projectileFromDrc, levelCharMap
 } from "./util.js";
 import { generateLevel } from "./terrainGen.js";
-import { trySpawnMob, addMobs, movingAIs, createRandomMobSpawning } from "./mobs.js";
-import { addItems } from "./items.js";
+import { trySpawnMob, movingAIs } from "./mobs.js";
 import Renderer from "./render.js";
 import UI from "./UI.js";
-import events from "./events.js";
 import options from "./options.js";
 
 // NOTE: all coords are given as (y,x)

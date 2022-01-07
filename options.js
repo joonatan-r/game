@@ -5,8 +5,8 @@ const options = {
     OBJ_IMG: false, // use image instead of text character for player/mobs etc.
     SHOW_MEMORIZED: true, // display areas that you have seen before / display black where you can't see currently
     GRAY_MEMORIZED: true, // areas that can't be seen currently but are displayed because they have been seen before are grayed / not
-    TURN_BASED: true, // in-game time only goes when you take action / in-game time goes on its own
-    TURN_DELAY: 500, // milliseconds between each turn if not using turn based mode
+    TURN_BASED: false, // in-game time only goes when you take action / in-game time goes on its own
+    TURN_DELAY: 300, // milliseconds between each turn if not using turn based mode
     CTRL_CLICK_AUTOTRAVEL: true, // clicking normally moves one time in the direction clicked & holding ctrl autotravels to the place clicked / reversed
     INTERRUPT_AUTOTRAVEL_IF_MOBS: true, // interrupt autotravel if any hostile mobs are displayed / not
     TRAVEL_REPEAT_START_DELAY: 100, // milliseconds for the delay before holding a key to move starts repeating

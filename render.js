@@ -1,4 +1,4 @@
-import { bresenham, coordsEq, isWall, removeByReference } from "./util.js";
+import { bresenham, isWall, removeByReference } from "./util.js";
 import options from "./options.js";
 
 function blocksSight(tile) {
