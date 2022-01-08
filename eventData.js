@@ -76,7 +76,7 @@ const events = {
                     ui.showMsg("You try to loot " + item.name + ", but it's locked.");
                     break;
                 case 1:
-                    ui.showMsg("You find a diamond!");
+                    ui.showMsg("You loot a diamond!");
                     currentState.player.inventory.push({
                         name: "a diamond",
                         symbol: "*"

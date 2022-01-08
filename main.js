@@ -695,21 +695,30 @@ function createNewLvl() {
     // NOTE: currently the travel point to the generated lvl must be on lvl edge
 
     const startPos = [];
+    const frontOfStartPos = [];
     let name = "";
     let newTravelPos = null;
 
     if (player.pos[0] === 0) {
         startPos[0] = level.length - 1;
         startPos[1] = player.pos[1];
+        frontOfStartPos[0] = level.length - 2;
+        frontOfStartPos[1] = player.pos[1];
     } else if (player.pos[0] === level.length - 1) {
         startPos[0] = 0;
         startPos[1] = player.pos[1];
+        frontOfStartPos[0] = 1
+        frontOfStartPos[1] = player.pos[1];
     } else if (player.pos[1] === 0) {
         startPos[0] = player.pos[0];
         startPos[1] = level[0].length - 1;
+        frontOfStartPos[0] = player.pos[0];
+        frontOfStartPos[1] = level[0].length - 2;
     } else if (player.pos[1] === level[0].length - 1) {
         startPos[0] = player.pos[0];
         startPos[1] = 0;
+        frontOfStartPos[0] = player.pos[0];
+        frontOfStartPos[1] = 1;
     }
     const generatedLvl = generateLevel(startPos);
     generatedLvl[startPos[0]][startPos[1]] = "^";
@@ -727,10 +736,17 @@ function createNewLvl() {
             if (Object.keys(levelCharMap).indexOf(generatedLvl[i][j]) !== -1) {
                 generatedLvl[i][j] = levelCharMap[generatedLvl[i][j]];
             }
-            if ((i === 0 || j === 0 || i === level.length - 1 || j === level[0].length - 1)
-                && generatedLvl[i][j] === "."
-            ) {
-                openEdges.push([i, j]);
+            if (i === 1 && generatedLvl[i][j] === ".") {
+                openEdges.push([0, j]);
+            }
+            if (j === 1 && generatedLvl[i][j] === ".") {
+                openEdges.push([i, 0]);
+            }
+            if (i === level.length - 2 && generatedLvl[i][j] === ".") {
+                openEdges.push([level.length - 1, j]);
+            }
+            if (j === level[0].length - 2 && generatedLvl[i][j] === ".") {
+                openEdges.push([i, level[0].length - 1]);
             }
         }
     }
@@ -738,6 +754,9 @@ function createNewLvl() {
     while (newTravelPos === null) newTravelPos = tryAddTravelPoint(openEdges, startPos);
     travelPoints["" + (levels.generatedIdx + 1)] = [[newTravelPos[0], newTravelPos[1]]];
     generatedLvl[newTravelPos[0]][newTravelPos[1]] = "^";
+    // because generation uses smaller level rectangle, start pos is shifted, this just ensures
+    // the player doesn't need to move diagonally out of the start point
+    generatedLvl[frontOfStartPos[0]][frontOfStartPos[1]] = ".";
 
     if (levels.generatedIdx === 0) {
         name = "Cave or something";

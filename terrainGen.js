@@ -1,7 +1,7 @@
 import { getRandomInt } from "./util.js";
 
-const SIZE_Y = 25;
-const SIZE_X = 40;
+const SIZE_Y = 23;
+const SIZE_X = 38;
 const SIDE_X_MAX = SIZE_X / 6;
 const SIDE_Y_MAX = SIZE_Y / 10;
 let level = [];
@@ -219,6 +219,7 @@ function addRect(version) {
 }
 
 export function generateLevel(startPoint) {
+    let genStartPoint = startPoint.slice();
     level = [];
     rects = [];
     visitedWalls = [0, 0, 0, 0];
@@ -237,13 +238,19 @@ export function generateLevel(startPoint) {
     let startDir;
     // console.log(version)
 
-    if (startPoint[0] === 0) {
+    if (genStartPoint[0] > SIZE_Y - 1) {
+        genStartPoint[0] = SIZE_Y - 1
+    }
+    if (genStartPoint[1] > SIZE_X - 1) {
+        genStartPoint[1] = SIZE_X - 1
+    }
+    if (genStartPoint[0] === 0) {
         startDir = Directions.down;
-    } else if (startPoint[0] === SIZE_Y - 1) {
+    } else if (genStartPoint[0] === SIZE_Y - 1) {
         startDir = Directions.up;
-    } else if (startPoint[1] === 0) {
+    } else if (genStartPoint[1] === 0) {
         startDir = Directions.right;
-    } else if (startPoint[1] === SIZE_X - 1) {
+    } else if (genStartPoint[1] === SIZE_X - 1) {
         startDir = Directions.left;
     } else {
         startDir = getRandomInt(0, 3);
@@ -251,7 +258,7 @@ export function generateLevel(startPoint) {
     const startRect = new Rect(
         getRandomInt(1, SIDE_Y_MAX),
         getRandomInt(1, SIDE_X_MAX),
-        startPoint,
+        genStartPoint,
         startDir,
         getRandomInt(0,1),
         version,
@@ -282,6 +289,22 @@ export function generateLevel(startPoint) {
     // too open level, retry (NOTE: a bit inefficient)
     if (wallNbr < 0.4*SIZE_Y*SIZE_X) {
         return generateLevel(startPoint);
+    }
+    // generation uses a smaller level rectangle, now add walls around
+    // (travel points will be inside the encasing walls) 
+    const levelTop = [];
+    const levelBottom = [];
+
+    for (let j = 0; j < SIZE_X; j++) {
+        levelTop.push("w");
+        levelBottom.push("w");
+    }
+    level.unshift(levelTop);
+    level.push(levelBottom);
+
+    for (let i = 0; i < SIZE_Y + 2; i++) {
+        level[i].unshift("w");
+        level[i].push("w");
     }
     return level;
 }
