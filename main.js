@@ -367,7 +367,8 @@ function tryFireEvent(type, entity) {
             mobs: mobs,
             levels: levels,
             level: level,
-            player: player
+            player: player,
+            setPause: setPause
         });
     }
 }
@@ -379,6 +380,7 @@ function changePlayerHealth(amount) {
         return;
     }
     player.health = newHealth;
+    ui.showMsg("You are hit!");
 }
 
 function gameOver(msg) {
@@ -423,7 +425,8 @@ function processTurn() {
             continue;
         }
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
-            gameOver(mob.name + " hits you! You die...");
+            // gameOver(mob.name + " hits you! You die...");
+            changePlayerHealth(-3);
             break;
         }
         movingAIs[mob.movingFunction](mob, posIsValid, level, rendered);

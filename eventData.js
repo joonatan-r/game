@@ -9,6 +9,7 @@ const events = {
                     mob.state = 1;
                     break;
                 case 1:
+                    currentState.setPause(true);
                     ui.showDialog("[" + mob.name + "]:\n\nSince you seem bent on going on, would you like to know something?\n\n[Your answer]:", 
                             ["Sure.", "No."], 
                             idx => {
@@ -22,6 +23,7 @@ const events = {
                                         mob.state = 2;
                                         break;
                                 }
+                                currentState.setPause(false);
                             }
                     );
                     break;
@@ -43,7 +45,7 @@ const events = {
             }
             if (playerHasObject) {
                 ui.showMsg("The weird object in your hands glows brightly and disintegrates, and the gate opens!");
-                // removeByReference(currentState.player.inventory, obj);
+                removeByReference(currentState.player.inventory, obj);
                 removeByReference(currentState.levels["Start of uncharted"].items, item);
                 
                 // TODO: player can currently pick up all items, so could pick up the opened gate too.
@@ -66,7 +68,7 @@ const events = {
                     break;
                 }
             }
-            if (playerHasKey) {
+            if (playerHasKey && item.state === 0) {
                 item.state = 1;
             }
             switch (item.state) {
@@ -74,6 +76,14 @@ const events = {
                     ui.showMsg("You try to loot " + item.name + ", but it's locked.");
                     break;
                 case 1:
+                    ui.showMsg("You find a diamond!");
+                    currentState.player.inventory.push({
+                        name: "a diamond",
+                        symbol: "*"
+                    });
+                    item.state = 2;
+                    break;
+                case 2:
                     ui.showMsg("You try to loot " + item.name + ", but it's empty.");
                     break;
             }
