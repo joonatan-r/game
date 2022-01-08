@@ -1,6 +1,19 @@
 import { removeByReference } from "./util.js";
 
 const events = {
+    start: function(ui, currentState) {
+        if (currentState.timeTracker.timer === 0) {
+            currentState.setPause(true);
+            ui.showDialog("Hello, adventurer!", ["OK"], () => {
+                currentState.setPause(false);
+            });
+        } else {
+            currentState.setPause(true);
+            ui.showDialog("Welcome back, adventurer!", ["OK"], () => {
+                currentState.setPause(false);
+            });
+        }
+    },
     onInteract: {
         "Scared Traveller": function(mob, ui, currentState) {
             switch (mob.state) {
@@ -10,7 +23,7 @@ const events = {
                     break;
                 case 1:
                     currentState.setPause(true);
-                    ui.showDialog("[" + mob.name + "]:\n\nSince you seem bent on going on, would you like to know something?\n\n[Your answer]:", 
+                    ui.showDialog("[" + mob.name + "]:\n\nSince you seem bent on going on, would you like to know something?", 
                             ["Sure.", "No."], 
                             idx => {
                                 switch (idx) {

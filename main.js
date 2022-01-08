@@ -90,7 +90,8 @@ let timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
 let player = {};
-player.health = 4;
+player.maxHealth = 4;
+player.health = player.maxHealth;
 player.inventory = [];
 player.pos = [9, 5];
 let levels = {};
@@ -153,6 +154,8 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
         items = levels[levels.currentLvl].items;
         player = loadData.player;
         timeTracker = loadData.timeTracker;
+        // loading from start menu keeps dialog open (in case user cancels), this ensures it's closed
+        ui.hideDialog();
         start();
     };
     fr.readAsText(this.files[0]);
@@ -162,6 +165,8 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
 function start() {
     updateInfo();
     render.renderAll(player, levels, customRenders);
+    tryFireEvent("start");
+    !options.TURN_BASED && clearInterval(turnInterval); // clear turnInterval in case it was already running
     !options.TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
 
     if (options.USE_BG_IMG) {
@@ -175,8 +180,13 @@ function start() {
     }
 }
 
+showStartDialog.shown = false;
+
 function showStartDialog() {
+    showStartDialog.shown = true;
     ui.showDialog("Start", ["New game", "Load game", "Options", "Controls", "Save configs as default"], idx => {
+        showStartDialog.shown = false;
+
         switch (idx) {
             case 0:
                 addMobs(levels);
@@ -185,6 +195,7 @@ function showStartDialog() {
                 break;
             case 1:
                 load();
+                showStartDialog();
                 break;
             case 2:
                 showOptionsDialog();
@@ -361,15 +372,20 @@ function posIsValid(pos) {
 }
 
 function tryFireEvent(type, entity) {
-    if (events[type] && events[type][entity.name]) {
-        events[type][entity.name](entity, ui, {
-            items: items,
-            mobs: mobs,
-            levels: levels,
-            level: level,
-            player: player,
-            setPause: setPause
-        });
+    const currentState = {
+        items: items,
+        mobs: mobs,
+        levels: levels,
+        level: level,
+        player: player,
+        timeTracker: timeTracker,
+        setPause: setPause
+    };
+
+    if (typeof entity === "undefined" && events[type]) {
+        events[type](ui, currentState);
+    } else if (events[type] && events[type][entity.name]) {
+        events[type][entity.name](entity, ui, currentState);
     }
 }
 
@@ -379,8 +395,17 @@ function changePlayerHealth(amount) {
         gameOver("You take a fatal hit. You die...");
         return;
     }
+    if (newHealth > player.maxHealth) {
+        newHealth = player.maxHealth;
+    }
+    if (amount < 0) {
+        ui.showMsg("You are hit!");
+    } else if (amount > 0) {
+        if (player.health !== player.maxHealth) {
+            ui.showMsg("You feel better.");
+        }
+    }
     player.health = newHealth;
-    ui.showMsg("You are hit!");
 }
 
 function gameOver(msg) {
@@ -812,6 +837,21 @@ function tryChangeLvl() {
     }
 }
 
+function showPauseMenu() {
+    setPause(true);
+    ui.showDialog("Pause Menu", ["Save", "Load"], idx => {
+        switch (idx) {
+            case 0:
+                save();
+                break;
+            case 1:
+                load();
+                break;
+        }
+        setPause(false);
+    }, true, true);
+}
+
 action.actType = "shoot";
 
 function action(key, ctrl) {
@@ -873,18 +913,7 @@ function action(key, ctrl) {
             }
             break;
         case options.CONTROLS.ESC:
-            setPause(true);
-            ui.showDialog("Pause Menu", ["Save", "Load"], idx => {
-                switch (idx) {
-                    case 0:
-                        save();
-                        break;
-                    case 1:
-                        load();
-                        break;
-                }
-                setPause(false);
-            }, true, true);
+            showPauseMenu();
             return;
         case options.CONTROLS.SHOOT:
             // if (timeTracker.turnsUntilShoot === 0) {
