@@ -21,4 +21,10 @@ export function addItems(levels) {
         blocksTravel: true,
         pos: [11, 17]
     });
+    levels["Secret room"].items.push({
+        name: "a strange device",
+        symbol: "+",
+        blocksTravel: true,
+        pos: [13, 16]
+    });
 }

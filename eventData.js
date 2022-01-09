@@ -100,6 +100,14 @@ const events = {
                     ui.showMsg("You try to loot " + item.name + ", but it's empty.");
                     break;
             }
+        },
+        "a strange device": function(item, ui, currentState) {
+            if (currentState.player.health === currentState.player.maxHealth) {
+                ui.showMsg("You get a strange feeling.");
+            } else {
+                currentState.player.health++;
+                ui.showMsg("You feel restored.");
+            }
         }
     }
 };
