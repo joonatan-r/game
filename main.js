@@ -432,7 +432,8 @@ function showMsgHistory(startPage) {
 }
 
 function updateInfo() {
-    info.textContent = "Level: " + levels.currentLvl + "\nTurn: " + timeTracker.timer 
+    const timeWord = options.TURN_BASED ? "\nTurn: " : "\nTime: ";
+    info.textContent = "Level: " + levels.currentLvl + timeWord + timeTracker.timer 
                        + "\nHealth: " + player.health + "\nSelected action: " + action.actType + "\n";
 
     if (timeTracker.turnsUntilShoot > 0 && action.actType === "shoot") {
@@ -922,6 +923,7 @@ function action(key, ctrl) {
             //     clickListener.actionType = "chooseDrc";
             // }
             action.actType = "shoot";
+            updateInfo();
             ui.showMsg("Action type set to shoot.");
             return;
         case options.CONTROLS.HISTORY:
@@ -957,6 +959,7 @@ function action(key, ctrl) {
             // keypressListener.actionType = "melee";
             // clickListener.actionType = "chooseDrc";
             action.actType = "melee";
+            updateInfo();
             ui.showMsg("Action type set to melee.");
             return;
         case options.CONTROLS.INTERACT:
@@ -964,6 +967,7 @@ function action(key, ctrl) {
             // keypressListener.actionType = "interact";
             // clickListener.actionType = "chooseDrc";
             action.actType = "interact";
+            updateInfo();
             ui.showMsg("Action type set to interact.");
             return;
         case options.CONTROLS.PICKUP:
@@ -1205,6 +1209,7 @@ function clickListener(e) {
 }
 
 function setPause(val) {
+    if (options.TURN_BASED) return;
     if (val && !setPause.paused) {
         // wait a turn first so no abuse
         setTimeout(() => {

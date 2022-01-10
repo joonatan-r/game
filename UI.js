@@ -18,17 +18,20 @@ export default class UI {
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
         this.msgMoveListener = this.msgMoveListener.bind(this);
 
-        msgBox.onclick = e => {
+        msgBox.onmousedown = e => {
             e.stopPropagation();
     
-            if (this.movingMsg) {
-                document.body.style.cursor = "default";
-                document.removeEventListener("mousemove", this.msgMoveListener);
-            } else {
+            if (!this.movingMsg) {
                 document.body.style.cursor = "move";
                 document.addEventListener("mousemove", this.msgMoveListener);
+                this.movingMsg = true;
             }
-            this.movingMsg = !this.movingMsg;
+        };
+        msgBox.onmouseup = e => {
+            e.stopPropagation();
+            document.body.style.cursor = "default";
+            document.removeEventListener("mousemove", this.msgMoveListener);
+            this.movingMsg = false;
         };
     }
 
@@ -227,18 +230,22 @@ export default class UI {
         p.setAttribute("id", "dialogText");
         p.textContent = text;
         dialog.appendChild(p);
-        p.onclick = e => {
+        p.onmousedown = e => {
             e.stopPropagation();
     
-            if (this.movingDialog) {
-                document.body.style.cursor = "default";
-                document.removeEventListener("mousemove", this.dialogMoveListener);
-            } else {
+            if (!this.movingDialog) {
                 document.body.style.cursor = "move";
                 document.addEventListener("mousemove", this.dialogMoveListener);
+                this.movingDialog = true;
             }
-            this.movingDialog = !this.movingDialog;
-        }
+        };
+        p.onmouseup = e => {
+            e.stopPropagation();
+            document.body.style.cursor = "default";
+            document.removeEventListener("mousemove", this.dialogMoveListener);
+            this.movingDialog = false;
+        };
+
         if (startPage > 0) {
             for (let i = 0; i < startPage; i++) {
                 repopulateDialog(1);
