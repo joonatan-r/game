@@ -48,7 +48,7 @@ export default class UI {
         if (!this.msgMoved) {
             const tableRect = table.getBoundingClientRect();
             msgBox.style.top = (tableRect.top + tableRect.height + 5) + "px";
-            msgBox.style.left = (info.clientWidth + 25) + "px";
+            // msgBox.style.left = (info.clientWidth + 25) + "px";
         }
         msgBox.style.display = "block";
         status.textContent = msg;

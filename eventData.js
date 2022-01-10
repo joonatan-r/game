@@ -4,12 +4,12 @@ const events = {
     start: function(ui, currentState) {
         if (currentState.timeTracker.timer === 0) {
             currentState.setPause(true);
-            ui.showDialog("Hello, adventurer!", ["OK"], () => {
+            ui.showDialog("Hello, adventurer!", ["Continue"], () => {
                 currentState.setPause(false);
             });
         } else {
             currentState.setPause(true);
-            ui.showDialog("Welcome back, adventurer!", ["OK"], () => {
+            ui.showDialog("Welcome back, adventurer!", ["Continue"], () => {
                 currentState.setPause(false);
             });
         }
