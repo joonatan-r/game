@@ -51,7 +51,7 @@ Start of uncharted
 #282828
 Guard house
 Road's end
-Cave or something
+0
 Secret room
 
 wwwwwwwwwww.w..........w.wwwwwwwwww...ww

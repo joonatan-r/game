@@ -337,6 +337,29 @@ export const projectileFromDrc = {
     9: "/",
 };
 
+export function inputToDrc(input, options) {
+    let drc = input;
+
+    if (input === options.CONTROLS.BOTTOM_LEFT || input === options.CONTROLS.ACT_BOTTOM_LEFT) {
+        drc = 1;
+    } else if (input === options.CONTROLS.BOTTOM || input === options.CONTROLS.ACT_BOTTOM) {
+        drc = 2;
+    } else if (input === options.CONTROLS.BOTTOM_RIGHT || input === options.CONTROLS.ACT_BOTTOM_RIGHT) {
+        drc = 3;
+    } else if (input === options.CONTROLS.LEFT || input === options.CONTROLS.ACT_LEFT) {
+        drc = 4;
+    } else if (input === options.CONTROLS.RIGHT || input === options.CONTROLS.ACT_RIGHT) {
+        drc = 6;
+    } else if (input === options.CONTROLS.TOP_LEFT || input === options.CONTROLS.ACT_TOP_LEFT) {
+        drc = 7;
+    } else if (input === options.CONTROLS.TOP || input === options.CONTROLS.ACT_TOP) {
+        drc = 8;
+    } else if (input === options.CONTROLS.TOP_RIGHT || input === options.CONTROLS.ACT_TOP_RIGHT) {
+        drc = 9;
+    }
+    return drc;
+}
+
 export function isWall(tile) {
     return tile === "*w" || tile === "*f" || tile === "*s" || tile === "*t";
 }

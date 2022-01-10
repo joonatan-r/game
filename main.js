@@ -3,14 +3,15 @@ import { addMobs } from "./mobData.js";
 import { addItems } from "./itemData.js";
 import events from "./eventData.js";
 import {
-    initialize, bresenham, isNextTo, coordsEq, isWall, movePosToDrc, removeByReference, 
-    pixelCoordsToDrc, makeTextFile, projectileFromDrc, levelCharMap
+    initialize, bresenham, isNextTo, coordsEq, inputToDrc, isWall, movePosToDrc, removeByReference, 
+    pixelCoordsToDrc, makeTextFile, projectileFromDrc
 } from "./util.js";
-import { generateLevel } from "./terrainGen.js";
-import { trySpawnMob, createRandomMobSpawning, movingAIs } from "./mobs.js";
+import { createNewLvl } from "./terrainGen.js";
+import { trySpawnMob, movingAIs } from "./mobs.js";
 import Renderer from "./render.js";
 import UI from "./UI.js";
 import options from "./options.js";
+import { mobileFix } from "./mobileFix.js";
 
 // NOTE: all coords are given as (y,x)
 // NOTE: save and load can handle member functions, currently not needed
@@ -19,68 +20,18 @@ import options from "./options.js";
 //       take multiple pages into account in pickup dialog
 // NOTE: now keypressListener actionTypes for shoot, melee, interact no longer used.
 
-let turnInterval = null;
-
 const table = document.getElementById("table");
 const info = document.getElementById("info");
 const menu = document.getElementById("clickMenu");
+const mobileInput = document.createElement("textarea");
+const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-let MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-let listenersActive = false;
+let turnInterval = null;
+let infoForMobileFix = { // use object to pass reference to mobileFix
+    listenersActive: false
+};
 
-// bandaid to enable mobile somehow
-
-const t = document.createElement("textarea");
-
-if (MOBILE) {
-    const c = document.createElement("div");
-    const d = document.createElement("div");
-    const enterD = document.createElement("div");
-    const escD = document.createElement("div");
-    enterD.style.backgroundColor = "#333";
-    enterD.style.textAlign = "center";
-    enterD.style.float = "left";
-    enterD.style.width = "100px";
-    enterD.style.height = "60px";
-    enterD.style.margin = "5px 15px 15px 5px";
-    escD.style.backgroundColor = "#333";
-    escD.style.textAlign = "center";
-    escD.style.float = "left";
-    escD.style.width = "100px";
-    escD.style.height = "60px";
-    escD.style.margin = "5px 15px 15px 5px";
-    d.style.width = "100px";
-    d.style.height = "60px";
-    d.style.overflow = "hidden";
-    d.style.margin = "5px 15px 15px 5px";
-    t.style.fontSize = "2em"; // prevents zooming to input
-    c.style.overflow = "hidden";
-    d.appendChild(t);
-    c.appendChild(enterD);
-    c.appendChild(escD);
-    c.appendChild(d);
-    document.body.insertBefore(c, table);
-    t.addEventListener("input", () => {
-        if (!listenersActive) return;
-        handleKeypress(t.value.toLowerCase(), false);
-        t.value = "";
-    });
-    enterD.ontouchstart = () => {
-        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
-        return false;
-    };
-    enterD.innerHTML = "<p data-ignore-click='true'>ENTER</p>";
-    escD.ontouchstart = () => {
-        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-        return false;
-    };
-    escD.innerHTML = "<p data-ignore-click='true'>ESC</p>";
-    enterD.dataset.ignoreClick = true;
-    escD.dataset.ignoreClick = true;
-    c.dataset.ignoreClick = true;
-    d.dataset.ignoreClick = true;
-    t.dataset.ignoreClick = true;
-}
+if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
 
 const area = [];
 const rendered = [];
@@ -154,8 +105,7 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
         items = levels[levels.currentLvl].items;
         player = loadData.player;
         timeTracker = loadData.timeTracker;
-        // loading from start menu keeps dialog open (in case user cancels), this ensures it's closed
-        ui.hideDialog();
+        ui.hideDialog(); // loading from start menu keeps dialog open (in case user cancels), this ensures it's closed
         start();
     };
     fr.readAsText(this.files[0]);
@@ -288,25 +238,25 @@ function showControlsDialog(startPage) {
             ui.showMsg("");
 
             for (let [key, val] of Object.entries(options.CONTROLS)) {
-                if ((val === t.value && key !== optKeys[idx])) {
-                    t.removeEventListener("input", mobileChangeInput);
+                if ((val === mobileInput.value && key !== optKeys[idx])) {
+                    mobileInput.removeEventListener("input", mobileChangeInput);
                     addListeners();
-                    ui.showMsg("Error, \"" + t.value + "\" is already in use");
-                    t.value = "";
+                    ui.showMsg("Error, \"" + mobileInput.value + "\" is already in use");
+                    mobileInput.value = "";
                     showControlsDialog(Math.ceil((idx+1) / 9) - 1);
                     return;
                 }
             }
-            options.CONTROLS[optKeys[idx]] = t.value.toLowerCase();
-            t.removeEventListener("input", mobileChangeInput);
+            options.CONTROLS[optKeys[idx]] = mobileInput.value.toLowerCase();
+            mobileInput.removeEventListener("input", mobileChangeInput);
             addListeners();
-            t.value = "";
+            mobileInput.value = "";
             showControlsDialog(Math.ceil((idx+1) / 9) - 1);
         };
         removeListeners();
 
         if (MOBILE) {
-            t.addEventListener("input", mobileChangeInput);
+            mobileInput.addEventListener("input", mobileChangeInput);
         } else {
             document.addEventListener("keydown", changeInput);
         }
@@ -426,7 +376,7 @@ function showMsgHistory(startPage) {
     if (msgHistory.length) {
         ui.showDialog("Message history:", msgHistory, idx => {
             if (idx < 0) return;
-            showMsgHistory(Math.ceil((idx+1) / 9) - 1); // don't do anything but show the history on the same page
+            showMsgHistory(Math.ceil((idx+1) / 9) - 1); // simply shows the history again on the same page
         }, true, true, null, startPage);
     }
 }
@@ -451,9 +401,8 @@ function processTurn() {
             continue;
         }
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
-            // gameOver(mob.name + " hits you! You die...");
             changePlayerHealth(-3);
-            break;
+            continue;
         }
         movingAIs[mob.movingFunction](mob, posIsValid, level, rendered);
 
@@ -482,159 +431,94 @@ function processTurn() {
 }
 
 async function shoot(fromPos, drc, mobIsShooting) {
-    // keypressListener.actionType = null;
-    // clickListener.actionType = null;
+    const currLvl = levels.currentLvl;
+    const icon = projectileFromDrc[drc];
+    let bulletPos = fromPos.slice();
+    let obj;
+    options.TURN_BASED && (interruptAutoTravel = true);
+    options.TURN_BASED && removeListeners();
+    !mobIsShooting && (timeTracker.turnsUntilShoot = 10);
 
-    switch (drc) {
-        case 4:
-        case 6:
-        case 8:
-        case 2:
-        case 7:
-        case 1:
-        case 9:
-        case 3:
-            const currLvl = levels.currentLvl;
-            const icon = projectileFromDrc[drc];
-            let bulletPos = fromPos.slice();
-            let obj;
-            options.TURN_BASED && (interruptAutoTravel = true);
-            options.TURN_BASED && removeListeners();
-            !mobIsShooting && (timeTracker.turnsUntilShoot = 10);
-
-            const checkHits = (checkPos) => {
-                if (coordsEq(checkPos, player.pos)) {
-                    // gameOver("A bullet hits you! You die...");
-                    changePlayerHealth(-1);
-                    removeByReference(customRenders, obj);
-                    render.renderAll(player, levels, customRenders);
-                    render.shotEffect(checkPos, player, levels, customRenders);
-                    return true;
-                }
-                for (let i = 0; i < mobs.length; i++) {
-                    if (coordsEq(checkPos, mobs[i].pos)) {
-                        // delete all properties of mob, so all references to it recognize deletion
-                        for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
-                        mobs.splice(i, 1);
-                        removeByReference(customRenders, obj);
-                        render.renderAll(player, levels, customRenders);
-                        render.shotEffect(checkPos, player, levels, customRenders);
-                        !player.dead && options.TURN_BASED && addListeners();
-                        !mobIsShooting && processTurn();
-                        return true;
-                    }
-                }
-                return false;
-            };
-            
-            while (1) {
-                const prevPos = coordsEq(bulletPos, fromPos) ? [] : bulletPos.slice();
-                render.renderAll(player, levels, customRenders);
-                movePosToDrc(bulletPos, drc);
-
-                if (!level[bulletPos[0]] || typeof level[bulletPos[0]][bulletPos[1]] === "undefined" 
-                    || level[bulletPos[0]][bulletPos[1]] === "*w"
-                ) {
-                    if (options.TURN_BASED) {
-                        !player.dead && addListeners();
-                        !mobIsShooting && processTurn();
-                    }       
-                    return;
-                }
-                if (rendered[bulletPos[0]][bulletPos[1]]) {
-                    area[bulletPos[0]][bulletPos[1]].textContent = icon;
-                }
-                obj = { symbol: icon, pos: [bulletPos[0], bulletPos[1]] };
-                customRenders.push(obj);
-                
-                await new Promise(r => setTimeout(r, 30));
-                if (levels.currentLvl !== currLvl) return;
-                
-                // if not checking previous position, mobs can sometimes walk "through" bullets
-                if (checkHits(bulletPos) || checkHits(prevPos)) return;
+    const checkHits = (checkPos) => {
+        if (coordsEq(checkPos, player.pos)) {
+            changePlayerHealth(-1);
+            removeByReference(customRenders, obj);
+            render.renderAll(player, levels, customRenders);
+            render.shotEffect(checkPos, player, levels, customRenders);
+            return true;
+        }
+        for (let i = 0; i < mobs.length; i++) {
+            if (coordsEq(checkPos, mobs[i].pos)) {
+                // delete all properties of mob, so all references to it recognize deletion
+                for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
+                mobs.splice(i, 1);
                 removeByReference(customRenders, obj);
+                render.renderAll(player, levels, customRenders);
+                render.shotEffect(checkPos, player, levels, customRenders);
+                !player.dead && options.TURN_BASED && addListeners();
+                !mobIsShooting && processTurn();
+                return true;
             }
+        }
+        return false;
+    };
+    
+    while (1) {
+        const prevPos = coordsEq(bulletPos, fromPos) ? [] : bulletPos.slice();
+        render.renderAll(player, levels, customRenders);
+        movePosToDrc(bulletPos, drc);
+
+        if (!level[bulletPos[0]] || typeof level[bulletPos[0]][bulletPos[1]] === "undefined" 
+            || level[bulletPos[0]][bulletPos[1]] === "*w"
+        ) {
+            if (options.TURN_BASED) {
+                !player.dead && addListeners();
+                !mobIsShooting && processTurn();
+            }       
             return;
-        // case options.CONTROLS.ESC:
-        //     ui.showMsg("");
-        //     return;
-        // default:
-        //     keypressListener.actionType = "shoot";
-        //     clickListener.actionType = "chooseDrc";
-        //     return;
+        }
+        if (rendered[bulletPos[0]][bulletPos[1]]) {
+            area[bulletPos[0]][bulletPos[1]].textContent = icon;
+        }
+        obj = { symbol: icon, pos: [bulletPos[0], bulletPos[1]] };
+        customRenders.push(obj);
+        
+        await new Promise(r => setTimeout(r, 30));
+        if (levels.currentLvl !== currLvl) return;
+        
+        // if not checking previous position, mobs can sometimes walk "through" bullets
+        if (checkHits(bulletPos) || checkHits(prevPos)) return;
+        removeByReference(customRenders, obj);
     }
 }
 
 function melee(drc) {
-    // keypressListener.actionType = null;
-    // clickListener.actionType = null;
+    let meleePos = player.pos.slice();
+    movePosToDrc(meleePos, drc);
+    processTurn(); // takes an extra turn
+    
+    if (player.dead) return;
 
-    switch (drc) {
-        case 4:
-        case 6:
-        case 8:
-        case 2:
-        case 7:
-        case 1:
-        case 9:
-        case 3:
-            let meleePos = player.pos.slice();
-            movePosToDrc(meleePos, drc);
-            processTurn(); // takes an extra turn
-            
-            if (player.dead) return;
-        
-            for (let i = 0; i < mobs.length; i++) {
-                if (coordsEq(meleePos, mobs[i].pos)) {
-                    ui.showMsg("You hit " + mobs[i].name + "!");
-                    for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
-                    mobs.splice(i, 1);
-                }
-            }
-            processTurn();
-            return;
-        // case options.CONTROLS.ESC:
-        //     ui.showMsg("");
-        //     return;
-        // default:
-        //     keypressListener.actionType = "melee";
-        //     clickListener.actionType = "chooseDrc";
-        //     return;
+    for (let i = 0; i < mobs.length; i++) {
+        if (coordsEq(meleePos, mobs[i].pos)) {
+            ui.showMsg("You hit " + mobs[i].name + "!");
+            for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
+            mobs.splice(i, 1);
+        }
     }
+    processTurn();
 }
 
 function interact(drc) {
     let interactPos = player.pos.slice();
+    movePosToDrc(interactPos, drc);
 
-    switch (drc) {
-        case 4:
-        case 6:
-        case 8:
-        case 2:
-        case 7:
-        case 1:
-        case 9:
-        case 3:
-            movePosToDrc(interactPos, drc);
-            break;
-        // case options.CONTROLS.ESC:
-        //     ui.showMsg("");
-        //     keypressListener.actionType = null;
-        //     clickListener.actionType = null;
-        //     return;
-        // default:
-        //     keypressListener.actionType = "interact";
-        //     clickListener.actionType = "chooseDrc";
-        //     return;
-    }
     for (let mob of mobs) {
         if (coordsEq(interactPos, mob.pos)) tryFireEvent("onInteract", mob);
     }
     for (let item of items) {
         if (coordsEq(interactPos, item.pos)) tryFireEvent("onInteract", item);
     }
-    // keypressListener.actionType = null;
-    // clickListener.actionType = null;
     processTurn();
 }
 
@@ -708,101 +592,6 @@ function pickup(alwaysDialog) {
     }
 }
 
-function tryAddTravelPoint(openEdges, startPos) {
-    for (const pos of openEdges) {
-        if (pos[0] !== startPos[0] && pos[1] !== startPos[1] && Math.random() < 1 / openEdges.length) {
-            return pos;
-        }
-    }
-    return null;
-}
-
-function createNewLvl() {
-    // NOTE: currently the travel point to the generated lvl must be on lvl edge
-
-    const startPos = [];
-    const frontOfStartPos = [];
-    let name = "";
-    let newTravelPos = null;
-
-    if (player.pos[0] === 0) {
-        startPos[0] = level.length - 1;
-        startPos[1] = player.pos[1];
-        frontOfStartPos[0] = level.length - 2;
-        frontOfStartPos[1] = player.pos[1];
-    } else if (player.pos[0] === level.length - 1) {
-        startPos[0] = 0;
-        startPos[1] = player.pos[1];
-        frontOfStartPos[0] = 1
-        frontOfStartPos[1] = player.pos[1];
-    } else if (player.pos[1] === 0) {
-        startPos[0] = player.pos[0];
-        startPos[1] = level[0].length - 1;
-        frontOfStartPos[0] = player.pos[0];
-        frontOfStartPos[1] = level[0].length - 2;
-    } else if (player.pos[1] === level[0].length - 1) {
-        startPos[0] = player.pos[0];
-        startPos[1] = 0;
-        frontOfStartPos[0] = player.pos[0];
-        frontOfStartPos[1] = 1;
-    }
-    const generatedLvl = generateLevel(startPos);
-    generatedLvl[startPos[0]][startPos[1]] = "^";
-    const newMemorized = [];
-    const travelPoints = {};
-    const openEdges = [];
-    travelPoints[levels.currentLvl] = [startPos];
-
-    for (let i = 0; i < level.length; i++) {
-        newMemorized.push([]);
-
-        for (let j = 0; j < level[0].length; j++) {
-            newMemorized[i][j] = "";
-
-            if (Object.keys(levelCharMap).indexOf(generatedLvl[i][j]) !== -1) {
-                generatedLvl[i][j] = levelCharMap[generatedLvl[i][j]];
-            }
-            if (i === 1 && generatedLvl[i][j] === ".") {
-                openEdges.push([0, j]);
-            }
-            if (j === 1 && generatedLvl[i][j] === ".") {
-                openEdges.push([i, 0]);
-            }
-            if (i === level.length - 2 && generatedLvl[i][j] === ".") {
-                openEdges.push([level.length - 1, j]);
-            }
-            if (j === level[0].length - 2 && generatedLvl[i][j] === ".") {
-                openEdges.push([i, level[0].length - 1]);
-            }
-        }
-    }
-    // travel point to next to-be-generated lvl
-    while (newTravelPos === null) newTravelPos = tryAddTravelPoint(openEdges, startPos);
-    travelPoints["" + (levels.generatedIdx + 1)] = [[newTravelPos[0], newTravelPos[1]]];
-    generatedLvl[newTravelPos[0]][newTravelPos[1]] = "^";
-    // because generation uses smaller level rectangle, start pos is shifted, this just ensures
-    // the player doesn't need to move diagonally out of the start point
-    generatedLvl[frontOfStartPos[0]][frontOfStartPos[1]] = ".";
-
-    if (levels.generatedIdx === 0) {
-        name = "Cave or something";
-    } else {
-        name = "" + levels.generatedIdx;
-    }
-    const spawns = createRandomMobSpawning();
-    levels[name] = {
-        level: generatedLvl,
-        bg: "#282828",
-        mobs: [],
-        items: [],
-        memorized: newMemorized,
-        spawnRate: spawns.rate,
-        spawnDistribution: spawns.distribution,
-        travelPoints: travelPoints
-    };
-    levels.generatedIdx++;
-}
-
 function tryChangeLvl() {
     const tps = levels[levels.currentLvl].travelPoints;
 
@@ -812,7 +601,7 @@ function tryChangeLvl() {
         for (let coords of tps[lvl]) {
             if (coordsEq(coords, player.pos)) {
                 if (typeof levels[lvl] === "undefined") {
-                    createNewLvl();
+                    createNewLvl(levels, level, player);
                 }
                 level = levels[lvl].level;
                 player.pos = levels[lvl].travelPoints[levels.currentLvl][idx].slice();
@@ -865,7 +654,7 @@ function action(key, ctrl) {
         case options.CONTROLS.TOP_LEFT:
         case options.CONTROLS.TOP:
         case options.CONTROLS.TOP_RIGHT:
-            const drc = inputToDrc(key);
+            const drc = inputToDrc(key, options);
             let newPos = player.pos.slice();
             let prevPos = null;
 
@@ -890,7 +679,7 @@ function action(key, ctrl) {
         case options.CONTROLS.ACT_TOP_LEFT:
         case options.CONTROLS.ACT_TOP:
         case options.CONTROLS.ACT_TOP_RIGHT:
-            const actDrc = inputToDrc(key);
+            const actDrc = inputToDrc(key, options);
 
             switch (action.actType) {
                 case "shoot":
@@ -917,11 +706,6 @@ function action(key, ctrl) {
             showPauseMenu();
             return;
         case options.CONTROLS.SHOOT:
-            // if (timeTracker.turnsUntilShoot === 0) {
-            //     ui.showMsg("In what direction?");
-            //     keypressListener.actionType = "shoot";
-            //     clickListener.actionType = "chooseDrc";
-            // }
             action.actType = "shoot";
             updateInfo();
             ui.showMsg("Action type set to shoot.");
@@ -955,17 +739,11 @@ function action(key, ctrl) {
             }
             return;
         case options.CONTROLS.MELEE:
-            // ui.showMsg("In what direction?");
-            // keypressListener.actionType = "melee";
-            // clickListener.actionType = "chooseDrc";
             action.actType = "melee";
             updateInfo();
             ui.showMsg("Action type set to melee.");
             return;
         case options.CONTROLS.INTERACT:
-            // ui.showMsg("In what direction?");
-            // keypressListener.actionType = "interact";
-            // clickListener.actionType = "chooseDrc";
             action.actType = "interact";
             updateInfo();
             ui.showMsg("Action type set to interact.");
@@ -1081,45 +859,22 @@ function selectPos(drc) {
     }
 }
 
-function inputToDrc(input) {
-    let drc = input;
-
-    if (input === options.CONTROLS.BOTTOM_LEFT || input === options.CONTROLS.ACT_BOTTOM_LEFT) {
-        drc = 1;
-    } else if (input === options.CONTROLS.BOTTOM || input === options.CONTROLS.ACT_BOTTOM) {
-        drc = 2;
-    } else if (input === options.CONTROLS.BOTTOM_RIGHT || input === options.CONTROLS.ACT_BOTTOM_RIGHT) {
-        drc = 3;
-    } else if (input === options.CONTROLS.LEFT || input === options.CONTROLS.ACT_LEFT) {
-        drc = 4;
-    } else if (input === options.CONTROLS.RIGHT || input === options.CONTROLS.ACT_RIGHT) {
-        drc = 6;
-    } else if (input === options.CONTROLS.TOP_LEFT || input === options.CONTROLS.ACT_TOP_LEFT) {
-        drc = 7;
-    } else if (input === options.CONTROLS.TOP || input === options.CONTROLS.ACT_TOP) {
-        drc = 8;
-    } else if (input === options.CONTROLS.TOP_RIGHT || input === options.CONTROLS.ACT_TOP_RIGHT) {
-        drc = 9;
-    }
-    return drc;
-}
-
 function handleKeypress(key, ctrl) {
     switch (keypressListener.actionType) {
         case "shoot":
-            shoot(player.pos, inputToDrc(key));
+            shoot(player.pos, inputToDrc(key, options));
             break;
         case "melee":
-            melee(inputToDrc(key));
+            melee(inputToDrc(key, options));
             break;
         case "interact":
-            interact(inputToDrc(key));
+            interact(inputToDrc(key, options));
             break;
         case "autoMove":
             if (key === options.CONTROLS.ESC) interruptAutoTravel = true;
             break;
         case "selectPos":
-            selectPos(inputToDrc(key));
+            selectPos(inputToDrc(key, options));
             break;
         default:
             action(key, ctrl);
@@ -1276,7 +1031,7 @@ function addListeners() {
     document.addEventListener("mousedown", clickListener);
     document.addEventListener("contextmenu", menuListener);
     document.addEventListener("mousemove", mouseStyleListener);
-    listenersActive = true;
+    infoForMobileFix.listenersActive = true;
 }
 
 function removeListeners() {
@@ -1284,7 +1039,7 @@ function removeListeners() {
     document.removeEventListener("mousedown", clickListener);
     document.removeEventListener("contextmenu", menuListener);
     document.removeEventListener("mousemove", mouseStyleListener);
-    listenersActive = false;
+    infoForMobileFix.listenersActive = false;
 
     // remove currently active key repeats to disable continuing moving
     for (let key of Object.keys(keyIntervals)) {
