@@ -32,7 +32,7 @@ export function mobileFix(mobileInput, infoObject) {
     document.body.insertBefore(c, table);
     mobileInput.addEventListener("input", () => {
         if (!infoObject.listenersActive) return;
-        handleKeypress(mobileInput.value.toLowerCase(), false);
+        infoObject.handleKeypress(mobileInput.value.toLowerCase(), false);
         mobileInput.value = "";
     });
     enterD.ontouchstart = () => {

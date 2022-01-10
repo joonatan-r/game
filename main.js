@@ -28,7 +28,8 @@ const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 let turnInterval = null;
 let infoForMobileFix = { // use object to pass reference to mobileFix
-    listenersActive: false
+    listenersActive: false,
+    handleKeypress: handleKeypress
 };
 
 if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
