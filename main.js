@@ -6,7 +6,7 @@ import {
     initialize, bresenham, isNextTo, coordsEq, inputToDrc, isWall, movePosToDrc, removeByReference, 
     pixelCoordsToDrc, makeTextFile, projectileFromDrc
 } from "./util.js";
-import { createNewLvl } from "./terrainGen.js";
+import { createNewLvl } from "./levelGeneration.js";
 import { trySpawnMob, movingAIs } from "./mobs.js";
 import Renderer from "./render.js";
 import UI from "./UI.js";
@@ -23,6 +23,8 @@ import { mobileFix } from "./mobileFix.js";
 const table = document.getElementById("table");
 const info = document.getElementById("info");
 const menu = document.getElementById("clickMenu");
+const travelButton = document.getElementById("travelButton");
+const showInfoButton = document.getElementById("showInfoButton");
 const mobileInput = document.createElement("textarea");
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -114,6 +116,8 @@ document.getElementById("loadInputFile").addEventListener("change", function() {
 });
 
 function start() {
+    menuListener.allowTravel = true;
+    document.addEventListener("contextmenu", menuListener);
     updateInfo();
     render.renderAll(player, levels, customRenders);
     tryFireEvent("start");
@@ -131,13 +135,8 @@ function start() {
     }
 }
 
-showStartDialog.shown = false;
-
 function showStartDialog() {
-    showStartDialog.shown = true;
     ui.showDialog("Start", ["New game", "Load game", "Options", "Controls", "Save configs as default"], idx => {
-        showStartDialog.shown = false;
-
         switch (idx) {
             case 0:
                 addMobs(levels);
@@ -809,6 +808,24 @@ async function autoTravel(coords) {
     autoTravelStack = [];
 }
 
+function showPosInfo(infoKeys) {
+    let msg = "";
+
+    if (!infoKeys.length) {
+        msg += "[ ]: An unseen area\n";
+    }
+    for (let key of infoKeys) {
+        if (key === ".") continue; // ignore floor
+        if (typeof infoTable[key] !== "undefined") {
+            msg += infoTable[key] + "\n";
+        } else {
+            msg += "No info\n";
+        }
+    }
+    if (msg === "") msg = "No info";
+    ui.showMsg(msg);
+}
+
 function selectPos(drc) {
     let prevPos = selectPos.currentPos.slice();
 
@@ -832,30 +849,13 @@ function selectPos(drc) {
             area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.add("selected");
             break;
         case options.CONTROLS.ENTER:
-            let msg = "";
-            let infoKeys = area[selectPos.currentPos[0]][selectPos.currentPos[1]].customProps.infoKeys;
-    
-            if (!infoKeys.length) {
-                msg += "[ ]: An unseen area\n";
-            }
-            for (let key of infoKeys) {
-                if (typeof infoTable[key] !== "undefined") {
-                    msg += infoTable[key] + "\n";
-                } else {
-                    msg += "No info\n";
-                }
-            }
-            ui.showMsg(msg);
+            showPosInfo(area[selectPos.currentPos[0]][selectPos.currentPos[1]].customProps.infoKeys);
             break;
         case options.CONTROLS.ESC:
             ui.showMsg("");
             area[prevPos[0]][prevPos[1]].classList.remove("selected");
             keypressListener.actionType = null;
             clickListener.actionType = null;
-            return;
-        default:
-            keypressListener.actionType = "selectPos";
-            clickListener.actionType = "ignore";
             return;
     }
 }
@@ -915,7 +915,8 @@ function clickListener(e) {
         menu.style.display = "none";
         return;
     }
-    if (e.target.id === "status" || e.target.dataset.ignoreClick || e.button !== 0) return;
+    if (e.target.id === "status" || e.target.id === "showInfoButton" || e.target.id === "travelButton" 
+        || e.target.dataset.ignoreClick || e.button !== 0) return;
     ui.showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
@@ -985,24 +986,18 @@ function menuListener(e) {
     menu.style.left = e.x + "px";
     menu.style.top = e.y + "px";
     menu.style.display = "block";
-
-    const travelButton = document.getElementById("travelButton");
-    const showInfoButton = document.getElementById("showInfoButton");
-    travelButton.onmousedown = () => autoTravel(e.target.customProps.coords);
+    if (menuListener.allowTravel) {
+        travelButton.style.display = "block";
+        travelButton.onmousedown = () => {
+            autoTravel(e.target.customProps.coords);
+            menu.style.display = "none";
+        };
+    } else {
+        travelButton.style.display = "none";
+    }
     showInfoButton.onmousedown = () => {
-        let msg = "";
-
-        if (!e.target.customProps.infoKeys.length) {
-            msg += "[ ]: An unseen area\n";
-        }
-        for (let key of e.target.customProps.infoKeys) {
-            if (typeof infoTable[key] !== "undefined") {
-                msg += infoTable[key] + "\n";
-            } else {
-                msg += "No info\n";
-            }
-        }
-        ui.showMsg(msg);
+        showPosInfo(e.target.customProps.infoKeys);
+        menu.style.display = "none";
     };
 }
 
@@ -1030,17 +1025,17 @@ function mouseStyleListener(e) {
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
     document.addEventListener("mousedown", clickListener);
-    document.addEventListener("contextmenu", menuListener);
     document.addEventListener("mousemove", mouseStyleListener);
+    menuListener.allowTravel = true;
     infoForMobileFix.listenersActive = true;
 }
 
 function removeListeners() {
     document.removeEventListener("keydown", keypressListener);
     document.removeEventListener("mousedown", clickListener);
-    document.removeEventListener("contextmenu", menuListener);
     document.removeEventListener("mousemove", mouseStyleListener);
     infoForMobileFix.listenersActive = false;
+    menuListener.allowTravel = false;
 
     // remove currently active key repeats to disable continuing moving
     for (let key of Object.keys(keyIntervals)) {

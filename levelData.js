@@ -1,5 +1,4 @@
 export const infoTable = {
-    "\u00B7": "[\u00B7]: The floor",
     "^": "[^]: A doorway",
     "Player": "[@]: You, the player",
     "some money": "[$]: Some money",
