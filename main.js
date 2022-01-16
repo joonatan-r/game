@@ -120,7 +120,7 @@ function start() {
     document.addEventListener("contextmenu", menuListener);
     updateInfo();
     render.renderAll(player, levels, customRenders);
-    tryFireEvent("start");
+    tryFireEvent("onStart");
     !options.TURN_BASED && clearInterval(turnInterval); // clear turnInterval in case it was already running
     !options.TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
 
@@ -334,6 +334,8 @@ function tryFireEvent(type, entity) {
 
     if (typeof entity === "undefined" && events[type]) {
         events[type](ui, currentState);
+    } else if (typeof entity === "string" && events[type] && events[type][entity]) {
+        events[type][entity](ui, currentState);
     } else if (events[type] && events[type][entity.name]) {
         events[type][entity.name](entity, ui, currentState);
     }
@@ -402,6 +404,9 @@ function processTurn() {
         }
         if (mob.isHostile && isNextTo(player.pos, mob.pos)) {
             changePlayerHealth(-3);
+            continue;
+        }
+        if (mob.stayStillForInteract && isNextTo(player.pos, mob.pos)) {
             continue;
         }
         movingAIs[mob.movingFunction](mob, posIsValid, level, rendered);
@@ -620,6 +625,7 @@ function tryChangeLvl() {
                 } else {
                     table.style.backgroundColor = "#000";
                 }
+                tryFireEvent("onEnterLevel", lvl);
                 return;
             }
             idx++;

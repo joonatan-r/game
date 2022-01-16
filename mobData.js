@@ -6,9 +6,10 @@ const Scared_Traveller = {
     name: "Scared Traveller",
     symbol: "@",
     isHostile: false,
+    stayStillForInteract: true,
     state: 0,
     pos: [18, 6],
-    speedModulus: 1.1,
+    speedModulus: 1.2,
     movingFunction: "random"
 };
 const Make = {

@@ -1,7 +1,7 @@
 import { removeByReference } from "./util.js";
 
 const events = {
-    start: function(ui, currentState) {
+    onStart: function(ui, currentState) {
         if (currentState.timeTracker.timer === 0) {
             currentState.setPause(true);
             ui.showDialog("Hello, adventurer!", ["Continue"], () => {
@@ -12,6 +12,30 @@ const events = {
             ui.showDialog("Welcome back, adventurer!", ["Continue"], () => {
                 currentState.setPause(false);
             });
+        }
+    },
+    onEnterLevel: {
+        "Start of uncharted": function(ui, currentState) {
+            const memorized = currentState.levels["Start of uncharted"].memorized;
+            let previouslyVisited = false;
+
+            // TODO maybe improved way to check if previously visited
+
+            for (const i of memorized) {
+                for (const j of i) {
+                    if (j !== "") {
+                        previouslyVisited = true;
+                        break;
+                    }
+                }
+                if (previouslyVisited) break;
+            }
+            if (!previouslyVisited) {
+                currentState.setPause(true);
+                ui.showDialog("A great wall blocks the path. There seems to be only one closed gate.", ["Continue"], () => {
+                    currentState.setPause(false);
+                });
+            }
         }
     },
     onInteract: {
