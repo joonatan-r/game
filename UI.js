@@ -54,7 +54,7 @@ export default class UI {
             // msgBox.style.left = (info.clientWidth + 25) + "px";
         }
         msgBox.style.display = "block";
-        const textToShow = ((this.prevMsg && this.prevMsg + "\n") || "") + msg;
+        const textToShow = msg + ((this.prevMsg && "\n" + this.prevMsg) || "");
         status.textContent = textToShow;
         this.prevMsg = (msg && textToShow) || "";
 
