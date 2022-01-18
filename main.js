@@ -120,9 +120,9 @@ function start() {
     document.addEventListener("contextmenu", menuListener);
     updateInfo();
     render.renderAll(player, levels, customRenders);
-    tryFireEvent("onStart");
     !options.TURN_BASED && clearInterval(turnInterval); // clear turnInterval in case it was already running
     !options.TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
+    tryFireEvent("onStart");
 
     if (options.USE_BG_IMG) {
         if (levels[levels.currentLvl].bg.startsWith("#")) {
@@ -432,6 +432,12 @@ function processTurn() {
     if (mob !== null) {
         mob.huntingTarget = refer(player);
         mobs.push(mob);
+    }
+    if (setPause.pauseNext && !setPause.paused) {
+        interruptAutoTravel = true;
+        setPause.paused = true;
+        setPause.pauseNext = false;
+        clearInterval(turnInterval);
     }
 }
 
@@ -974,13 +980,10 @@ function clickListener(e) {
 function setPause(val) {
     if (options.TURN_BASED) return;
     if (val && !setPause.paused) {
-        // wait a turn first so no abuse
-        setTimeout(() => {
-            clearInterval(turnInterval);
-            setPause.paused = true;
-            interruptAutoTravel = true;
-        }, options.TURN_DELAY);
-    } else if (setPause.paused) {
+        setPause.pauseNext = true; // pause at the end of next processTurn. done this way to prevent abuse
+    } else if (!val && !setPause.paused) {
+        setPause.pauseNext = false;
+    } else if (!val && setPause.paused) {
         turnInterval = setInterval(() => processTurn(), options.TURN_DELAY);
         setPause.paused = false;
     }
