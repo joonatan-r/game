@@ -367,6 +367,7 @@ function gameOver(msg) {
     removeListeners();
     player.dead = true;
     render.renderAll(player, levels, customRenders);
+    render.shotEffect(player.pos, player, levels, customRenders);
 
     for (let key of Object.keys(keyIntervals)) {
         clearInterval(keyIntervals[key]);
@@ -415,6 +416,17 @@ function processTurn() {
             shoot(mob.pos, mob.straightLineToTargetDrc, true);
         } else {
             mob.pos = [mob.target[0], mob.target[1]];
+
+            for (let obj of customRenders) {
+                if (coordsEq(mob.pos, obj.pos) && obj.damageMobs) {
+                    mobDie(mob);
+
+                    if (obj.disappearOnHit) {
+                        hitCustomRenderEffect(obj);
+                    }
+                    break; // NOTE: if mob health implemented, remove this
+                }
+            }
         }
     }
     render.renderAll(player, levels, customRenders);
@@ -441,6 +453,19 @@ function processTurn() {
     }
 }
 
+function mobDie(mob) {
+    // delete all properties of mob, so all references to it recognize deletion
+    for (let prop in mob) if (mob.hasOwnProperty(prop)) delete mob[prop];
+    removeByReference(mobs, mob);
+}
+
+function hitCustomRenderEffect(obj) {
+    obj.deleted = true;
+    removeByReference(customRenders, obj);
+    render.renderAll(player, levels, customRenders);
+    render.shotEffect(obj.pos, player, levels, customRenders);
+}
+
 async function shoot(fromPos, drc, mobIsShooting) {
     const currLvl = levels.currentLvl;
     const icon = projectileFromDrc[drc];
@@ -451,21 +476,15 @@ async function shoot(fromPos, drc, mobIsShooting) {
     !mobIsShooting && (timeTracker.turnsUntilShoot = 10);
 
     const checkHits = (checkPos) => {
-        if (coordsEq(checkPos, player.pos)) {
+        if (coordsEq(checkPos, player.pos) && mobIsShooting) {
             changePlayerHealth(-1);
-            removeByReference(customRenders, obj);
-            render.renderAll(player, levels, customRenders);
-            render.shotEffect(checkPos, player, levels, customRenders);
+            hitCustomRenderEffect(obj);
             return true;
         }
-        for (let i = 0; i < mobs.length; i++) {
-            if (coordsEq(checkPos, mobs[i].pos)) {
-                // delete all properties of mob, so all references to it recognize deletion
-                for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
-                mobs.splice(i, 1);
-                removeByReference(customRenders, obj);
-                render.renderAll(player, levels, customRenders);
-                render.shotEffect(checkPos, player, levels, customRenders);
+        for (let mob of mobs) {
+            if (coordsEq(checkPos, mob.pos)) {
+                mobDie(mob);
+                hitCustomRenderEffect(obj);
                 !player.dead && options.TURN_BASED && addListeners();
                 !mobIsShooting && processTurn();
                 return true;
@@ -475,7 +494,6 @@ async function shoot(fromPos, drc, mobIsShooting) {
     };
     
     while (1) {
-        const prevPos = coordsEq(bulletPos, fromPos) ? [] : bulletPos.slice();
         render.renderAll(player, levels, customRenders);
         movePosToDrc(bulletPos, drc);
 
@@ -491,33 +509,74 @@ async function shoot(fromPos, drc, mobIsShooting) {
         if (rendered[bulletPos[0]][bulletPos[1]]) {
             area[bulletPos[0]][bulletPos[1]].textContent = icon;
         }
-        obj = { symbol: icon, pos: [bulletPos[0], bulletPos[1]] };
+        obj = {
+            symbol: icon,
+            pos: [bulletPos[0], bulletPos[1]],
+            damagePlayer: mobIsShooting,
+            damageMobs: true,
+            disappearOnHit: true
+        };
         customRenders.push(obj);
         
         await new Promise(r => setTimeout(r, 30));
         if (levels.currentLvl !== currLvl) return;
-        
-        // if not checking previous position, mobs can sometimes walk "through" bullets
-        if (checkHits(bulletPos) || checkHits(prevPos)) return;
+        if (checkHits(bulletPos)) return;
+        // NOTE: obj can hit something either by it moving into player/mob, or them moving into it.
+        // if something moves into it, they handle the extra effects themselves.
+        if (obj.deleted) return;
         removeByReference(customRenders, obj);
     }
 }
 
-function melee(drc) {
+function meleeTurnBased(drc) {
     let meleePos = player.pos.slice();
     movePosToDrc(meleePos, drc);
     processTurn(); // takes an extra turn
-    
     if (player.dead) return;
 
-    for (let i = 0; i < mobs.length; i++) {
-        if (coordsEq(meleePos, mobs[i].pos)) {
-            ui.showMsg("You hit " + mobs[i].name + "!");
-            for (let prop in mobs[i]) if (mobs[i].hasOwnProperty(prop)) delete mobs[i][prop];
-            mobs.splice(i, 1);
+    for (let mob of mobs) {
+        if (coordsEq(meleePos, mob.pos)) {
+            ui.showMsg("You hit " + mob.name + "!");
+            mobDie(mob);
+            render.shotEffect(mob.pos, player, levels, customRenders);
+            break;
         }
     }
     processTurn();
+}
+
+async function meleeRealTime(drc) {
+    await new Promise(r => setTimeout(r, options.TURN_DELAY));
+    if (player.dead) return;
+    let meleePos = player.pos.slice();
+    movePosToDrc(meleePos, drc);
+    const obj = {
+        symbol: projectileFromDrc[drc],
+        pos: meleePos,
+        damageMobs: true,
+        disappearOnHit: true
+    };
+    customRenders.push(obj);
+    render.renderAll(player, levels, customRenders);
+
+    for (let mob of mobs) {
+        if (coordsEq(meleePos, mob.pos)) {
+            ui.showMsg("You hit " + mob.name + "!");
+            mobDie(mob);
+            hitCustomRenderEffect(obj);
+        }
+    }
+    await new Promise(r => setTimeout(r, 300));
+    removeByReference(customRenders, obj);
+    render.renderAll(player, levels, customRenders);
+}
+
+function melee(drc) {
+    if (options.TURN_BASED) {
+        meleeTurnBased(drc);
+    } else {
+        meleeRealTime(drc);
+    }
 }
 
 function interact(drc) {
@@ -540,6 +599,15 @@ function movePlayer(newPos) {
 
     if (level[player.pos[0]][player.pos[1]] === "^") {
         tryChangeLvl();
+    }
+    for (let obj of customRenders) {
+        if (coordsEq(player.pos, obj.pos) && obj.damagePlayer) {
+            changePlayerHealth(-1);
+
+            if (obj.disappearOnHit) {
+                hitCustomRenderEffect(obj);
+            }
+        }
     }
     for (let i = 0; i < items.length; i++) {
         if (coordsEq(player.pos, items[i].pos)) {

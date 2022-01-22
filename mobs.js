@@ -85,6 +85,7 @@ function createMobOfType(mobType) {
     };
 }
 
+// Functions set mob.target, which dictates where the mob will move next
 export const movingAIs = {
     Ukko: (mob, posIsValid) => {
         if (Math.random() < 0.5) {
