@@ -1,4 +1,5 @@
-import { getRandomInt, levelCharMap } from "./util.js";
+import { levelCharMap, levelTiles, levelTilesRaw } from "./levelData.js";
+import { getRandomInt } from "./util.js";
 import { createRandomMobSpawning } from "./mobs.js";
 
 const SIZE_Y = 23;
@@ -10,13 +11,13 @@ let rects = [];
 let visitedWalls = [0, 0, 0, 0];
 let toBeFilledQueue = [];
 let edgesToBeFilledQueue = [];
-let filling = ".";
+let filling = levelTilesRaw.floor;
 
 for (let i = 0; i < SIZE_Y; i++) {
     level.push([]);
   
     for (let j = 0; j < SIZE_X; j++) {
-        level[i][j] = "w";
+        level[i][j] = levelTilesRaw.wall;
     }
 }
 
@@ -49,7 +50,7 @@ class Rect {
         this.dir = dir;
         this.side = side;
 
-        filling = ".";
+        filling = levelTilesRaw.floor;
 
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
@@ -139,13 +140,13 @@ class Rect {
                     visitedWalls[3] = 1;
                 }
                 if (i === height - 1 && j === width - 1
-                    && level[coords[0]][coords[1]] === "."
+                    && level[coords[0]][coords[1]] === levelTilesRaw.floor
                     && version === 1
                 ) {
                     // if this rect would end up in another rect, 
                     // instead put wall there. edges will never add walls to prevent
                     // unreachable areas
-                    filling = "w";
+                    filling = levelTilesRaw.wall;
                 }
                 if (isEdge) {
                     edgesToBeFilledQueue.push(coords);
@@ -154,14 +155,14 @@ class Rect {
                 }
             }
         }
-        if (version !== 0 || filling !== "w") {
+        if (version !== 0 || filling !== levelTilesRaw.wall) {
             for (const coords of toBeFilledQueue) {
                 level[coords[0]][coords[1]] = filling;
             }
         }
         // edges will always be open to prevent unreachable areas
         for (const coords of edgesToBeFilledQueue) {
-            level[coords[0]][coords[1]] = ".";
+            level[coords[0]][coords[1]] = levelTilesRaw.floor;
         }
         toBeFilledQueue = [];
         edgesToBeFilledQueue = [];
@@ -226,13 +227,13 @@ function generateLevel(startPoint) {
     visitedWalls = [0, 0, 0, 0];
     toBeFilledQueue = [];
     edgesToBeFilledQueue = [];
-    filling = ".";
+    filling = levelTilesRaw.floor;
     
     for (let i = 0; i < SIZE_Y; i++) {
         level.push([]);
       
         for (let j = 0; j < SIZE_X; j++) {
-            level[i][j] = "w";
+            level[i][j] = levelTilesRaw.wall;
         }
     }
     let version = Math.random() < 0.7 ? 0 : 1;
@@ -282,7 +283,7 @@ function generateLevel(startPoint) {
     }
     for (let i = 0; i < SIZE_Y; i++) {
         for (let j = 0; j < SIZE_X; j++) {
-            if (level[i][j] === "w") {
+            if (level[i][j] === levelTilesRaw.wall) {
                 wallNbr++;
             }
         }
@@ -297,15 +298,15 @@ function generateLevel(startPoint) {
     const levelBottom = [];
 
     for (let j = 0; j < SIZE_X; j++) {
-        levelTop.push("w");
-        levelBottom.push("w");
+        levelTop.push(levelTilesRaw.wall);
+        levelBottom.push(levelTilesRaw.wall);
     }
     level.unshift(levelTop);
     level.push(levelBottom);
 
     for (let i = 0; i < SIZE_Y + 2; i++) {
-        level[i].unshift("w");
-        level[i].push("w");
+        level[i].unshift(levelTilesRaw.wall);
+        level[i].push(levelTilesRaw.wall);
     }
     return level;
 }
@@ -340,7 +341,7 @@ export function createNewLvl(levels, level, player) {
         frontOfStartPos[1] = 1;
     }
     const generatedLvl = generateLevel(startPos);
-    generatedLvl[startPos[0]][startPos[1]] = "^";
+    generatedLvl[startPos[0]][startPos[1]] = levelTilesRaw.doorWay;
     const newMemorized = [];
     const travelPoints = {};
     const openEdges = [];
@@ -355,16 +356,16 @@ export function createNewLvl(levels, level, player) {
             if (Object.keys(levelCharMap).indexOf(generatedLvl[i][j]) !== -1) {
                 generatedLvl[i][j] = levelCharMap[generatedLvl[i][j]];
             }
-            if (i === 1 && generatedLvl[i][j] === ".") {
+            if (i === 1 && generatedLvl[i][j] === levelTiles.floor) {
                 openEdges.push([0, j]);
             }
-            if (j === 1 && generatedLvl[i][j] === ".") {
+            if (j === 1 && generatedLvl[i][j] === levelTiles.floor) {
                 openEdges.push([i, 0]);
             }
-            if (i === level.length - 2 && generatedLvl[i][j] === ".") {
+            if (i === level.length - 2 && generatedLvl[i][j] === levelTiles.floor) {
                 openEdges.push([level.length - 1, j]);
             }
-            if (j === level[0].length - 2 && generatedLvl[i][j] === ".") {
+            if (j === level[0].length - 2 && generatedLvl[i][j] === levelTiles.floor) {
                 openEdges.push([i, level[0].length - 1]);
             }
         }
@@ -372,10 +373,10 @@ export function createNewLvl(levels, level, player) {
     // travel point to next to-be-generated lvl
     while (newTravelPos === null) newTravelPos = tryAddTravelPoint(openEdges, startPos);
     travelPoints["" + (levels.generatedIdx + 1)] = [[newTravelPos[0], newTravelPos[1]]];
-    generatedLvl[newTravelPos[0]][newTravelPos[1]] = "^";
+    generatedLvl[newTravelPos[0]][newTravelPos[1]] = levelTiles.doorWay;
     // because generation uses smaller level rectangle, start pos is shifted, this just ensures
     // the player doesn't need to move diagonally out of the start point
-    generatedLvl[frontOfStartPos[0]][frontOfStartPos[1]] = ".";
+    generatedLvl[frontOfStartPos[0]][frontOfStartPos[1]] = levelTiles.floor;
 
     const spawns = createRandomMobSpawning();
     levels[name] = {

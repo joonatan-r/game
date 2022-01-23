@@ -1,17 +1,18 @@
+import { levelTiles } from "./levelData.js";
 import { bresenham, isWall, removeByReference } from "./util.js";
 import options from "./options.js";
 
 function blocksSight(tile) {
-    return tile === "*w" || tile === "*f";
+    return tile === levelTiles.wall || tile === levelTiles.fakeWall;
 }
 
 export default class Renderer {
     tileConversion = {
-        ".": "",
-        "*w": "",
-        "*f": "",
-        "*s": "",
-        "*t": ""
+        [levelTiles.floor]: "",
+        [levelTiles.wall]: "",
+        [levelTiles.fakeWall]: "",
+        [levelTiles.seeThroughWall]: "",
+        [levelTiles.transparentBgWall]: ""
     };
 
     constructor(area, rendered) { // NOTE: area has to be initialized before
@@ -21,7 +22,7 @@ export default class Renderer {
         this.edges = [];
 
         if (options.USE_DOTS) {
-            this.tileConversion["."] = "\u00B7";
+            this.tileConversion[levelTiles.floor] = "\u00B7";
         }
         for (let i = 0; i < area.length; i++) {
             this.areaCache.push([]);
@@ -47,7 +48,7 @@ export default class Renderer {
             options[key] = newOptions[key];
         }
         if (options.USE_DOTS) {
-            this.tileConversion["."] = "\u00B7";
+            this.tileConversion[levelTiles.floor] = "\u00B7";
         }
     }
 
@@ -76,7 +77,7 @@ export default class Renderer {
         }
         for (let coords of this.edges) {
             bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
-                if (level[y][x] === "*t") {
+                if (level[y][x] === levelTiles.transparentBgWall) {
                     visitedTTypeWall = true;
                 } else if (visitedTTypeWall) {
                     visitedTTypeWall = false;
@@ -159,7 +160,7 @@ export default class Renderer {
                 }
                 const classes = [];
 
-                if (!blocksSight(level[i][j]) && level[i][j] !== "*t") {
+                if (!blocksSight(level[i][j]) && level[i][j] !== levelTiles.transparentBgWall) {
                     if (options.USE_BG_IMG) {
                         classes.push("wall-s-bg");
                     } else {

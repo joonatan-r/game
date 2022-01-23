@@ -1,5 +1,31 @@
+export const levelTiles = {
+    floor: ".",
+    doorWay: "^",
+    stairsDown: ">",
+    stairsUp: "<",
+    wall: "*w", // "normal" wall
+    fakeWall: "*f",
+    seeThroughWall: "*s",
+    transparentBgWall: "*t" // wall that blocks sight, but shows the background of the wall tile
+};
+export const levelTilesRaw = {
+    floor: ".",
+    doorWay: "^",
+    stairsDown: ">",
+    stairsUp: "<",
+    wall: "w",
+    fakeWall: "f",
+    seeThroughWall: "s",
+    transparentBgWall: "t"
+};
+export const levelCharMap = {
+    [levelTilesRaw.wall]: levelTiles.wall,
+    [levelTilesRaw.fakeWall]: levelTiles.fakeWall,
+    [levelTilesRaw.seeThroughWall]: levelTiles.seeThroughWall,
+    [levelTilesRaw.transparentBgWall]: levelTiles.transparentBgWall
+};
 export const infoTable = {
-    "^": "[^]: A doorway",
+    [levelTiles.doorWay]: "[" + levelTiles.doorWay + "]: A doorway",
     "Player": "[@]: You, the player",
     "some money": "[$]: Some money",
     "a weird object": "[?]: A strange object",
@@ -10,7 +36,6 @@ export const infoTable = {
     "Jorma": "[J]: Jorma, a hostile human",
 };
 
-// for characters' special meanings see levelCharMap in util.js
 // all characters' special meaning can be escaped using preceding "e"
 // the first declared level here is the starting level 
 

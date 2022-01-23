@@ -1,11 +1,4 @@
-import { levelData } from "./levelData.js";
-
-export const levelCharMap = {
-    "w": "*w", // "normal" wall
-    "f": "*f", // "fake" wall
-    "s": "*s", // "see-through" wall
-    "t": "*t" // wall that blocks sight, but shows the background of the wall tile
-};
+import { levelData, levelCharMap, levelTiles } from "./levelData.js";
 
 export function initialize(levels, table, area, rendered) {
     let level = [[]];
@@ -97,7 +90,9 @@ export function initialize(levels, table, area, rendered) {
                     if (Object.keys(levelCharMap).indexOf(c) !== -1) {
                         c = levelCharMap[c];
                     }
-                    if (c === ">" || c === "<" || c === "^") travelCoords.push([yIdx, xIdx]);
+                    if (c === levelTiles.stairsDown || c === levelTiles.stairsUp || c === levelTiles.doorWay) {
+                        travelCoords.push([yIdx, xIdx]);
+                    }
                     level[yIdx][xIdx] = c;
                     xIdx++;
                 }
@@ -361,7 +356,10 @@ export function inputToDrc(input, options) {
 }
 
 export function isWall(tile) {
-    return tile === "*w" || tile === "*f" || tile === "*s" || tile === "*t";
+    return tile === levelTiles.wall 
+        || tile === levelTiles.fakeWall 
+        || tile === levelTiles.seeThroughWall 
+        || tile === levelTiles.transparentBgWall;
 }
 
 export function getSecondBestDirections(drcs, currentDrc, excluded) {

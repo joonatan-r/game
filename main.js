@@ -1,4 +1,4 @@
-import { infoTable } from "./levelData.js";
+import { infoTable, levelTiles } from "./levelData.js";
 import { addMobs } from "./mobData.js";
 import { addItems } from "./itemData.js";
 import events from "./eventData.js";
@@ -312,9 +312,9 @@ function posIsValid(pos) {
         || pos[1] > level[0].length - 1 
         || pos[0] < 0 
         || pos[1] < 0
-        || level[pos[0]][pos[1]] === "*w"
-        || level[pos[0]][pos[1]] === "*s"
-        || level[pos[0]][pos[1]] === "*t"
+        || level[pos[0]][pos[1]] === levelTiles.wall
+        || level[pos[0]][pos[1]] === levelTiles.seeThroughWall
+        || level[pos[0]][pos[1]] === levelTiles.transparentBgWall
     ) {
         return false;
     }
@@ -505,7 +505,8 @@ async function shoot(fromPos, drc, mobIsShooting) {
         movePosToDrc(bulletPos, drc);
 
         if (!level[bulletPos[0]] || typeof level[bulletPos[0]][bulletPos[1]] === "undefined" 
-            || level[bulletPos[0]][bulletPos[1]] === "*w"
+            || level[bulletPos[0]][bulletPos[1]] === levelTiles.wall
+            || level[bulletPos[0]][bulletPos[1]] === levelTiles.transparentBgWall
         ) {
             if (options.TURN_BASED) {
                 !player.dead && addListeners();
@@ -597,7 +598,7 @@ function movePlayer(newPos) {
     player.pos = newPos;
     tryFireEvent("onMove");
 
-    if (level[player.pos[0]][player.pos[1]] === "^") {
+    if (level[player.pos[0]][player.pos[1]] === levelTiles.doorWay) {
         tryChangeLvl();
     }
     for (let obj of customRenders) {
@@ -740,7 +741,7 @@ function action(key, ctrl) {
 
             if (ctrl) {
                 while (level[newPos[0]] && typeof level[newPos[0]][newPos[1]] !== "undefined"
-                        && (!isWall(level[newPos[0]][newPos[1]]) || level[newPos[0]][newPos[1]] === "*f")
+                        && (!isWall(level[newPos[0]][newPos[1]]) || level[newPos[0]][newPos[1]] === levelTiles.fakeWall)
                 ) {
                     prevPos = newPos.slice();
                     movePosToDrc(newPos, drc);
@@ -776,7 +777,9 @@ function action(key, ctrl) {
             }
             return;
         case options.CONTROLS.ENTER:
-            if (level[player.pos[0]][player.pos[1]] === ">" || level[player.pos[0]][player.pos[1]] === "<") {
+            if (level[player.pos[0]][player.pos[1]] === levelTiles.stairsDown 
+                || level[player.pos[0]][player.pos[1]] === levelTiles.stairsUp
+            ) {
                 tryChangeLvl();
             } else {
                 return;
@@ -860,7 +863,7 @@ async function autoTravel(coords) {
     keypressListener.actionType = "autoMove";
     bresenham(player.pos[0], player.pos[1], coords[0], coords[1], 
             (y, x) => {
-                if (level[y] && isWall(level[y][x]) && level[y][x] !== "*f") {
+                if (level[y] && isWall(level[y][x]) && level[y][x] !== levelTiles.fakeWall) {
                     return "stop";
                 }
                 coordsList.push([y, x]);
@@ -895,14 +898,15 @@ function showPosInfo(infoKeys) {
         msg += "[ ]: An unseen area\n";
     }
     for (let key of infoKeys) {
-        if (key === ".") continue; // ignore floor
+        if (key === levelTiles.floor) continue; // ignore floor
         if (typeof infoTable[key] !== "undefined") {
             msg += infoTable[key] + "\n";
         } else {
             msg += "No info\n";
         }
     }
-    if (msg === "") msg = "No info";
+    if (msg === "") msg = "No info\n";
+    msg = msg.slice(0, -1)
     ui.showMsg(msg);
 }
 

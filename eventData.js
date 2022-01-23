@@ -1,3 +1,4 @@
+import { levelTiles } from "./levelData.js";
 import { coordsEq, removeByReference } from "./util.js";
 
 const events = {
@@ -19,9 +20,9 @@ const events = {
         const playerPos = currentState.player.pos;
 
         if (lvl === "Start of uncharted") {
-            if (coordsEq(playerPos, [19, 23]) && currentState.level[19][23] === "*f") {
+            if (coordsEq(playerPos, [19, 23]) && currentState.level[19][23] === levelTiles.fakeWall) {
                 ui.showMsg("You find a hidden passage!");
-                currentState.level[19][23] = ".";
+                currentState.level[19][23] = levelTiles.floor;
             }
         }
     },
