@@ -595,6 +595,7 @@ function movePlayer(newPos) {
     if (!posIsValid(newPos)) return;
     
     player.pos = newPos;
+    tryFireEvent("onMove");
 
     if (level[player.pos[0]][player.pos[1]] === "^") {
         tryChangeLvl();

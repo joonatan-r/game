@@ -1,4 +1,4 @@
-import { removeByReference } from "./util.js";
+import { coordsEq, removeByReference } from "./util.js";
 
 const events = {
     onStart: function(ui, currentState) {
@@ -12,6 +12,17 @@ const events = {
             ui.showDialog("Welcome back, adventurer!", ["Continue"], () => {
                 currentState.setPause(false);
             });
+        }
+    },
+    onMove: function(ui, currentState) {
+        const lvl = currentState.levels.currentLvl;
+        const playerPos = currentState.player.pos;
+
+        if (lvl === "Start of uncharted") {
+            if (coordsEq(playerPos, [19, 23]) && currentState.level[19][23] === "*f") {
+                ui.showMsg("You find a hidden passage!");
+                currentState.level[19][23] = ".";
+            }
         }
     },
     onEnterLevel: {
