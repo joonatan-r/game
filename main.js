@@ -470,7 +470,14 @@ async function shoot(fromPos, drc, mobIsShooting) {
     const currLvl = levels.currentLvl;
     const icon = projectileFromDrc[drc];
     let bulletPos = fromPos.slice();
-    let obj;
+    let obj = {
+        symbol: icon,
+        pos: bulletPos.slice(),
+        damagePlayer: mobIsShooting,
+        damageMobs: true,
+        disappearOnHit: true
+    };
+    customRenders.push(obj);
     options.TURN_BASED && (interruptAutoTravel = true);
     options.TURN_BASED && removeListeners();
     !mobIsShooting && (timeTracker.turnsUntilShoot = 10);
@@ -504,28 +511,20 @@ async function shoot(fromPos, drc, mobIsShooting) {
                 !player.dead && addListeners();
                 !mobIsShooting && processTurn();
             }       
-            return;
+            break;
         }
         if (rendered[bulletPos[0]][bulletPos[1]]) {
             area[bulletPos[0]][bulletPos[1]].textContent = icon;
         }
-        obj = {
-            symbol: icon,
-            pos: [bulletPos[0], bulletPos[1]],
-            damagePlayer: mobIsShooting,
-            damageMobs: true,
-            disappearOnHit: true
-        };
-        customRenders.push(obj);
-        
+        obj.pos = bulletPos.slice();
+        if (checkHits(bulletPos)) break;
         await new Promise(r => setTimeout(r, 30));
-        if (levels.currentLvl !== currLvl) return;
-        if (checkHits(bulletPos)) return;
+        if (levels.currentLvl !== currLvl) break;
         // NOTE: obj can hit something either by it moving into player/mob, or them moving into it.
         // if something moves into it, they handle the extra effects themselves.
-        if (obj.deleted) return;
-        removeByReference(customRenders, obj);
+        if (obj.deleted) break;
     }
+    removeByReference(customRenders, obj);
 }
 
 function meleeTurnBased(drc) {
