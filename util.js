@@ -1,6 +1,7 @@
 import { levelData, levelCharMap, levelTiles } from "./levelData.js";
 
-export function initialize(levels, table, area, rendered) {
+export function initialize(levels, area, rendered) {
+    const table = document.getElementById("table");
     let level = [[]];
     let yIdx = 0;
     let xIdx = 0;

@@ -13,12 +13,13 @@ import UI from "./UI.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
 
-// NOTE: all coords are given as (y,x)
-// NOTE: save and load can handle member functions, currently not needed
-
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls, 
 //       take multiple pages into account in pickup dialog
+// NOTE: all coords are given as (y,x)
+// NOTE: save and load can handle member functions, currently not needed
 // NOTE: now keypressListener actionTypes for shoot, melee, interact no longer used.
+// NOTE: all references within "levels", "player", or "timeTracker" to other objects included
+//       in each other must be done with "refer()" for saving to work properly
 
 const table = document.getElementById("table");
 const info = document.getElementById("info");
@@ -31,7 +32,7 @@ const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 let turnInterval = null;
 let infoForMobileFix = { // use object to pass reference to mobileFix
     listenersActive: false,
-    handleKeypress: handleKeypress
+    action: action
 };
 
 if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
@@ -49,18 +50,16 @@ player.health = player.maxHealth;
 player.inventory = [];
 player.pos = [9, 5];
 let levels = {};
-
-initialize(levels, table, area, rendered);
-
-// NOTE: all references within "levels", "player", or "timeTracker" to other objects included
-//       in each other must be done with "refer()" for saving to work properly
-let level = levels[levels.currentLvl].level;
-let mobs = levels[levels.currentLvl].mobs;
-let items = levels[levels.currentLvl].items;
 let customRenders = []; // for "animations" to not get erased
 let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let autoTravelStack = []; // used to cancel previous autoTravels when there is a new one
+
+initialize(levels, area, rendered);
+
+let level = levels[levels.currentLvl].level;
+let mobs = levels[levels.currentLvl].mobs;
+let items = levels[levels.currentLvl].items;
 const render = new Renderer(area, rendered);
 const ui = new UI(removeListeners, addListeners, msgHistory);
 
@@ -83,6 +82,7 @@ document.addEventListener("keyup", function(e) {
     clearInterval(keyIntervals[e.key]);
     delete keyIntervals[e.key];
 });
+document.addEventListener("mousemove", mouseStyleListener);
 document.getElementById("loadInputFile").addEventListener("change", function() {
     const fr = new FileReader();
     fr.onload = () => {
@@ -123,16 +123,7 @@ function start() {
     !options.TURN_BASED && clearInterval(turnInterval); // clear turnInterval in case it was already running
     !options.TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
     tryFireEvent("onStart");
-
-    if (options.USE_BG_IMG) {
-        if (levels[levels.currentLvl].bg.startsWith("#")) {
-            table.style.backgroundColor = levels[levels.currentLvl].bg;
-        } else {
-            table.style.backgroundImage = levels[levels.currentLvl].bg;
-        }
-    } else {
-        table.style.backgroundColor = "#000";
-    }
+    render.setBg(levels);
 }
 
 function showStartDialog() {
@@ -689,17 +680,7 @@ function tryChangeLvl() {
                 items = levels[lvl].items;
                 levels.currentLvl = lvl;
                 customRenders = [];
-
-                if (options.USE_BG_IMG) {
-                    if (levels[levels.currentLvl].bg.startsWith("#")) {
-                        table.style.backgroundColor = levels[levels.currentLvl].bg;
-                        table.style.backgroundImage = "";
-                    } else {
-                        table.style.backgroundImage = levels[levels.currentLvl].bg;
-                    }
-                } else {
-                    table.style.backgroundColor = "#000";
-                }
+                render.setBg(levels);
                 tryFireEvent("onEnterLevel", lvl);
                 return;
             }
@@ -724,8 +705,17 @@ function showPauseMenu() {
 }
 
 action.actType = "shoot";
+action.inputType = null;
 
 function action(key, ctrl) {
+    switch(action.inputType) {
+        case "autoMove":
+            if (key === options.CONTROLS.ESC) interruptAutoTravel = true;
+            return;
+        case "selectPos":
+            selectPos(inputToDrc(key, options));
+            return;
+    }
     switch (key) {
         case options.CONTROLS.BOTTOM_LEFT:
         case options.CONTROLS.BOTTOM:
@@ -836,8 +826,7 @@ function action(key, ctrl) {
             break;
         case options.CONTROLS.INSPECT:
             ui.showMsg("Move to a location to inspect. Use enter to select and esc to leave.");
-            keypressListener.actionType = "selectPos";
-            clickListener.actionType = "ignore";
+            action.inputType = "selectPos";
             selectPos.currentPos = player.pos.slice();
             break;
         default:
@@ -860,7 +849,7 @@ async function autoTravel(coords) {
         autoTravelStack[i] = false; // stop previous autoTravels
     }
     interruptAutoTravel = false;
-    keypressListener.actionType = "autoMove";
+    action.inputType = "autoMove";
     bresenham(player.pos[0], player.pos[1], coords[0], coords[1], 
             (y, x) => {
                 if (level[y] && isWall(level[y][x]) && level[y][x] !== levelTiles.fakeWall) {
@@ -875,7 +864,7 @@ async function autoTravel(coords) {
     for (let coord of coordsList) {
         // new coord may not be next to player if e.g. a mob blocks the way
         if (!autoTravelStack[idx] || interruptAutoTravel || levels.currentLvl !== lvl || !isNextTo(player.pos, coord)) {
-            keypressListener.actionType = null;
+            action.inputType = null;
             return;
         }
         movePlayer(coord);
@@ -887,7 +876,7 @@ async function autoTravel(coords) {
         }
         await new Promise(r => setTimeout(r, options.AUTOTRAVEL_REPEAT_DELAY));
     }
-    keypressListener.actionType = null;
+    action.inputType = null;
     autoTravelStack = [];
 }
 
@@ -938,31 +927,8 @@ function selectPos(drc) {
         case options.CONTROLS.ESC:
             ui.showMsg("");
             area[prevPos[0]][prevPos[1]].classList.remove("selected");
-            keypressListener.actionType = null;
-            clickListener.actionType = null;
+            action.inputType = null;
             return;
-    }
-}
-
-function handleKeypress(key, ctrl) {
-    switch (keypressListener.actionType) {
-        case "shoot":
-            shoot(player.pos, inputToDrc(key, options));
-            break;
-        case "melee":
-            melee(inputToDrc(key, options));
-            break;
-        case "interact":
-            interact(inputToDrc(key, options));
-            break;
-        case "autoMove":
-            if (key === options.CONTROLS.ESC) interruptAutoTravel = true;
-            break;
-        case "selectPos":
-            selectPos(inputToDrc(key, options));
-            break;
-        default:
-            action(key, ctrl);
     }
 }
 
@@ -971,7 +937,7 @@ async function setKeyRepeat(e) {
     
     // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
     if (keyIntervals[e.key] === "tempVal") {
-        keyIntervals[e.key] = setInterval(() => handleKeypress(e.key, e.ctrlKey), options.TRAVEL_REPEAT_DELAY);
+        keyIntervals[e.key] = setInterval(() => action(e.key, e.ctrlKey), options.TRAVEL_REPEAT_DELAY);
     }
 }
 
@@ -984,14 +950,11 @@ function keypressListener(e) {
                          options.CONTROLS.TOP, options.CONTROLS.TOP_RIGHT];
 
     if (moveKeyList.indexOf(e.key) !== -1) {
-        // enable key repeating only for moving
-        if (!keypressListener.actionType) {
-            keyIntervals[e.key] = "tempVal";
-            setKeyRepeat(e);
-        }
+        keyIntervals[e.key] = "tempVal";
+        setKeyRepeat(e);
         ui.showMsg("");
     }
-    handleKeypress(e.key, e.ctrlKey);
+    action(e.key, e.ctrlKey);
 }
 
 function clickListener(e) {
@@ -1000,52 +963,33 @@ function clickListener(e) {
         return;
     }
     if (e.target.id === "status" || e.target.id === "showInfoButton" || e.target.id === "travelButton" 
-        || e.target.dataset.ignoreClick || e.button !== 0) return;
+        || e.target.dataset.ignoreClick || e.button !== 0 || action.inputType === "selectPos") return;
     ui.showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
     const x = e.x - (rect.left + rect.width / 2);
     const y = e.y - (rect.top + rect.height / 2);
     const drc = pixelCoordsToDrc(y, x);
-
-    switch (clickListener.actionType) {
-        case "chooseDrc":
-            switch (keypressListener.actionType) {
-                case "shoot":
-                    shoot(player.pos, drc);
-                    break;
-                case "melee":
-                    melee(drc);
-                    break;
-                case "interact":
-                    interact(drc);
-                    break;
-            }
-            break;
-        case "ignore":
-            return;
-        default:
-            let doAutoTravel = false;
-            
-            if ((options.CTRL_CLICK_AUTOTRAVEL && e.ctrlKey) 
-                || (!options.CTRL_CLICK_AUTOTRAVEL && !e.ctrlKey)
-            ) {
-                doAutoTravel = true;
-            }
-            if (doAutoTravel) {
-                if (e.target.tagName !== "TD") return;
-                autoTravel(e.target.customProps.coords);
-            } else {
-                const newPos = player.pos.slice();
-                movePosToDrc(newPos, drc);
-                movePlayer(newPos);
-                
-                if (options.TURN_BASED) {
-                    processTurn();
-                } else {
-                    render.renderAll(player, levels, customRenders);
-                }
-            }
+    let doAutoTravel = false;
+    
+    if ((options.CTRL_CLICK_AUTOTRAVEL && e.ctrlKey) 
+        || (!options.CTRL_CLICK_AUTOTRAVEL && !e.ctrlKey)
+    ) {
+        doAutoTravel = true;
+    }
+    if (doAutoTravel) {
+        if (e.target.tagName !== "TD") return;
+        autoTravel(e.target.customProps.coords);
+    } else {
+        const newPos = player.pos.slice();
+        movePosToDrc(newPos, drc);
+        movePlayer(newPos);
+        
+        if (options.TURN_BASED) {
+            processTurn();
+        } else {
+            render.renderAll(player, levels, customRenders);
+        }
     }
 }
 
@@ -1083,6 +1027,7 @@ function menuListener(e) {
 }
 
 function mouseStyleListener(e) {
+    // NOTE: currently not in use
     if (clickListener.actionType === "chooseDrc") {
         const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
         const x = e.x - (rect.left + rect.width / 2);
@@ -1106,7 +1051,6 @@ function mouseStyleListener(e) {
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
     document.addEventListener("mousedown", clickListener);
-    document.addEventListener("mousemove", mouseStyleListener);
     menuListener.allowTravel = true;
     infoForMobileFix.listenersActive = true;
 }
@@ -1114,7 +1058,6 @@ function addListeners() {
 function removeListeners() {
     document.removeEventListener("keydown", keypressListener);
     document.removeEventListener("mousedown", clickListener);
-    document.removeEventListener("mousemove", mouseStyleListener);
     infoForMobileFix.listenersActive = false;
     menuListener.allowTravel = false;
 

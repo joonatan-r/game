@@ -6,6 +6,8 @@ function blocksSight(tile) {
     return tile === levelTiles.wall || tile === levelTiles.fakeWall;
 }
 
+const table = document.getElementById("table");
+
 export default class Renderer {
     tileConversion = {
         [levelTiles.floor]: "",
@@ -49,6 +51,20 @@ export default class Renderer {
         }
         if (options.USE_DOTS) {
             this.tileConversion[levelTiles.floor] = "\u00B7";
+        }
+    }
+
+    setBg(levels) {
+        if (options.USE_BG_IMG) {
+            if (levels[levels.currentLvl].bg.startsWith("#")) {
+                table.style.backgroundColor = levels[levels.currentLvl].bg;
+                table.style.backgroundImage = 'none';
+            } else {
+                table.style.backgroundImage = levels[levels.currentLvl].bg;
+                table.style.backgroundColor = 'none';
+            }
+        } else {
+            table.style.backgroundColor = "#000";
         }
     }
 
