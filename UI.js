@@ -7,15 +7,15 @@ const status = document.getElementById("status");
 const info = document.getElementById("info");
 
 export default class UI {
+    msgHistory = [];
     dialogMoved = false;
     msgMoved = false;
     movePos = [];
     dialogStack = [];
 
-    constructor(removeListeners, addListeners, msgHistory) {
+    constructor(removeListeners, addListeners) {
         this.removeListeners = removeListeners;
         this.addListeners = addListeners;
-        this.msgHistory = msgHistory;
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
         this.msgMoveListener = this.msgMoveListener.bind(this);
 
@@ -264,6 +264,15 @@ export default class UI {
         while (dialog.firstChild) {
             dialog.firstChild.onclick = null; // just to be safe
             dialog.removeChild(dialog.firstChild);
+        }
+    }
+
+    showMsgHistory(startPage) {
+        if (this.msgHistory.length) {
+            this.showDialog("Message history:", this.msgHistory, idx => {
+                if (idx < 0) return;
+                this.showMsgHistory(Math.ceil((idx+1) / 9) - 1); // simply shows the history again on the same page
+            }, true, true, null, startPage);
         }
     }
 };

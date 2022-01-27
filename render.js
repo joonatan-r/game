@@ -45,7 +45,7 @@ export default class Renderer {
         return tile;
     }
 
-    changeRenderOptions(newOptions) {
+    changeOptions(newOptions) {
         for (let key of Object.keys(newOptions)) {
             options[key] = newOptions[key];
         }

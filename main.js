@@ -1,10 +1,10 @@
-import { infoTable, levelTiles } from "./levelData.js";
+import { levelTiles } from "./levelData.js";
 import { addMobs } from "./mobData.js";
 import { addItems } from "./itemData.js";
 import events from "./eventData.js";
 import {
     initialize, bresenham, isNextTo, coordsEq, inputToDrc, isWall, movePosToDrc, removeByReference, 
-    pixelCoordsToDrc, makeTextFile, projectileFromDrc
+    pixelCoordsToDrc, makeTextFile, projectileFromDrc, showPosInfo, load, save
 } from "./util.js";
 import { createNewLvl } from "./levelGeneration.js";
 import { trySpawnMob, movingAIs } from "./mobs.js";
@@ -21,7 +21,6 @@ import { mobileFix } from "./mobileFix.js";
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
 //       in each other must be done with "refer()" for saving to work properly
 
-const table = document.getElementById("table");
 const info = document.getElementById("info");
 const menu = document.getElementById("clickMenu");
 const travelButton = document.getElementById("travelButton");
@@ -29,7 +28,6 @@ const showInfoButton = document.getElementById("showInfoButton");
 const mobileInput = document.createElement("textarea");
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-let turnInterval = null;
 let infoForMobileFix = { // use object to pass reference to mobileFix
     listenersActive: false,
     action: action
@@ -39,8 +37,8 @@ if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
 
 const area = [];
 const rendered = [];
-const msgHistory = [];
 const keyIntervals = {}; // for key repeats when holding key
+let turnInterval = null;
 let timeTracker = {};
 timeTracker.timer = 0;
 timeTracker.turnsUntilShoot = 0;
@@ -61,11 +59,7 @@ let level = levels[levels.currentLvl].level;
 let mobs = levels[levels.currentLvl].mobs;
 let items = levels[levels.currentLvl].items;
 const render = new Renderer(area, rendered);
-const ui = new UI(removeListeners, addListeners, msgHistory);
-
-addListeners();
-showStartDialog();
-
+const ui = new UI(removeListeners, addListeners);
 const defaultOptions = localStorage.getItem("gameDefaultOptions");
 
 if (defaultOptions) {
@@ -74,56 +68,28 @@ if (defaultOptions) {
     for (let key of Object.keys(newOptions)) {
         options[key] = newOptions[key];
     }
-    render.changeRenderOptions(options);
+    render.changeOptions(options);
 }
+
+addListeners();
+showStartDialog();
 
 // added separately because never removed
 document.addEventListener("keyup", function(e) {
     clearInterval(keyIntervals[e.key]);
     delete keyIntervals[e.key];
 });
-document.addEventListener("mousemove", mouseStyleListener);
-document.getElementById("loadInputFile").addEventListener("change", function() {
-    const fr = new FileReader();
-    fr.onload = () => {
-        const refs = [];
-        const loadData = JSON.parse(fr.result, function(key, val) {
-            if (typeof val === "string" && val.startsWith("function")) {
-                // convert string representations of functions back to functions
-                return eval("(" + val + ")");
-            }
-            if (typeof val === "string" && val.startsWith("refTo ")) {
-                refs.push({ obj: this, key: key });
-            }
-            return val;
-        });
-
-        for (let ref of refs) {
-            const idx = ref.obj[ref.key].split(" ")[1];
-            ref.obj[ref.key] = loadData.referenced[idx]; // replace references with actual objects
-        }
-        levels = loadData.levels;
-        level = levels[levels.currentLvl].level;
-        mobs = levels[levels.currentLvl].mobs;
-        items = levels[levels.currentLvl].items;
-        player = loadData.player;
-        timeTracker = loadData.timeTracker;
-        ui.hideDialog(); // loading from start menu keeps dialog open (in case user cancels), this ensures it's closed
-        start();
-    };
-    fr.readAsText(this.files[0]);
-    this.value = null;
-});
+// document.addEventListener("mousemove", mouseStyleListener);
 
 function start() {
     menuListener.allowTravel = true;
     document.addEventListener("contextmenu", menuListener);
     updateInfo();
     render.renderAll(player, levels, customRenders);
+    render.setBg(levels);
     !options.TURN_BASED && clearInterval(turnInterval); // clear turnInterval in case it was already running
     !options.TURN_BASED && (turnInterval = setInterval(() => processTurn(), options.TURN_DELAY));
     tryFireEvent("onStart");
-    render.setBg(levels);
 }
 
 function showStartDialog() {
@@ -135,7 +101,7 @@ function showStartDialog() {
                 start();
                 break;
             case 1:
-                load();
+                loadGame();
                 showStartDialog();
                 break;
             case 2:
@@ -196,7 +162,7 @@ function showOptionsDialog(startPage) {
             options[optKeys[idx]] = !opt;
             showOptionsDialog(Math.ceil((idx+1) / 9) - 1);
         }
-        render.changeRenderOptions(options);
+        render.changeOptions(options);
     }, false, true, -1, startPage);
 }
 
@@ -255,39 +221,26 @@ function showControlsDialog(startPage) {
     }, false, true, -1, startPage);
 }
 
-function save() {
-    const link = document.createElement("a");
-    const saveData = {
+function saveGame() {
+    save({
         levels: levels,
         player: player,
-        timeTracker: timeTracker
-    };
-    link.setAttribute("download", "save.json");
-    link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
-            if (typeof val === "function") {
-                return "" + val; // store functions as string
-            }
-            const idx = referenced.indexOf(val);
-
-            if (idx !== -1) {
-                return "refTo " + idx;
-            }
-            return val;
-        })
-            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(referenced) + "}"
-            // objects that have multiple references to them are stored in "referenced", no replacer here
-    );
-    document.body.appendChild(link);
-    window.requestAnimationFrame(() => {
-        link.dispatchEvent(new MouseEvent("click"));
-        document.body.removeChild(link);
+        timeTracker: timeTracker,
+        referenced: referenced
     });
 }
 
-function load() {
-    removeListeners(); // don't trigger click listener here
-    document.getElementById("loadInputFile").click();
-    addListeners();
+function loadGame() {
+    load((loadData) => {
+        levels = loadData.levels;
+        level = levels[levels.currentLvl].level;
+        mobs = levels[levels.currentLvl].mobs;
+        items = levels[levels.currentLvl].items;
+        player = loadData.player;
+        timeTracker = loadData.timeTracker;
+        ui.hideDialog(); // loading from start menu keeps dialog open (in case user cancels), this ensures it's closed
+        start();
+    });
 }
 
 function posIsValid(pos) {
@@ -363,15 +316,6 @@ function gameOver(msg) {
     for (let key of Object.keys(keyIntervals)) {
         clearInterval(keyIntervals[key]);
         delete keyIntervals[key];
-    }
-}
-
-function showMsgHistory(startPage) {
-    if (msgHistory.length) {
-        ui.showDialog("Message history:", msgHistory, idx => {
-            if (idx < 0) return;
-            showMsgHistory(Math.ceil((idx+1) / 9) - 1); // simply shows the history again on the same page
-        }, true, true, null, startPage);
     }
 }
 
@@ -500,6 +444,7 @@ async function shoot(fromPos, drc, mobIsShooting) {
             || level[bulletPos[0]][bulletPos[1]] === levelTiles.transparentBgWall
         ) {
             if (options.TURN_BASED) {
+                removeByReference(customRenders, obj);
                 !player.dead && addListeners();
                 !mobIsShooting && processTurn();
             }       
@@ -694,14 +639,22 @@ function showPauseMenu() {
     ui.showDialog("Pause Menu", ["Save", "Load"], idx => {
         switch (idx) {
             case 0:
-                save();
+                saveGame();
                 break;
             case 1:
-                load();
+                loadGame();
                 break;
         }
         setPause(false);
     }, true, true);
+}
+
+function updateAfterAction() {
+    if (options.TURN_BASED) {
+        processTurn();
+    } else {
+        render.renderAll(player, levels, customRenders);
+    }
 }
 
 action.actType = "shoot";
@@ -784,7 +737,7 @@ function action(key, ctrl) {
             ui.showMsg("Action type set to shoot.");
             return;
         case options.CONTROLS.HISTORY:
-            showMsgHistory();
+            ui.showMsgHistory();
             return;
         case options.CONTROLS.INVENTORY:
             let contentNames = [];
@@ -832,11 +785,7 @@ function action(key, ctrl) {
         default:
             return;
     }
-    if (options.TURN_BASED) {
-        processTurn();
-    } else {
-        render.renderAll(player, levels, customRenders);
-    }
+    updateAfterAction();
 }
 
 async function autoTravel(coords) {
@@ -868,35 +817,11 @@ async function autoTravel(coords) {
             return;
         }
         movePlayer(coord);
-        
-        if (options.TURN_BASED) {
-            processTurn();
-        } else {
-            render.renderAll(player, levels, customRenders);
-        }
+        updateAfterAction();
         await new Promise(r => setTimeout(r, options.AUTOTRAVEL_REPEAT_DELAY));
     }
     action.inputType = null;
     autoTravelStack = [];
-}
-
-function showPosInfo(infoKeys) {
-    let msg = "";
-
-    if (!infoKeys.length) {
-        msg += "[ ]: An unseen area\n";
-    }
-    for (let key of infoKeys) {
-        if (key === levelTiles.floor) continue; // ignore floor
-        if (typeof infoTable[key] !== "undefined") {
-            msg += infoTable[key] + "\n";
-        } else {
-            msg += "No info\n";
-        }
-    }
-    if (msg === "") msg = "No info\n";
-    msg = msg.slice(0, -1)
-    ui.showMsg(msg);
 }
 
 function selectPos(drc) {
@@ -922,7 +847,7 @@ function selectPos(drc) {
             area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.add("selected");
             break;
         case options.CONTROLS.ENTER:
-            showPosInfo(area[selectPos.currentPos[0]][selectPos.currentPos[1]].customProps.infoKeys);
+            showPosInfo(area[selectPos.currentPos[0]][selectPos.currentPos[1]].customProps.infoKeys, ui);
             break;
         case options.CONTROLS.ESC:
             ui.showMsg("");
@@ -984,12 +909,7 @@ function clickListener(e) {
         const newPos = player.pos.slice();
         movePosToDrc(newPos, drc);
         movePlayer(newPos);
-        
-        if (options.TURN_BASED) {
-            processTurn();
-        } else {
-            render.renderAll(player, levels, customRenders);
-        }
+        updateAfterAction();
     }
 }
 
@@ -1021,32 +941,31 @@ function menuListener(e) {
         travelButton.style.display = "none";
     }
     showInfoButton.onmousedown = () => {
-        showPosInfo(e.target.customProps.infoKeys);
+        showPosInfo(e.target.customProps.infoKeys, ui);
         menu.style.display = "none";
     };
 }
 
-function mouseStyleListener(e) {
-    // NOTE: currently not in use
-    if (clickListener.actionType === "chooseDrc") {
-        const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
-        const x = e.x - (rect.left + rect.width / 2);
-        const y = e.y - (rect.top + rect.height / 2);
-        const drc = pixelCoordsToDrc(y, x);
-        document.body.style.cursor = {
-            1: "sw-resize",
-            2: "s-resize",
-            3: "se-resize",
-            4: "w-resize",
-            6: "e-resize",
-            7: "nw-resize",
-            8: "n-resize",
-            9: "ne-resize",
-        }[drc];
-    } else if (document.body.style.cursor !== "default") {
-        document.body.style.cursor = "default";
-    }
-}
+// function mouseStyleListener(e) {
+//     if (clickListener.actionType === "chooseDrc") {
+//         const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
+//         const x = e.x - (rect.left + rect.width / 2);
+//         const y = e.y - (rect.top + rect.height / 2);
+//         const drc = pixelCoordsToDrc(y, x);
+//         document.body.style.cursor = {
+//             1: "sw-resize",
+//             2: "s-resize",
+//             3: "se-resize",
+//             4: "w-resize",
+//             6: "e-resize",
+//             7: "nw-resize",
+//             8: "n-resize",
+//             9: "ne-resize",
+//         }[drc];
+//     } else if (document.body.style.cursor !== "default") {
+//         document.body.style.cursor = "default";
+//     }
+// }
 
 function addListeners() {
     document.addEventListener("keydown", keypressListener);

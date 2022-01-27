@@ -1,4 +1,4 @@
-import { levelData, levelCharMap, levelTiles } from "./levelData.js";
+import { levelData, levelCharMap, levelTiles, infoTable } from "./levelData.js";
 
 export function initialize(levels, area, rendered) {
     const table = document.getElementById("table");
@@ -204,6 +204,61 @@ export function makeTextFile(text) {
     return makeTextFile.textFile;
 }
 
+export function save(saveData) {
+    const link = document.createElement("a");
+    link.setAttribute("download", "save.json");
+    link.href = makeTextFile(JSON.stringify(saveData, (key, val) => {
+            if (typeof val === "function") {
+                return "" + val; // store functions as string
+            }
+            const idx = saveData.referenced.indexOf(val);
+
+            if (idx !== -1) {
+                return "refTo " + idx;
+            }
+            return val;
+        })
+            .slice(0, -1) + ",\"referenced\":" + JSON.stringify(saveData.referenced) + "}"
+            // objects that have multiple references to them are stored in "referenced", no replacer here
+    );
+    document.body.appendChild(link);
+    window.requestAnimationFrame(() => {
+        link.dispatchEvent(new MouseEvent("click"));
+        document.body.removeChild(link);
+    });
+}
+
+export function load(onLoad) {
+    const loadInput = document.getElementById("loadInputFile");
+    const listener = function() {
+        const fr = new FileReader();
+        fr.onload = () => {
+            const refs = [];
+            const loadData = JSON.parse(fr.result, function(key, val) {
+                if (typeof val === "string" && val.startsWith("function")) {
+                    // convert string representations of functions back to functions
+                    return eval("(" + val + ")");
+                }
+                if (typeof val === "string" && val.startsWith("refTo ")) {
+                    refs.push({ obj: this, key: key });
+                }
+                return val;
+            });
+    
+            for (let ref of refs) {
+                const idx = ref.obj[ref.key].split(" ")[1];
+                ref.obj[ref.key] = loadData.referenced[idx]; // replace references with actual objects
+            }
+            onLoad(loadData);
+            loadInput.removeEventListener("change", listener);
+        };
+        fr.readAsText(this.files[0]);
+        this.value = null;
+    };
+    loadInput.addEventListener("change", listener);
+    loadInput.click();
+}
+
 export function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
@@ -239,6 +294,25 @@ export function pixelCoordsToDrc(y, x) {
             return 8; // t
         }
     }
+}
+
+export function showPosInfo(infoKeys, ui) {
+    let msg = "";
+
+    if (!infoKeys.length) {
+        msg += "[ ]: An unseen area\n";
+    }
+    for (let key of infoKeys) {
+        if (key === levelTiles.floor) continue; // ignore floor
+        if (typeof infoTable[key] !== "undefined") {
+            msg += infoTable[key] + "\n";
+        } else {
+            msg += "No info\n";
+        }
+    }
+    if (msg === "") msg = "No info\n";
+    msg = msg.slice(0, -1)
+    ui.showMsg(msg);
 }
 
 export function getCoordsNextTo(pos) {
