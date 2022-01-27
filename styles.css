@@ -61,6 +61,10 @@ p {
     background-color: #777;
 }
 
+#msgBox:hover, #dialogText:hover {
+    cursor: move;
+}
+
 #info {
     display: inline-block;
     border: 1px solid white;

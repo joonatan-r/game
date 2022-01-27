@@ -9,6 +9,7 @@ const info = document.getElementById("info");
 export default class UI {
     dialogMoved = false;
     msgMoved = false;
+    movePos = [];
     dialogStack = [];
 
     constructor(removeListeners, addListeners, msgHistory) {
@@ -22,28 +23,27 @@ export default class UI {
             e.stopPropagation();
     
             if (!this.movingMsg) {
-                document.body.style.cursor = "move";
+                this.movePos = [e.pageX - msgBox.offsetLeft, e.pageY - msgBox.offsetTop];
                 document.addEventListener("mousemove", this.msgMoveListener);
                 this.movingMsg = true;
             }
         };
         msgBox.onmouseup = e => {
             e.stopPropagation();
-            document.body.style.cursor = "default";
             document.removeEventListener("mousemove", this.msgMoveListener);
             this.movingMsg = false;
         };
     }
 
     dialogMoveListener(e) {
-        dialog.style.left = (e.clientX - 5) + "px";
-        dialog.style.top = (e.clientY - 5) + "px";
+        dialog.style.left = (e.clientX - this.movePos[0]) + "px";
+        dialog.style.top = (e.clientY - this.movePos[1]) + "px";
         this.dialogMoved = true;
     }
 
     msgMoveListener(e) {
-        msgBox.style.left = (e.clientX - 5) + "px";
-        msgBox.style.top = (e.clientY - 5) + "px";
+        msgBox.style.left = (e.clientX - this.movePos[0]) + "px";
+        msgBox.style.top = (e.clientY - this.movePos[1]) + "px";
         this.msgMoved = true;
     }
 
@@ -236,14 +236,13 @@ export default class UI {
             e.stopPropagation();
     
             if (!this.movingDialog) {
-                document.body.style.cursor = "move";
+                this.movePos = [e.pageX - dialog.offsetLeft, e.pageY - dialog.offsetTop];
                 document.addEventListener("mousemove", this.dialogMoveListener);
                 this.movingDialog = true;
             }
         };
         p.onmouseup = e => {
             e.stopPropagation();
-            document.body.style.cursor = "default";
             document.removeEventListener("mousemove", this.dialogMoveListener);
             this.movingDialog = false;
         };
