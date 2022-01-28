@@ -46,10 +46,7 @@ export default class Renderer {
     }
 
     changeOptions(newOptions) {
-        for (let key of Object.keys(newOptions)) {
-            options[key] = newOptions[key];
-        }
-        if (options.USE_DOTS) {
+        if (newOptions.USE_DOTS) {
             this.tileConversion[levelTiles.floor] = "\u00B7";
         }
     }
