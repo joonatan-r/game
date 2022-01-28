@@ -66,6 +66,10 @@ export default class UI {
         this.msgHistory.unshift(msg);
     }
 
+    getPageForIdx(idx) {
+        return Math.ceil((idx + 1) / 9) - 1;
+    }
+
     // If the dialog is closed with escape (when allowed), onSelect is called with -1. 
     // stackDepth used to enable navigating to the previous dialog, when a choice can open a new dialog.
     // The first dialog should have 0, the dialog that its choices can open should have 1, etc.
@@ -271,7 +275,7 @@ export default class UI {
         if (this.msgHistory.length) {
             this.showDialog("Message history:", this.msgHistory, idx => {
                 if (idx < 0) return;
-                this.showMsgHistory(Math.ceil((idx+1) / 9) - 1); // simply shows the history again on the same page
+                this.showMsgHistory(this.getPageForIdx(idx));
             }, true, true, null, startPage);
         }
     }

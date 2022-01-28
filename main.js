@@ -4,7 +4,7 @@ import { addItems } from "./itemData.js";
 import events from "./eventData.js";
 import {
     initialize, bresenham, isNextTo, coordsEq, inputToDrc, isWall, movePosToDrc, removeByReference, 
-    pixelCoordsToDrc, makeTextFile, projectileFromDrc, showPosInfo, load, save
+    pixelCoordsToDrc, projectileFromDrc, showPosInfo, load, save
 } from "./util.js";
 import { createNewLvl } from "./levelGeneration.js";
 import { trySpawnMob, movingAIs } from "./mobs.js";
@@ -21,23 +21,24 @@ import { mobileFix } from "./mobileFix.js";
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
 //       in each other must be done with "refer()" for saving to work properly
 
+
+// -------- INITIALIZING --------
+
+
 const info = document.getElementById("info");
 const menu = document.getElementById("clickMenu");
 const travelButton = document.getElementById("travelButton");
 const showInfoButton = document.getElementById("showInfoButton");
 const mobileInput = document.createElement("textarea");
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-let infoForMobileFix = { // use object to pass reference to mobileFix
-    listenersActive: false,
-    action: action
-};
-
-if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
-
-const area = [];
-const rendered = [];
 const keyIntervals = {}; // for key repeats when holding key
+const initialized = initialize();
+const area = initialized.area;
+const rendered = initialized.rendered;
+let levels = initialized.levels;
+let level = levels[levels.currentLvl].level;
+let mobs = levels[levels.currentLvl].mobs;
+let items = levels[levels.currentLvl].items;
 let turnInterval = null;
 let timeTracker = {};
 timeTracker.timer = 0;
@@ -47,17 +48,14 @@ player.maxHealth = 4;
 player.health = player.maxHealth;
 player.inventory = [];
 player.pos = [9, 5];
-let levels = {};
 let customRenders = []; // for "animations" to not get erased
 let referenced = []; // for retaining object references when saving
 let interruptAutoTravel = false;
 let autoTravelStack = []; // used to cancel previous autoTravels when there is a new one
-
-initialize(levels, area, rendered);
-
-let level = levels[levels.currentLvl].level;
-let mobs = levels[levels.currentLvl].mobs;
-let items = levels[levels.currentLvl].items;
+let infoForMobileFix = { // use object to pass reference to mobileFix
+    listenersActive: false,
+    action: action
+};
 const render = new Renderer(area, rendered);
 const ui = new UI(removeListeners, addListeners);
 const defaultOptions = localStorage.getItem("gameDefaultOptions");
@@ -70,16 +68,20 @@ if (defaultOptions) {
     }
     render.changeOptions(options);
 }
+if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
 
-addListeners();
-showStartDialog();
-
-// added separately because never removed
+// listeners that won't be removed
 document.addEventListener("keyup", function(e) {
     clearInterval(keyIntervals[e.key]);
     delete keyIntervals[e.key];
 });
 // document.addEventListener("mousemove", mouseStyleListener);
+
+showStartDialog();
+
+
+// -------- GAME MANAGEMENT --------
+
 
 function start() {
     menuListener.allowTravel = true;
@@ -92,177 +94,19 @@ function start() {
     tryFireEvent("onStart");
 }
 
-function showStartDialog() {
-    ui.showDialog("Start", ["New game", "Load game", "Options", "Controls", "Save configs as default"], idx => {
-        switch (idx) {
-            case 0:
-                addMobs(levels);
-                addItems(levels);
-                start();
-                break;
-            case 1:
-                loadGame();
-                showStartDialog();
-                break;
-            case 2:
-                showOptionsDialog();
-                break;
-            case 3:
-                showControlsDialog();
-                break;
-            case 4:
-                localStorage.setItem("gameDefaultOptions", JSON.stringify(options));
-                ui.showMsg("Saved default options");
-                showStartDialog();
-                break;
-        }
-    }, false, true, 0);
-}
+function gameOver(msg) {
+    ui.showMsg(msg);
+    !options.TURN_BASED && clearInterval(turnInterval);
+    interruptAutoTravel = true;
+    removeListeners();
+    player.dead = true;
+    render.renderAll(player, levels, customRenders);
+    render.shotEffect(player.pos, player, levels, customRenders);
 
-function showOptionsDialog(startPage) {
-    const optKeys = [...Object.keys(options)];
-    removeByReference(optKeys, "CONTROLS");
-    const optList = [...optKeys];
-    
-    for (let i = 0; i < optList.length; i++) {
-        optList[i] += ": " + options[optList[i]];
+    for (let key of Object.keys(keyIntervals)) {
+        clearInterval(keyIntervals[key]);
+        delete keyIntervals[key];
     }
-    ui.showDialog("Options", optList, idx => {
-        let opt = options[optKeys[idx]];
-
-        if (typeof opt === "number") {
-            let input = "";
-            const inputListener = e => {
-                if (e.key === "Escape") {
-                    input = "";
-                    document.removeEventListener("keydown", inputListener);
-                    addListeners();
-                    ui.showMsg("");
-                    showOptionsDialog(Math.ceil((idx+1) / 9) - 1); // refresh but show the same page again
-                } else if (e.key === "Enter") {
-                    const val = Number(input);
-
-                    if (val > 10) {
-                        options[optKeys[idx]] = val;
-                    }
-                    input = "";
-                    document.removeEventListener("keydown", inputListener);
-                    addListeners();
-                    ui.showMsg("");
-                    showOptionsDialog(Math.ceil((idx+1) / 9) - 1);
-                } else {
-                    input += e.key;
-                    ui.showMsg("New value: " + input);
-                }
-            };
-            removeListeners();
-            document.addEventListener("keydown", inputListener);
-            ui.showMsg("Type the new value. Enter to accept and escape to cancel.");
-        } else if (typeof opt === "boolean") {
-            options[optKeys[idx]] = !opt;
-            showOptionsDialog(Math.ceil((idx+1) / 9) - 1);
-        }
-        render.changeOptions(options);
-    }, false, true, -1, startPage);
-}
-
-function showControlsDialog(startPage) {
-    const optKeys = [...Object.keys(options.CONTROLS)];
-    const optList = [...Object.keys(options.CONTROLS)];
-    
-    for (let i = 0; i < optList.length; i++) {
-        optList[i] += ": \"" + options.CONTROLS[optList[i]] + "\"";
-    }
-    ui.showDialog("Controls", optList, idx => {
-        const changeInput = e => {
-            ui.showMsg("");
-
-            for (let [key, val] of Object.entries(options.CONTROLS)) {
-                if ((val === e.key && key !== optKeys[idx])) {
-                    document.removeEventListener("keydown", changeInput);
-                    addListeners();
-                    ui.showMsg("Error, \"" + e.key + "\" is already in use");
-                    showControlsDialog(Math.ceil((idx+1) / 9) - 1);
-                    return;
-                }
-            }
-            options.CONTROLS[optKeys[idx]] = e.key;
-            document.removeEventListener("keydown", changeInput);
-            addListeners();
-            showControlsDialog(Math.ceil((idx+1) / 9) - 1);
-        };
-        const mobileChangeInput = () => {
-            ui.showMsg("");
-
-            for (let [key, val] of Object.entries(options.CONTROLS)) {
-                if ((val === mobileInput.value && key !== optKeys[idx])) {
-                    mobileInput.removeEventListener("input", mobileChangeInput);
-                    addListeners();
-                    ui.showMsg("Error, \"" + mobileInput.value + "\" is already in use");
-                    mobileInput.value = "";
-                    showControlsDialog(Math.ceil((idx+1) / 9) - 1);
-                    return;
-                }
-            }
-            options.CONTROLS[optKeys[idx]] = mobileInput.value.toLowerCase();
-            mobileInput.removeEventListener("input", mobileChangeInput);
-            addListeners();
-            mobileInput.value = "";
-            showControlsDialog(Math.ceil((idx+1) / 9) - 1);
-        };
-        removeListeners();
-
-        if (MOBILE) {
-            mobileInput.addEventListener("input", mobileChangeInput);
-        } else {
-            document.addEventListener("keydown", changeInput);
-        }
-        ui.showMsg("Press the new input for \"" + optKeys[idx] + "\"");
-    }, false, true, -1, startPage);
-}
-
-function saveGame() {
-    save({
-        levels: levels,
-        player: player,
-        timeTracker: timeTracker,
-        referenced: referenced
-    });
-}
-
-function loadGame() {
-    load((loadData) => {
-        levels = loadData.levels;
-        level = levels[levels.currentLvl].level;
-        mobs = levels[levels.currentLvl].mobs;
-        items = levels[levels.currentLvl].items;
-        player = loadData.player;
-        timeTracker = loadData.timeTracker;
-        ui.hideDialog(); // loading from start menu keeps dialog open (in case user cancels), this ensures it's closed
-        start();
-    });
-}
-
-function posIsValid(pos) {
-    if (pos.length !== 2) return false;
-    for (let mob of mobs) {
-        if (coordsEq(mob.pos, pos)) return false;
-    }
-    for (let item of items) {
-        if (coordsEq(item.pos, pos) && item.blocksTravel) return false;
-    }
-    if (coordsEq(player.pos, pos) 
-        || pos[0] > level.length - 1 
-        || pos[1] > level[0].length - 1 
-        || pos[0] < 0 
-        || pos[1] < 0
-        || level[pos[0]][pos[1]] === levelTiles.wall
-        || level[pos[0]][pos[1]] === levelTiles.seeThroughWall
-        || level[pos[0]][pos[1]] === levelTiles.transparentBgWall
-    ) {
-        return false;
-    }
-    return true;
 }
 
 function tryFireEvent(type, entity) {
@@ -282,50 +126,6 @@ function tryFireEvent(type, entity) {
         events[type][entity](ui, currentState);
     } else if (events[type] && events[type][entity.name]) {
         events[type][entity.name](entity, ui, currentState);
-    }
-}
-
-function changePlayerHealth(amount) {
-    let newHealth = player.health + amount;
-    if (newHealth < 1) {
-        gameOver("You take a fatal hit. You die...");
-        return;
-    }
-    if (newHealth > player.maxHealth) {
-        newHealth = player.maxHealth;
-    }
-    if (amount < 0) {
-        ui.showMsg("You are hit!");
-    } else if (amount > 0) {
-        if (player.health !== player.maxHealth) {
-            ui.showMsg("You feel better.");
-        }
-    }
-    player.health = newHealth;
-}
-
-function gameOver(msg) {
-    ui.showMsg(msg);
-    !options.TURN_BASED && clearInterval(turnInterval);
-    interruptAutoTravel = true;
-    removeListeners();
-    player.dead = true;
-    render.renderAll(player, levels, customRenders);
-    render.shotEffect(player.pos, player, levels, customRenders);
-
-    for (let key of Object.keys(keyIntervals)) {
-        clearInterval(keyIntervals[key]);
-        delete keyIntervals[key];
-    }
-}
-
-function updateInfo() {
-    const timeWord = options.TURN_BASED ? "\nTurn: " : "\nTime: ";
-    info.textContent = "Level: " + levels.currentLvl + timeWord + timeTracker.timer 
-                       + "\nHealth: " + player.health + "\nSelected action: " + action.actType + "\n";
-
-    if (timeTracker.turnsUntilShoot > 0 && action.actType === "shoot") {
-        info.textContent += "Cooldown: " + timeTracker.turnsUntilShoot;
     }
 }
 
@@ -388,10 +188,107 @@ function processTurn() {
     }
 }
 
+function setPause(val) {
+    if (options.TURN_BASED) return;
+    if (val && !setPause.paused) {
+        setPause.pauseNext = true; // pause at the end of next processTurn. done this way to prevent abuse
+    } else if (!val && !setPause.paused) {
+        setPause.pauseNext = false;
+    } else if (!val && setPause.paused) {
+        turnInterval = setInterval(() => processTurn(), options.TURN_DELAY);
+        setPause.paused = false;
+    }
+}
+
+function updateAfterAction() {
+    if (options.TURN_BASED) {
+        processTurn();
+    } else {
+        render.renderAll(player, levels, customRenders);
+    }
+}
+
 function mobDie(mob) {
     // delete all properties of mob, so all references to it recognize deletion
     for (let prop in mob) if (mob.hasOwnProperty(prop)) delete mob[prop];
     removeByReference(mobs, mob);
+}
+
+function changePlayerHealth(amount) {
+    let newHealth = player.health + amount;
+    if (newHealth < 1) {
+        gameOver("You take a fatal hit. You die...");
+        return;
+    }
+    if (newHealth > player.maxHealth) {
+        newHealth = player.maxHealth;
+    }
+    if (amount < 0) {
+        ui.showMsg("You are hit!");
+    } else if (amount > 0) {
+        if (player.health !== player.maxHealth) {
+            ui.showMsg("You feel better.");
+        }
+    }
+    player.health = newHealth;
+}
+
+
+// -------- MISC --------
+
+
+function saveGame() {
+    save({
+        levels: levels,
+        player: player,
+        timeTracker: timeTracker,
+        referenced: referenced
+    });
+}
+
+function loadGame() {
+    load((loadData) => {
+        levels = loadData.levels;
+        level = levels[levels.currentLvl].level;
+        mobs = levels[levels.currentLvl].mobs;
+        items = levels[levels.currentLvl].items;
+        player = loadData.player;
+        timeTracker = loadData.timeTracker;
+        ui.hideDialog(); // loading from start menu keeps dialog open (in case user cancels), this ensures it's closed
+        start();
+    });
+}
+
+function updateInfo() {
+    const timeWord = options.TURN_BASED ? "\nTurn: " : "\nTime: ";
+    info.textContent = "Level: " + levels.currentLvl + timeWord + timeTracker.timer 
+                       + "\nHealth: " + player.health + "\nSelected action: " + action.actType + "\n";
+
+    if (timeTracker.turnsUntilShoot > 0 && action.actType === "shoot") {
+        info.textContent += "Cooldown: " + timeTracker.turnsUntilShoot;
+    }
+}
+
+function posIsValid(pos) {
+    if (pos.length !== 2) return false;
+    for (let mob of mobs) {
+        if (coordsEq(mob.pos, pos)) return false;
+    }
+    for (let item of items) {
+        if (coordsEq(item.pos, pos) && item.blocksTravel) return false;
+    }
+    if (coordsEq(player.pos, pos) 
+        || pos[0] > level.length - 1 
+        || pos[1] > level[0].length - 1 
+        || pos[0] < 0 
+        || pos[1] < 0
+        || level[pos[0]][pos[1]] === levelTiles.wall
+        || level[pos[0]][pos[1]] === levelTiles.seeThroughWall
+        || level[pos[0]][pos[1]] === levelTiles.transparentBgWall
+    ) {
+        return false;
+    }
+    return true;
 }
 
 function hitCustomRenderEffect(obj) {
@@ -400,6 +297,277 @@ function hitCustomRenderEffect(obj) {
     render.renderAll(player, levels, customRenders);
     render.shotEffect(obj.pos, player, levels, customRenders);
 }
+
+function refer(obj) {
+    if (referenced.indexOf(obj) === -1) referenced.push(obj);
+    return obj;
+}
+
+
+// -------- DIALOGS --------
+
+
+function showStartDialog() {
+    ui.showDialog("Start", ["New game", "Load game", "Options", "Controls", "Save configs as default"], idx => {
+        switch (idx) {
+            case 0:
+                addMobs(levels);
+                addItems(levels);
+                start();
+                break;
+            case 1:
+                loadGame();
+                showStartDialog();
+                break;
+            case 2:
+                showOptionsDialog();
+                break;
+            case 3:
+                showControlsDialog();
+                break;
+            case 4:
+                localStorage.setItem("gameDefaultOptions", JSON.stringify(options));
+                ui.showMsg("Saved default options");
+                showStartDialog();
+                break;
+        }
+    }, false, true, 0);
+}
+
+function showOptionsDialog(startPage) {
+    const optKeys = [...Object.keys(options)];
+    removeByReference(optKeys, "CONTROLS");
+    const optList = [...optKeys];
+    
+    for (let i = 0; i < optList.length; i++) {
+        optList[i] += ": " + options[optList[i]];
+    }
+    ui.showDialog("Options", optList, idx => {
+        let opt = options[optKeys[idx]];
+
+        if (typeof opt === "number") {
+            let input = "";
+            const inputListener = e => {
+                if (e.key === "Escape") {
+                    input = "";
+                    document.removeEventListener("keydown", inputListener);
+                    ui.showMsg("");
+                    showOptionsDialog(ui.getPageForIdx(idx));
+                } else if (e.key === "Enter") {
+                    const val = Number(input);
+
+                    if (val > 10) {
+                        options[optKeys[idx]] = val;
+                    }
+                    input = "";
+                    document.removeEventListener("keydown", inputListener);
+                    ui.showMsg("");
+                    showOptionsDialog(ui.getPageForIdx(idx));
+                } else {
+                    input += e.key;
+                    ui.showMsg("New value: " + input);
+                }
+            };
+            document.addEventListener("keydown", inputListener);
+            ui.showMsg("Type the new value. Enter to accept and escape to cancel.");
+        } else if (typeof opt === "boolean") {
+            options[optKeys[idx]] = !opt;
+            showOptionsDialog(ui.getPageForIdx(idx));
+        }
+        render.changeOptions(options);
+    }, false, true, -1, startPage);
+}
+
+function showControlsDialog(startPage) {
+    const optKeys = [...Object.keys(options.CONTROLS)];
+    const optList = [...Object.keys(options.CONTROLS)];
+    
+    for (let i = 0; i < optList.length; i++) {
+        optList[i] += ": \"" + options.CONTROLS[optList[i]] + "\"";
+    }
+    ui.showDialog("Controls", optList, idx => {
+        const changeInput = e => {
+            ui.showMsg("");
+
+            for (let [key, val] of Object.entries(options.CONTROLS)) {
+                if ((val === e.key && key !== optKeys[idx])) {
+                    document.removeEventListener("keydown", changeInput);
+                    ui.showMsg("Error, \"" + e.key + "\" is already in use");
+                    showControlsDialog(ui.getPageForIdx(idx));
+                    return;
+                }
+            }
+            options.CONTROLS[optKeys[idx]] = e.key;
+            document.removeEventListener("keydown", changeInput);
+            showControlsDialog(ui.getPageForIdx(idx));
+        };
+        const mobileChangeInput = () => {
+            ui.showMsg("");
+
+            for (let [key, val] of Object.entries(options.CONTROLS)) {
+                if ((val === mobileInput.value && key !== optKeys[idx])) {
+                    mobileInput.removeEventListener("input", mobileChangeInput);
+                    ui.showMsg("Error, \"" + mobileInput.value + "\" is already in use");
+                    mobileInput.value = "";
+                    showControlsDialog(ui.getPageForIdx(idx));
+                    return;
+                }
+            }
+            options.CONTROLS[optKeys[idx]] = mobileInput.value.toLowerCase();
+            mobileInput.removeEventListener("input", mobileChangeInput);
+            mobileInput.value = "";
+            showControlsDialog(ui.getPageForIdx(idx));
+        };
+
+        if (MOBILE) {
+            mobileInput.addEventListener("input", mobileChangeInput);
+        } else {
+            document.addEventListener("keydown", changeInput);
+        }
+        ui.showMsg("Press the new input for \"" + optKeys[idx] + "\"");
+    }, false, true, -1, startPage);
+}
+
+function showPauseMenu() {
+    setPause(true);
+    ui.showDialog("Pause Menu", ["Save", "Load"], idx => {
+        switch (idx) {
+            case 0:
+                saveGame();
+                break;
+            case 1:
+                loadGame();
+                break;
+        }
+        setPause(false);
+    }, true, true);
+}
+
+
+// -------- LISTENERS --------
+
+
+function addListeners() {
+    document.addEventListener("keydown", keypressListener);
+    document.addEventListener("mousedown", clickListener);
+    menuListener.allowTravel = true;
+    infoForMobileFix.listenersActive = true;
+}
+
+function removeListeners() {
+    document.removeEventListener("keydown", keypressListener);
+    document.removeEventListener("mousedown", clickListener);
+    infoForMobileFix.listenersActive = false;
+    menuListener.allowTravel = false;
+
+    // remove currently active key repeats to disable continuing moving
+    for (let key of Object.keys(keyIntervals)) {
+        clearInterval(keyIntervals[key]);
+        delete keyIntervals[key];
+    }
+}
+
+async function setKeyRepeat(e) {
+    await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
+    
+    // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
+    if (keyIntervals[e.key] === "tempVal") {
+        keyIntervals[e.key] = setInterval(() => action(e.key, e.ctrlKey), options.TRAVEL_REPEAT_DELAY);
+    }
+}
+
+function keypressListener(e) {
+    if (Object.keys(keyIntervals).indexOf(e.key) !== -1) {
+        return;
+    }
+    const moveKeyList = [options.CONTROLS.BOTTOM_LEFT, options.CONTROLS.BOTTOM, options.CONTROLS.BOTTOM_RIGHT,
+                         options.CONTROLS.LEFT, options.CONTROLS.RIGHT, options.CONTROLS.TOP_LEFT, 
+                         options.CONTROLS.TOP, options.CONTROLS.TOP_RIGHT];
+
+    if (moveKeyList.indexOf(e.key) !== -1) {
+        keyIntervals[e.key] = "tempVal";
+        setKeyRepeat(e);
+        ui.showMsg("");
+    }
+    action(e.key, e.ctrlKey);
+}
+
+function clickListener(e) {
+    if (menu.style.display !== "none" && menu.style.display.length !== 0) {
+        menu.style.display = "none";
+        return;
+    }
+    if (e.target.id === "status" || e.target.id === "showInfoButton" || e.target.id === "travelButton" 
+        || e.target.dataset.ignoreClick || e.button !== 0 || action.inputType === "selectPos") return;
+    ui.showMsg("");
+    // get cursor position in relation to the player symbol and convert to drc
+    const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
+    const x = e.x - (rect.left + rect.width / 2);
+    const y = e.y - (rect.top + rect.height / 2);
+    const drc = pixelCoordsToDrc(y, x);
+    let doAutoTravel = false;
+    
+    if ((options.CTRL_CLICK_AUTOTRAVEL && e.ctrlKey) 
+        || (!options.CTRL_CLICK_AUTOTRAVEL && !e.ctrlKey)
+    ) {
+        doAutoTravel = true;
+    }
+    if (doAutoTravel) {
+        if (e.target.tagName !== "TD") return;
+        autoTravel(e.target.customProps.coords);
+    } else {
+        const newPos = player.pos.slice();
+        movePosToDrc(newPos, drc);
+        movePlayer(newPos);
+        updateAfterAction();
+    }
+}
+
+function menuListener(e) {
+    e.preventDefault();
+    if (e.target.tagName !== "TD") return;
+    menu.style.left = e.x + "px";
+    menu.style.top = e.y + "px";
+    menu.style.display = "block";
+    if (menuListener.allowTravel) {
+        travelButton.style.display = "block";
+        travelButton.onmousedown = () => {
+            autoTravel(e.target.customProps.coords);
+            menu.style.display = "none";
+        };
+    } else {
+        travelButton.style.display = "none";
+    }
+    showInfoButton.onmousedown = () => {
+        showPosInfo(e.target.customProps.infoKeys, ui);
+        menu.style.display = "none";
+    };
+}
+
+// function mouseStyleListener(e) {
+//     if (clickListener.actionType === "chooseDrc") {
+//         const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
+//         const x = e.x - (rect.left + rect.width / 2);
+//         const y = e.y - (rect.top + rect.height / 2);
+//         const drc = pixelCoordsToDrc(y, x);
+//         document.body.style.cursor = {
+//             1: "sw-resize",
+//             2: "s-resize",
+//             3: "se-resize",
+//             4: "w-resize",
+//             6: "e-resize",
+//             7: "nw-resize",
+//             8: "n-resize",
+//             9: "ne-resize",
+//         }[drc];
+//     } else if (document.body.style.cursor !== "default") {
+//         document.body.style.cursor = "default";
+//     }
+// }
+
+
+// -------- ACTIONS --------
+
 
 async function shoot(fromPos, drc, mobIsShooting) {
     const currLvl = levels.currentLvl;
@@ -464,6 +632,14 @@ async function shoot(fromPos, drc, mobIsShooting) {
     removeByReference(customRenders, obj);
 }
 
+function melee(drc) {
+    if (options.TURN_BASED) {
+        meleeTurnBased(drc);
+    } else {
+        meleeRealTime(drc);
+    }
+}
+
 function meleeTurnBased(drc) {
     let meleePos = player.pos.slice();
     movePosToDrc(meleePos, drc);
@@ -505,14 +681,6 @@ async function meleeRealTime(drc) {
     await new Promise(r => setTimeout(r, 300));
     removeByReference(customRenders, obj);
     render.renderAll(player, levels, customRenders);
-}
-
-function melee(drc) {
-    if (options.TURN_BASED) {
-        meleeTurnBased(drc);
-    } else {
-        meleeRealTime(drc);
-    }
 }
 
 function interact(drc) {
@@ -576,6 +744,42 @@ function movePlayer(newPos) {
     }
 }
 
+async function autoTravel(coords) {
+    const coordsList = [];
+    const lvl = levels.currentLvl;
+    const idx = autoTravelStack.length;
+    autoTravelStack.push(true);
+
+    for (let i = 0; i < idx; i++) {
+        autoTravelStack[i] = false; // stop previous autoTravels
+    }
+    interruptAutoTravel = false;
+    action.inputType = "autoMove";
+    bresenham(player.pos[0], player.pos[1], coords[0], coords[1], 
+            (y, x) => {
+                if (level[y] && isWall(level[y][x]) && level[y][x] !== levelTiles.fakeWall) {
+                    return "stop";
+                }
+                coordsList.push([y, x]);
+                return "ok";
+            }
+    );
+    coordsList.shift(); // first element is the player's start position
+
+    for (let coord of coordsList) {
+        // new coord may not be next to player if e.g. a mob blocks the way
+        if (!autoTravelStack[idx] || interruptAutoTravel || levels.currentLvl !== lvl || !isNextTo(player.pos, coord)) {
+            action.inputType = null;
+            return;
+        }
+        movePlayer(coord);
+        updateAfterAction();
+        await new Promise(r => setTimeout(r, options.AUTOTRAVEL_REPEAT_DELAY));
+    }
+    action.inputType = null;
+    autoTravelStack = [];
+}
+
 function pickup(alwaysDialog) {
     for (let i = 0; i < items.length; i++) {
         if (coordsEq(player.pos, items[i].pos)) {
@@ -634,26 +838,36 @@ function tryChangeLvl() {
     }
 }
 
-function showPauseMenu() {
-    setPause(true);
-    ui.showDialog("Pause Menu", ["Save", "Load"], idx => {
-        switch (idx) {
-            case 0:
-                saveGame();
-                break;
-            case 1:
-                loadGame();
-                break;
-        }
-        setPause(false);
-    }, true, true);
-}
+function selectPos(drc) {
+    let prevPos = selectPos.currentPos.slice();
 
-function updateAfterAction() {
-    if (options.TURN_BASED) {
-        processTurn();
-    } else {
-        render.renderAll(player, levels, customRenders);
+    switch (drc) {
+        case 4:
+        case 6:
+        case 8:
+        case 2:
+        case 7:
+        case 1:
+        case 9:
+        case 3:
+            movePosToDrc(selectPos.currentPos, drc);
+
+            if (!level[selectPos.currentPos[0]] 
+                || typeof level[selectPos.currentPos[0]][selectPos.currentPos[1]] === "undefined"
+            ) {
+                selectPos.currentPos = prevPos;
+            }
+            area[prevPos[0]][prevPos[1]].classList.remove("selected");
+            area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.add("selected");
+            break;
+        case options.CONTROLS.ENTER:
+            showPosInfo(area[selectPos.currentPos[0]][selectPos.currentPos[1]].customProps.infoKeys, ui);
+            break;
+        case options.CONTROLS.ESC:
+            ui.showMsg("");
+            area[prevPos[0]][prevPos[1]].classList.remove("selected");
+            action.inputType = null;
+            return;
     }
 }
 
@@ -786,208 +1000,4 @@ function action(key, ctrl) {
             return;
     }
     updateAfterAction();
-}
-
-async function autoTravel(coords) {
-    const coordsList = [];
-    const lvl = levels.currentLvl;
-    const idx = autoTravelStack.length;
-    autoTravelStack.push(true);
-
-    for (let i = 0; i < idx; i++) {
-        autoTravelStack[i] = false; // stop previous autoTravels
-    }
-    interruptAutoTravel = false;
-    action.inputType = "autoMove";
-    bresenham(player.pos[0], player.pos[1], coords[0], coords[1], 
-            (y, x) => {
-                if (level[y] && isWall(level[y][x]) && level[y][x] !== levelTiles.fakeWall) {
-                    return "stop";
-                }
-                coordsList.push([y, x]);
-                return "ok";
-            }
-    );
-    coordsList.shift(); // first element is the player's start position
-
-    for (let coord of coordsList) {
-        // new coord may not be next to player if e.g. a mob blocks the way
-        if (!autoTravelStack[idx] || interruptAutoTravel || levels.currentLvl !== lvl || !isNextTo(player.pos, coord)) {
-            action.inputType = null;
-            return;
-        }
-        movePlayer(coord);
-        updateAfterAction();
-        await new Promise(r => setTimeout(r, options.AUTOTRAVEL_REPEAT_DELAY));
-    }
-    action.inputType = null;
-    autoTravelStack = [];
-}
-
-function selectPos(drc) {
-    let prevPos = selectPos.currentPos.slice();
-
-    switch (drc) {
-        case 4:
-        case 6:
-        case 8:
-        case 2:
-        case 7:
-        case 1:
-        case 9:
-        case 3:
-            movePosToDrc(selectPos.currentPos, drc);
-
-            if (!level[selectPos.currentPos[0]] 
-                || typeof level[selectPos.currentPos[0]][selectPos.currentPos[1]] === "undefined"
-            ) {
-                selectPos.currentPos = prevPos;
-            }
-            area[prevPos[0]][prevPos[1]].classList.remove("selected");
-            area[selectPos.currentPos[0]][selectPos.currentPos[1]].classList.add("selected");
-            break;
-        case options.CONTROLS.ENTER:
-            showPosInfo(area[selectPos.currentPos[0]][selectPos.currentPos[1]].customProps.infoKeys, ui);
-            break;
-        case options.CONTROLS.ESC:
-            ui.showMsg("");
-            area[prevPos[0]][prevPos[1]].classList.remove("selected");
-            action.inputType = null;
-            return;
-    }
-}
-
-async function setKeyRepeat(e) {
-    await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
-    
-    // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
-    if (keyIntervals[e.key] === "tempVal") {
-        keyIntervals[e.key] = setInterval(() => action(e.key, e.ctrlKey), options.TRAVEL_REPEAT_DELAY);
-    }
-}
-
-function keypressListener(e) {
-    if (Object.keys(keyIntervals).indexOf(e.key) !== -1) {
-        return;
-    }
-    const moveKeyList = [options.CONTROLS.BOTTOM_LEFT, options.CONTROLS.BOTTOM, options.CONTROLS.BOTTOM_RIGHT,
-                         options.CONTROLS.LEFT, options.CONTROLS.RIGHT, options.CONTROLS.TOP_LEFT, 
-                         options.CONTROLS.TOP, options.CONTROLS.TOP_RIGHT];
-
-    if (moveKeyList.indexOf(e.key) !== -1) {
-        keyIntervals[e.key] = "tempVal";
-        setKeyRepeat(e);
-        ui.showMsg("");
-    }
-    action(e.key, e.ctrlKey);
-}
-
-function clickListener(e) {
-    if (menu.style.display !== "none" && menu.style.display.length !== 0) {
-        menu.style.display = "none";
-        return;
-    }
-    if (e.target.id === "status" || e.target.id === "showInfoButton" || e.target.id === "travelButton" 
-        || e.target.dataset.ignoreClick || e.button !== 0 || action.inputType === "selectPos") return;
-    ui.showMsg("");
-    // get cursor position in relation to the player symbol and convert to drc
-    const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
-    const x = e.x - (rect.left + rect.width / 2);
-    const y = e.y - (rect.top + rect.height / 2);
-    const drc = pixelCoordsToDrc(y, x);
-    let doAutoTravel = false;
-    
-    if ((options.CTRL_CLICK_AUTOTRAVEL && e.ctrlKey) 
-        || (!options.CTRL_CLICK_AUTOTRAVEL && !e.ctrlKey)
-    ) {
-        doAutoTravel = true;
-    }
-    if (doAutoTravel) {
-        if (e.target.tagName !== "TD") return;
-        autoTravel(e.target.customProps.coords);
-    } else {
-        const newPos = player.pos.slice();
-        movePosToDrc(newPos, drc);
-        movePlayer(newPos);
-        updateAfterAction();
-    }
-}
-
-function setPause(val) {
-    if (options.TURN_BASED) return;
-    if (val && !setPause.paused) {
-        setPause.pauseNext = true; // pause at the end of next processTurn. done this way to prevent abuse
-    } else if (!val && !setPause.paused) {
-        setPause.pauseNext = false;
-    } else if (!val && setPause.paused) {
-        turnInterval = setInterval(() => processTurn(), options.TURN_DELAY);
-        setPause.paused = false;
-    }
-}
-
-function menuListener(e) {
-    e.preventDefault();
-    if (e.target.tagName !== "TD") return;
-    menu.style.left = e.x + "px";
-    menu.style.top = e.y + "px";
-    menu.style.display = "block";
-    if (menuListener.allowTravel) {
-        travelButton.style.display = "block";
-        travelButton.onmousedown = () => {
-            autoTravel(e.target.customProps.coords);
-            menu.style.display = "none";
-        };
-    } else {
-        travelButton.style.display = "none";
-    }
-    showInfoButton.onmousedown = () => {
-        showPosInfo(e.target.customProps.infoKeys, ui);
-        menu.style.display = "none";
-    };
-}
-
-// function mouseStyleListener(e) {
-//     if (clickListener.actionType === "chooseDrc") {
-//         const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
-//         const x = e.x - (rect.left + rect.width / 2);
-//         const y = e.y - (rect.top + rect.height / 2);
-//         const drc = pixelCoordsToDrc(y, x);
-//         document.body.style.cursor = {
-//             1: "sw-resize",
-//             2: "s-resize",
-//             3: "se-resize",
-//             4: "w-resize",
-//             6: "e-resize",
-//             7: "nw-resize",
-//             8: "n-resize",
-//             9: "ne-resize",
-//         }[drc];
-//     } else if (document.body.style.cursor !== "default") {
-//         document.body.style.cursor = "default";
-//     }
-// }
-
-function addListeners() {
-    document.addEventListener("keydown", keypressListener);
-    document.addEventListener("mousedown", clickListener);
-    menuListener.allowTravel = true;
-    infoForMobileFix.listenersActive = true;
-}
-
-function removeListeners() {
-    document.removeEventListener("keydown", keypressListener);
-    document.removeEventListener("mousedown", clickListener);
-    infoForMobileFix.listenersActive = false;
-    menuListener.allowTravel = false;
-
-    // remove currently active key repeats to disable continuing moving
-    for (let key of Object.keys(keyIntervals)) {
-        clearInterval(keyIntervals[key]);
-        delete keyIntervals[key];
-    }
-}
-
-function refer(obj) {
-    if (referenced.indexOf(obj) === -1) referenced.push(obj);
-    return obj;
 }

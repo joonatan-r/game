@@ -1,7 +1,10 @@
 import { levelData, levelCharMap, levelTiles, infoTable } from "./levelData.js";
 
-export function initialize(levels, area, rendered) {
+export function initialize() {
     const table = document.getElementById("table");
+    const area = [];
+    const rendered = [];
+    let levels = {};
     let level = [[]];
     let yIdx = 0;
     let xIdx = 0;
@@ -131,6 +134,11 @@ export function initialize(levels, area, rendered) {
             }
         }
     }
+    return {
+        levels: levels,
+        area: area,
+        rendered: rendered
+    };
 }
 
 // Bresenham's algorithm, modified to work for all directions
