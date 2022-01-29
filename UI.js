@@ -185,16 +185,16 @@ export default class UI {
                 dialog.appendChild(escP);
                 escP.onclick = e => {
                     e.stopPropagation();
-                    onSelect(-1);
                     this.hideDialog();
+                    onSelect(-1);
                 };
             }
         }
         // i guess this doesnt need to be bound because it uses arrow function?
         this.dialogKeyListener = e => {
             if (allowEsc && e.key === options.CONTROLS.ESC) {
-                onSelect(-1);
                 this.hideDialog();
+                onSelect(-1);
                 return;
             }
             if (e.key === "ArrowLeft"

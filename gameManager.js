@@ -53,22 +53,12 @@ export default class GameManager {
     }
 
     tryFireEvent(type, entity) {
-        const currentState = {
-            items: this.items,
-            mobs: this.mobs,
-            levels: this.levels,
-            level: this.level,
-            player: this.player,
-            timeTracker: this.timeTracker,
-            setPause: this.setPause
-        };
-    
         if (typeof entity === "undefined" && events[type]) {
-            events[type](this.ui, currentState);
+            events[type](this);
         } else if (typeof entity === "string" && events[type] && events[type][entity]) {
-            events[type][entity](this.ui, currentState);
+            events[type][entity](this);
         } else if (events[type] && events[type][entity.name]) {
-            events[type][entity.name](entity, this.ui, currentState);
+            events[type][entity.name](entity, this);
         }
     }
 

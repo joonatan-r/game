@@ -2,33 +2,33 @@ import { levelTiles } from "./levelData.js";
 import { coordsEq, removeByReference } from "./util.js";
 
 const events = {
-    onStart: function(ui, currentState) {
-        if (currentState.timeTracker.timer === 0) {
-            currentState.setPause(true);
-            ui.showDialog("Hello, adventurer!", ["Continue"], () => {
-                currentState.setPause(false);
+    onStart: function(gm) {
+        if (gm.timeTracker.timer === 0) {
+            gm.setPause(true);
+            gm.ui.showDialog("Hello, adventurer!", ["Continue"], () => {
+                gm.setPause(false);
             });
         } else {
-            currentState.setPause(true);
-            ui.showDialog("Welcome back, adventurer!", ["Continue"], () => {
-                currentState.setPause(false);
+            gm.setPause(true);
+            gm.ui.showDialog("Welcome back, adventurer!", ["Continue"], () => {
+                gm.setPause(false);
             });
         }
     },
-    onMove: function(ui, currentState) {
-        const lvl = currentState.levels.currentLvl;
-        const playerPos = currentState.player.pos;
+    onMove: function(gm) {
+        const lvl = gm.levels.currentLvl;
+        const playerPos = gm.player.pos;
 
         if (lvl === "Start of uncharted") {
-            if (coordsEq(playerPos, [19, 23]) && currentState.level[19][23] === levelTiles.fakeWall) {
-                ui.showMsg("You find a hidden passage!");
-                currentState.level[19][23] = levelTiles.floor;
+            if (coordsEq(playerPos, [19, 23]) && gm.level[19][23] === levelTiles.fakeWall) {
+                gm.ui.showMsg("You find a hidden passage!");
+                gm.level[19][23] = levelTiles.floor;
             }
         }
     },
     onEnterLevel: {
-        "Start of uncharted": function(ui, currentState) {
-            const memorized = currentState.levels["Start of uncharted"].memorized;
+        "Start of uncharted": function(gm) {
+            const memorized = gm.levels["Start of uncharted"].memorized;
             let previouslyVisited = false;
 
             // TODO maybe improved way to check if previously visited
@@ -43,49 +43,49 @@ const events = {
                 if (previouslyVisited) break;
             }
             if (!previouslyVisited) {
-                currentState.setPause(true);
-                ui.showDialog("A great wall blocks the path. There seems to be only one closed gate.", ["Continue"], () => {
-                    currentState.setPause(false);
+                gm.setPause(true);
+                gm.ui.showDialog("A great wall blocks the path. There seems to be only one closed gate.", ["Continue"], () => {
+                    gm.setPause(false);
                 });
             }
         }
     },
     onInteract: {
-        "Scared Traveller": function(mob, ui, currentState) {
+        "Scared Traveller": function(mob, gm) {
             switch (mob.state) {
                 case 0:
-                    ui.showMsg("[" + mob.name + "]: Why are you here? Turn back while you still can!");
+                    gm.ui.showMsg("[" + mob.name + "]: Why are you here? Turn back while you still can!");
                     mob.state = 1;
                     break;
                 case 1:
-                    currentState.setPause(true);
-                    ui.showDialog("[" + mob.name + "]:\n\nSince you seem bent on going on, would you like to know something?", 
+                    gm.setPause(true);
+                    gm.ui.showDialog("[" + mob.name + "]:\n\nSince you seem bent on going on, would you like to know something?", 
                             ["Sure.", "No."], 
                             idx => {
                                 switch (idx) {
                                     case 0:
-                                        ui.showMsg("[" + mob.name + "]: I think there's something hidden in the area past the gate.");
+                                        gm.ui.showMsg("[" + mob.name + "]: I think there's something hidden in the area past the gate.");
                                         mob.state = 2;
                                         break;
                                     case 1:
-                                        ui.showMsg("[" + mob.name + "]: Fair enough.");
+                                        gm.ui.showMsg("[" + mob.name + "]: Fair enough.");
                                         mob.state = 2;
                                         break;
                                 }
-                                currentState.setPause(false);
+                                gm.setPause(false);
                             }
                     );
                     break;
                 case 2:
-                    ui.showMsg("[" + mob.name + "]: I gotta get out of here...");
+                    gm.ui.showMsg("[" + mob.name + "]: I gotta get out of here...");
                     break;
             }
         },
-        "a gate": function(item, ui, currentState) {
+        "a gate": function(item, gm) {
             let playerHasObject = false;
             let obj = null;
 
-            for (let invItem of currentState.player.inventory) {
+            for (let invItem of gm.player.inventory) {
                 if (invItem.name === "a weird object") {
                     playerHasObject = true;
                     obj = invItem;
@@ -93,25 +93,25 @@ const events = {
                 }
             }
             if (playerHasObject) {
-                ui.showMsg("The weird object in your hands glows brightly and disintegrates, and the gate opens!");
-                removeByReference(currentState.player.inventory, obj);
-                removeByReference(currentState.levels["Start of uncharted"].items, item);
+                gm.ui.showMsg("The weird object in your hands glows brightly and disintegrates, and the gate opens!");
+                removeByReference(gm.player.inventory, obj);
+                removeByReference(gm.levels["Start of uncharted"].items, item);
                 
                 // TODO: player can currently pick up all items, so could pick up the opened gate too.
                 
-                // currentState.levels["Start of uncharted"].items.push({
+                // gm.levels["Start of uncharted"].items.push({
                 //     name: "an opened gate",
                 //     symbol: "#",
                 //     pos: [11, 17]
                 // });
             } else {
-                ui.showMsg("You seem to need something to open this gate.");
+                gm.ui.showMsg("You seem to need something to open this gate.");
             }
         },
-        "a chest": function(item, ui, currentState) {
+        "a chest": function(item, gm) {
             let playerHasKey = false;
 
-            for (let invItem of currentState.player.inventory) {
+            for (let invItem of gm.player.inventory) {
                 if (invItem.name === "a key") {
                     playerHasKey = true;
                     break;
@@ -122,27 +122,27 @@ const events = {
             }
             switch (item.state) {
                 case 0:
-                    ui.showMsg("You try to loot " + item.name + ", but it's locked.");
+                    gm.ui.showMsg("You try to loot " + item.name + ", but it's locked.");
                     break;
                 case 1:
-                    ui.showMsg("You loot a diamond!");
-                    currentState.player.inventory.push({
+                    gm.ui.showMsg("You loot a diamond!");
+                    gm.player.inventory.push({
                         name: "a diamond",
                         symbol: "*"
                     });
                     item.state = 2;
                     break;
                 case 2:
-                    ui.showMsg("You try to loot " + item.name + ", but it's empty.");
+                    gm.ui.showMsg("You try to loot " + item.name + ", but it's empty.");
                     break;
             }
         },
-        "a strange device": function(item, ui, currentState) {
-            if (currentState.player.health === currentState.player.maxHealth) {
-                ui.showMsg("You get a strange feeling.");
+        "a strange device": function(item, gm) {
+            if (gm.player.health === gm.player.maxHealth) {
+                gm.ui.showMsg("You get a strange feeling.");
             } else {
-                currentState.player.health++;
-                ui.showMsg("You feel restored.");
+                gm.player.health++;
+                gm.ui.showMsg("You feel restored.");
             }
         }
     }
