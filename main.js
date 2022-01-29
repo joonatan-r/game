@@ -1,13 +1,11 @@
 import { levelTiles } from "./levelData.js";
-import { addMobs } from "./mobData.js";
-import { addItems } from "./itemData.js";
 import {
-    inputToDrc, isWall, movePosToDrc, removeByReference, 
-    pixelCoordsToDrc, showPosInfo, load, save
+    inputToDrc, isWall, movePosToDrc, pixelCoordsToDrc, getPosInfo
 } from "./util.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
 import GameManager from "./gameManager.js";
+import BuiltinDialogs from "./builtinDialogs.js";
 
 // TODO: improve show info, fix mob towards straight line to ignore see-through walls, 
 //       take multiple pages into account in pickup dialog
@@ -15,10 +13,6 @@ import GameManager from "./gameManager.js";
 // NOTE: save and load can handle member functions, currently not needed
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
 //       in each other must be done with "refer()" for saving to work properly
-
-
-// -------- INITIALIZING --------
-
 
 const menu = document.getElementById("clickMenu");
 const travelButton = document.getElementById("travelButton");
@@ -50,11 +44,8 @@ document.addEventListener("keyup", function(e) {
 });
 // document.addEventListener("mousemove", mouseStyleListener);
 
-showStartDialog();
-
-
-// -------- MISC --------
-
+const bd = new BuiltinDialogs(gm, start, (MOBILE && mobileInput));
+bd.showStartDialog();
 
 function start() {
     menuListener.allowTravel = true;
@@ -66,172 +57,6 @@ function start() {
     !options.TURN_BASED && (gm.turnInterval = setInterval(() => gm.processTurn(), options.TURN_DELAY));
     gm.tryFireEvent("onStart");
 }
-
-function saveGame() {
-    save({
-        levels: gm.levels,
-        player: gm.player,
-        timeTracker: gm.timeTracker,
-        referenced: gm.referenced
-    });
-}
-
-function loadGame() {
-    load((loadData) => {
-        gm.levels = loadData.levels;
-        gm.level = gm.levels[gm.levels.currentLvl].level;
-        gm.mobs = gm.levels[gm.levels.currentLvl].mobs;
-        gm.items = gm.levels[gm.levels.currentLvl].items;
-        gm.player = loadData.player;
-        gm.timeTracker = loadData.timeTracker;
-        gm.ui.hideDialog(); // loading from start menu keeps dialog open (in case user cancels), this ensures it's closed
-        start();
-    });
-}
-
-
-// -------- DIALOGS --------
-
-
-function showStartDialog() {
-    gm.ui.showDialog("Start", ["New game", "Load game", "Options", "Controls", "Save configs as default"], idx => {
-        switch (idx) {
-            case 0:
-                addMobs(gm.levels);
-                addItems(gm.levels);
-                start();
-                break;
-            case 1:
-                loadGame();
-                showStartDialog();
-                break;
-            case 2:
-                showOptionsDialog();
-                break;
-            case 3:
-                showControlsDialog();
-                break;
-            case 4:
-                localStorage.setItem("gameDefaultOptions", JSON.stringify(options));
-                gm.ui.showMsg("Saved default options");
-                showStartDialog();
-                break;
-        }
-    }, false, true, 0);
-}
-
-function showOptionsDialog(startPage) {
-    const optKeys = [...Object.keys(options)];
-    removeByReference(optKeys, "CONTROLS");
-    const optList = [...optKeys];
-    
-    for (let i = 0; i < optList.length; i++) {
-        optList[i] += ": " + options[optList[i]];
-    }
-    gm.ui.showDialog("Options", optList, idx => {
-        let opt = options[optKeys[idx]];
-
-        if (typeof opt === "number") {
-            let input = "";
-            const inputListener = e => {
-                if (e.key === "Escape") {
-                    input = "";
-                    document.removeEventListener("keydown", inputListener);
-                    gm.ui.showMsg("");
-                    showOptionsDialog(gm.ui.getPageForIdx(idx));
-                } else if (e.key === "Enter") {
-                    const val = Number(input);
-
-                    if (val > 10) {
-                        options[optKeys[idx]] = val;
-                    }
-                    input = "";
-                    document.removeEventListener("keydown", inputListener);
-                    gm.ui.showMsg("");
-                    showOptionsDialog(gm.ui.getPageForIdx(idx));
-                } else {
-                    input += e.key;
-                    gm.ui.showMsg("New value: " + input);
-                }
-            };
-            document.addEventListener("keydown", inputListener);
-            gm.ui.showMsg("Type the new value. Enter to accept and escape to cancel.");
-        } else if (typeof opt === "boolean") {
-            options[optKeys[idx]] = !opt;
-            showOptionsDialog(gm.ui.getPageForIdx(idx));
-        }
-        gm.render.changeOptions(options);
-    }, false, true, -1, startPage);
-}
-
-function showControlsDialog(startPage) {
-    const optKeys = [...Object.keys(options.CONTROLS)];
-    const optList = [...Object.keys(options.CONTROLS)];
-    
-    for (let i = 0; i < optList.length; i++) {
-        optList[i] += ": \"" + options.CONTROLS[optList[i]] + "\"";
-    }
-    gm.ui.showDialog("Controls", optList, idx => {
-        const changeInput = e => {
-            gm.ui.showMsg("");
-
-            for (let [key, val] of Object.entries(options.CONTROLS)) {
-                if ((val === e.key && key !== optKeys[idx])) {
-                    document.removeEventListener("keydown", changeInput);
-                    gm.ui.showMsg("Error, \"" + e.key + "\" is already in use");
-                    showControlsDialog(gm.ui.getPageForIdx(idx));
-                    return;
-                }
-            }
-            options.CONTROLS[optKeys[idx]] = e.key;
-            document.removeEventListener("keydown", changeInput);
-            showControlsDialog(gm.ui.getPageForIdx(idx));
-        };
-        const mobileChangeInput = () => {
-            gm.ui.showMsg("");
-
-            for (let [key, val] of Object.entries(options.CONTROLS)) {
-                if ((val === mobileInput.value && key !== optKeys[idx])) {
-                    mobileInput.removeEventListener("input", mobileChangeInput);
-                    gm.ui.showMsg("Error, \"" + mobileInput.value + "\" is already in use");
-                    mobileInput.value = "";
-                    showControlsDialog(gm.ui.getPageForIdx(idx));
-                    return;
-                }
-            }
-            options.CONTROLS[optKeys[idx]] = mobileInput.value.toLowerCase();
-            mobileInput.removeEventListener("input", mobileChangeInput);
-            mobileInput.value = "";
-            showControlsDialog(gm.ui.getPageForIdx(idx));
-        };
-
-        if (MOBILE) {
-            mobileInput.addEventListener("input", mobileChangeInput);
-        } else {
-            document.addEventListener("keydown", changeInput);
-        }
-        gm.ui.showMsg("Press the new input for \"" + optKeys[idx] + "\"");
-    }, false, true, -1, startPage);
-}
-
-function showPauseMenu() {
-    gm.setPause(true);
-    gm.ui.showDialog("Pause Menu", ["Save", "Load"], idx => {
-        switch (idx) {
-            case 0:
-                saveGame();
-                break;
-            case 1:
-                loadGame();
-                break;
-        }
-        gm.setPause(false);
-    }, true, true);
-}
-
-
-// -------- LISTENERS --------
-
 
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
@@ -325,7 +150,7 @@ function menuListener(e) {
         travelButton.style.display = "none";
     }
     showInfoButton.onmousedown = () => {
-        showPosInfo(e.target.customProps.infoKeys, gm.ui);
+        gm.ui.showMsg(getPosInfo(e.target.customProps.infoKeys));
         menu.style.display = "none";
     };
 }
@@ -350,9 +175,6 @@ function menuListener(e) {
 //         document.body.style.cursor = "default";
 //     }
 // }
-
-
-// -------- ACTIONS --------
 
 function action(key, ctrl) {
     switch(gm.inputType) {
@@ -423,7 +245,7 @@ function action(key, ctrl) {
             }
             break;
         case options.CONTROLS.ESC:
-            showPauseMenu();
+            bd.showPauseMenu();
             return;
         case options.CONTROLS.SHOOT:
             gm.actType = "shoot";

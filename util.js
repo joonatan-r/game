@@ -304,7 +304,7 @@ export function pixelCoordsToDrc(y, x) {
     }
 }
 
-export function showPosInfo(infoKeys, ui) {
+export function getPosInfo(infoKeys) {
     let msg = "";
 
     if (!infoKeys.length) {
@@ -319,8 +319,7 @@ export function showPosInfo(infoKeys, ui) {
         }
     }
     if (msg === "") msg = "No info\n";
-    msg = msg.slice(0, -1)
-    ui.showMsg(msg);
+    return msg.slice(0, -1);
 }
 
 export function getCoordsNextTo(pos) {

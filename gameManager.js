@@ -6,8 +6,8 @@ import options from "./options.js";
 import Renderer from "./render.js";
 import UI from "./UI.js";
 import {
-    bresenham, coordsEq, initialize, isNextTo, isWall, movePosToDrc, 
-    projectileFromDrc, removeByReference, showPosInfo 
+    bresenham, coordsEq, getPosInfo, initialize, isNextTo, isWall, movePosToDrc, 
+    projectileFromDrc, removeByReference 
 } from "./util.js";
 
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
@@ -528,7 +528,7 @@ export default class GameManager {
                 this.area[this.selectPos.currentPos[0]][this.selectPos.currentPos[1]].classList.add("selected");
                 break;
             case options.CONTROLS.ENTER:
-                showPosInfo(this.area[this.selectPos.currentPos[0]][this.selectPos.currentPos[1]].customProps.infoKeys, this.ui);
+                this.ui.showMsg(getPosInfo(this.area[this.selectPos.currentPos[0]][this.selectPos.currentPos[1]].customProps.infoKeys));
                 break;
             case options.CONTROLS.ESC:
                 this.ui.showMsg("");
