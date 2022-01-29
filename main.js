@@ -110,13 +110,30 @@ function clickListener(e) {
     }
     if (e.target.id === "status" || e.target.id === "showInfoButton" || e.target.id === "travelButton" 
         || e.target.dataset.ignoreClick || e.button !== 0 || gm.inputType === "selectPos") return;
-    gm.ui.showMsg("");
     // get cursor position in relation to the player symbol and convert to drc
     const rect = gm.area[gm.player.pos[0]][gm.player.pos[1]].getBoundingClientRect();
     const x = e.x - (rect.left + rect.width / 2);
     const y = e.y - (rect.top + rect.height / 2);
     const drc = pixelCoordsToDrc(y, x);
     let doAutoTravel = false;
+    
+    if (e.altKey) {
+        switch (gm.actType) {
+            case "shoot":
+                if (gm.timeTracker.turnsUntilShoot === 0) {
+                    gm.shoot(gm.player.pos, drc);
+                }
+                break;
+            case "melee":
+                gm.melee(drc);
+                break;
+            case "interact":
+                gm.interact(drc);
+                break;
+        }
+        return;
+    }
+    gm.ui.showMsg("");
     
     if ((options.CTRL_CLICK_AUTOTRAVEL && e.ctrlKey) 
         || (!options.CTRL_CLICK_AUTOTRAVEL && !e.ctrlKey)

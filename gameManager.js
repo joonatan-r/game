@@ -415,17 +415,20 @@ export default class GameManager {
         }
         this.interruptAutoTravel = false;
         this.inputType = "autoMove";
-        bresenham(this.player.pos[0], this.player.pos[1], coords[0], coords[1], 
-                (y, x) => {
-                    if (this.level[y] && isWall(this.level[y][x]) && this.level[y][x] !== levelTiles.fakeWall) {
-                        return "stop";
-                    }
-                    coordsList.push([y, x]);
-                    return "ok";
-                }
-        );
-        coordsList.shift(); // first element is the player's start position
-    
+        const placeHolderPlayer = { pos: this.player.pos.slice() };
+        let currCoords = [];
+        let maxIters = 50;
+        
+        while (!coordsEq(currCoords, coords) && maxIters--) {
+            movingAIs["towardsPos"](placeHolderPlayer, coords, this.posIsValid, this.level);
+
+            if (coordsEq(currCoords, placeHolderPlayer.target)) {
+                break;
+            }
+            placeHolderPlayer.pos = placeHolderPlayer.target.slice();
+            currCoords = placeHolderPlayer.target;
+            coordsList.push(currCoords);
+        }
         for (let coord of coordsList) {
             // new coord may not be next to player if e.g. a mob blocks the way
             if (!this.autoTravelStack[idx] || this.interruptAutoTravel || this.levels.currentLvl !== lvl || !isNextTo(this.player.pos, coord)) {
