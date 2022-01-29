@@ -278,12 +278,15 @@ export default class GameManager {
                 || this.level[bulletPos[0]][bulletPos[1]] === levelTiles.wall
                 || this.level[bulletPos[0]][bulletPos[1]] === levelTiles.transparentBgWall
             ) {
-                if (options.TURN_BASED) {
-                    removeByReference(this.customRenders, obj);
+                removeByReference(this.customRenders, obj);
+
+                if (!options.TURN_BASED) {
+                    this.render.renderAll(this.player, this.levels, this.customRenders);
+                } else {
                     !this.player.dead && this.addListeners();
                     !mobIsShooting && this.processTurn();
                 }       
-                break;
+                return;
             }
             if (this.rendered[bulletPos[0]][bulletPos[1]]) {
                 this.area[bulletPos[0]][bulletPos[1]].textContent = icon;

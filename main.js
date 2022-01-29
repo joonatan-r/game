@@ -44,7 +44,7 @@ document.addEventListener("keyup", function(e) {
 });
 // document.addEventListener("mousemove", mouseStyleListener);
 
-const bd = new BuiltinDialogs(gm, start, (MOBILE && mobileInput));
+const bd = new BuiltinDialogs(gm, start, removeListeners, (MOBILE && mobileInput));
 bd.showStartDialog();
 
 function start() {

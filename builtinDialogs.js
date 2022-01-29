@@ -4,9 +4,10 @@ import options from "./options.js";
 import { load, removeByReference, save } from "./util.js";
 
 export default class BuiltinDialogs {
-    constructor(gm, start, mobileInput) {
+    constructor(gm, start, removeListeners, mobileInput) {
         this.gm = gm;
         this.start = start;
+        this.removeListeners = removeListeners;
         this.mobileInput = mobileInput;
     }
 
@@ -90,9 +91,11 @@ export default class BuiltinDialogs {
                         this.showOptionsDialog(this.gm.ui.getPageForIdx(idx));
                     } else {
                         input += e.key;
+                        this.gm.ui.showMsg("");
                         this.gm.ui.showMsg("New value: " + input);
                     }
                 };
+                this.removeListeners();
                 document.addEventListener("keydown", inputListener);
                 this.gm.ui.showMsg("Type the new value. Enter to accept and escape to cancel.");
             } else if (typeof opt === "boolean") {
@@ -143,6 +146,7 @@ export default class BuiltinDialogs {
                 this.mobileInput.value = "";
                 this.showControlsDialog(this.gm.ui.getPageForIdx(idx));
             };
+            this.removeListeners();
     
             if (this.mobileInput) {
                 this.mobileInput.addEventListener("input", mobileChangeInput);
