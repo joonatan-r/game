@@ -48,7 +48,6 @@ const bd = new BuiltinDialogs(gm, start, removeListeners, (MOBILE && mobileInput
 bd.showStartDialog();
 
 function start() {
-    menuListener.allowTravel = true;
     document.addEventListener("contextmenu", menuListener);
     gm.updateInfo();
     gm.render.renderAll(gm.player, gm.levels, gm.customRenders);

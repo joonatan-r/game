@@ -7,6 +7,7 @@ import Renderer from "./render.js";
 import UI from "./UI.js";
 import {
     bresenham, coordsEq, getPosInfo, initialize, isNextTo, isWall, movePosToDrc, 
+    pixelCoordsToDrc, 
     projectileFromDrc, removeByReference 
 } from "./util.js";
 
@@ -36,6 +37,7 @@ export default class GameManager {
         this.player.health = this.player.maxHealth;
         this.player.inventory = [];
         this.player.pos = [9, 5];
+        this.player.image = 2;
         this.customRenders = []; // retain "animations", can also be damaging zones
         this.interruptAutoTravel = false;
         this.referenced = []; // for retaining object references when saving
@@ -355,10 +357,21 @@ export default class GameManager {
         }
         this.processTurn();
     }
+
+    resetMoveVisual() {
+        this.player.image = this.player.image.slice(0, -5); // change from "_move" to normal
+    }
     
     movePlayer(newPos) {
         if (!this.posIsValid(newPos)) return;
+
+        clearTimeout(this.playerVisualResetTimeout);
+        this.playerVisualResetTimeout = setTimeout(this.resetMoveVisual, options.TURN_DELAY);
+
+        // also works if new pos not next to current for some reason
+        const facing = pixelCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
         
+        this.player.image = facing + "_move";
         this.player.pos = newPos;
         this.tryFireEvent("onMove");
     

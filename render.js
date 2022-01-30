@@ -136,7 +136,7 @@ export default class Renderer {
         }
         if (!player.dead) {
             if (options.OBJ_IMG) {
-                this.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./img.png\"/>";
+                this.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./playerImages/player_" + player.image + ".png\"/>";
             } else {
                 this.area[player.pos[0]][player.pos[1]].textContent = "@";
             }
