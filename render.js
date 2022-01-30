@@ -38,24 +38,12 @@ export default class Renderer {
                 this.areaCache[i][j] = "";
             }
         }
-        let loaded = 0;
-        const nbrOfImgs = 38;
-        const cb = img => {
-            tempDiv.style.backgroundImage = "url(\"" + img.src + "\")";
-            loaded++;
-            if (loaded === nbrOfImgs) document.body.removeChild(tempDiv);
-        };
-        const tempDiv = document.createElement("div");
-        document.body.appendChild(tempDiv);
-
         for (let i = 1; i <= 9; i++) {
             if (i === 5) continue;
             const img = new Image();
             const img2 = new Image();
             img.src = "./playerImages/player_" + i + ".png";
-            img.src = "./mobImages/mob_" + i + ".png";
-            img.onload = () => cb(img);
-            img2.onload = () => cb(img2);
+            img2.src = "./mobImages/mob_" + i + ".png";
             this.imageCache.push(img, img2);
         }
         for (let i = 1; i <= 9; i++) {
@@ -63,9 +51,7 @@ export default class Renderer {
             const img = new Image();
             const img2 = new Image();
             img.src = "./playerImages/player_" + i + "_move.png";
-            img.src = "./mobImages/mob_" + i + "_move.png";
-            img.onload = () => cb(img);
-            img2.onload = () => cb(img2);
+            img2.src = "./mobImages/mob_" + i + "_move.png";
             this.imageCache.push(img, img2);
         }
     }
