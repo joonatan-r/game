@@ -44,6 +44,7 @@ export default class GameManager {
         this.autoTravelStack = []; // used to cancel previous autoTravels when there is a new one
         this.actType = "shoot";
         this.inputType = null;
+        this.mobsUsingVisualTimeout = []; // store mobs whose img should be updated after moving
 
         for (let obj = this; obj; obj = Object.getPrototypeOf(obj)){
             for (let name of Object.getOwnPropertyNames(obj)){
@@ -133,7 +134,11 @@ export default class GameManager {
             if (mob.isShooter && mob.straightLineToTargetDrc) {
                 this.shoot(mob.pos, mob.straightLineToTargetDrc, true);
             } else {
+                // also works if new pos not next to current for some reason
+                const facing = pixelCoordsToDrc(mob.target[0] - mob.pos[0], mob.target[1] - mob.pos[1]);
                 mob.pos = [mob.target[0], mob.target[1]];
+                mob.image = facing + "_move";
+                this.mobsUsingVisualTimeout.push(mob);
     
                 for (let obj of this.customRenders) {
                     if (coordsEq(mob.pos, obj.pos) && obj.damageMobs) {
@@ -147,6 +152,14 @@ export default class GameManager {
                 }
             }
         }
+        clearTimeout(this.mobVisualTimeout);
+        this.mobVisualTimeout = setTimeout(() => {
+            for (let i = this.mobsUsingVisualTimeout.length - 1; i >= 0; i--) {
+                const mob = this.mobsUsingVisualTimeout[i];
+                if (mob.image) mob.image = mob.image.slice(0, -5); // change from "_move" to normal
+                this.mobsUsingVisualTimeout.splice(i, 1);
+            }
+        }, 100);
         this.render.renderAll(this.player, this.levels, this.customRenders);
     
         if (options.INTERRUPT_AUTOTRAVEL_IF_MOBS) {
@@ -364,13 +377,10 @@ export default class GameManager {
     
     movePlayer(newPos) {
         if (!this.posIsValid(newPos)) return;
-
-        clearTimeout(this.playerVisualResetTimeout);
-        this.playerVisualResetTimeout = setTimeout(this.resetMoveVisual, 100);
-
+        clearTimeout(this.player.moveVisualTimeout);
+        this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, 100);
         // also works if new pos not next to current for some reason
         const facing = pixelCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
-        
         this.player.image = facing + "_move";
         this.player.pos = newPos;
         this.tryFireEvent("onMove");
