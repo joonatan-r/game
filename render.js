@@ -22,6 +22,7 @@ export default class Renderer {
         this.rendered = rendered;
         this.areaCache = [];
         this.edges = [];
+        this.imageCache = [];
 
         if (options.USE_DOTS) {
             this.tileConversion[levelTiles.floor] = "\u00B7";
@@ -35,6 +36,18 @@ export default class Renderer {
                 }
                 this.areaCache[i][j] = "";
             }
+        }
+        for (let i = 1; i <= 9; i++) {
+            if (i === 5) continue;
+            const img = new Image();
+            img.src = "./playerImages/player_" + i + ".png";
+            this.imageCache.push(img);
+        }
+        for (let i = 1; i <= 9; i++) {
+            if (i === 5) continue;
+            const img = new Image();
+            img.src = "./playerImages/player_" + i + "_move.png";
+            this.imageCache.push(img);
         }
     }
 
@@ -85,6 +98,7 @@ export default class Renderer {
                     selectionPos = [i, j];
                 }
                 this.area[i][j].className = "hidden";
+                this.area[i][j].style.backgroundImage !== "none" && (this.area[i][j].style.backgroundImage = "none");
                 this.area[i][j].customProps.infoKeys = [];
             }
         }
@@ -136,7 +150,8 @@ export default class Renderer {
         }
         if (!player.dead) {
             if (options.OBJ_IMG) {
-                this.area[player.pos[0]][player.pos[1]].innerHTML = "<img src=\"./playerImages/player_" + player.image + ".png\"/>";
+                this.area[player.pos[0]][player.pos[1]].style.backgroundImage = "url(\"./playerImages/player_" + player.image + ".png\")";
+                this.area[player.pos[0]][player.pos[1]].style.backgroundSize = "23px 23px";
             } else {
                 this.area[player.pos[0]][player.pos[1]].textContent = "@";
             }

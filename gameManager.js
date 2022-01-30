@@ -366,7 +366,7 @@ export default class GameManager {
         if (!this.posIsValid(newPos)) return;
 
         clearTimeout(this.playerVisualResetTimeout);
-        this.playerVisualResetTimeout = setTimeout(this.resetMoveVisual, options.TURN_DELAY);
+        this.playerVisualResetTimeout = setTimeout(this.resetMoveVisual, 100);
 
         // also works if new pos not next to current for some reason
         const facing = pixelCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
