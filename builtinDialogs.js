@@ -1,6 +1,6 @@
 import { addItems } from "./itemData.js";
 import { addMobs } from "./mobData.js";
-import options from "./options.js";
+import options, { controlNameMap, optionNameMap } from "./options.js";
 import { load, removeByReference, save } from "./util.js";
 
 export default class BuiltinDialogs {
@@ -63,10 +63,10 @@ export default class BuiltinDialogs {
     showOptionsDialog(startPage) {
         const optKeys = [...Object.keys(options)];
         removeByReference(optKeys, "CONTROLS");
-        const optList = [...optKeys];
+        const optList = optKeys.map(k => optionNameMap[k]);
         
         for (let i = 0; i < optList.length; i++) {
-            optList[i] += ": " + options[optList[i]];
+            optList[i] += ": " + options[optKeys[i]];
         }
         this.gm.ui.showDialog("Options", optList, idx => {
             let opt = options[optKeys[idx]];
@@ -108,10 +108,10 @@ export default class BuiltinDialogs {
     
     showControlsDialog(startPage) {
         const optKeys = [...Object.keys(options.CONTROLS)];
-        const optList = [...Object.keys(options.CONTROLS)];
+        const optList = optKeys.map(k => controlNameMap[k]);
         
         for (let i = 0; i < optList.length; i++) {
-            optList[i] += ": \"" + options.CONTROLS[optList[i]] + "\"";
+            optList[i] += ": \"" + options.CONTROLS[optKeys[i]] + "\"";
         }
         this.gm.ui.showDialog("Controls", optList, idx => {
             const changeInput = e => {

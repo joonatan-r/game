@@ -41,4 +41,48 @@ const options = {
     },
 };
 
+export const optionNameMap = {
+    USE_BG_IMG: "Show background image",
+    USE_DOTS: "Display dots on floor tiles",
+    OBJ_BG: "Show black background for objects",
+    OBJ_IMG: "Show images for objects instead of symbols",
+    SHOW_MEMORIZED: "Show previously seen tiles",
+    GRAY_MEMORIZED: "Gray previously seen tiles",
+    TURN_BASED: "Use turn based system instead of realtime",
+    TURN_DELAY: "Realtime cycles update speed (ms)",
+    CTRL_CLICK_AUTOTRAVEL: "Autotravel on ctrl click, travel in direction on normal click (false=flipped)",
+    INTERRUPT_AUTOTRAVEL_IF_MOBS: "Interrupt autotravel if a hostile mob is seen",
+    TRAVEL_REPEAT_START_DELAY: "Delay before holding direction starts repeating (ms)",
+    TRAVEL_REPEAT_DELAY: "Delay between moves when holding direction (ms)",
+    AUTOTRAVEL_REPEAT_DELAY: "Delay between autotravel moves (ms)"
+};
+
+export const controlNameMap = {
+    ESC: "Escape/cancel",
+    ENTER: "Enter",
+    SHOOT: "Shoot",
+    HISTORY: "Show history",
+    INVENTORY: "Show inventory",
+    MELEE: "Melee",
+    INTERACT: "Interact",
+    PICKUP: "Pickup",
+    INSPECT: "Inspect",
+    BOTTOM_LEFT: "Move bottom left",
+    BOTTOM: "Move bottom",
+    BOTTOM_RIGHT: "Move bottom right",
+    LEFT: "Move left",
+    RIGHT: "Move right",
+    TOP_LEFT: "Move top left",
+    TOP: "Move top",
+    TOP_RIGHT: "Move top right",
+    ACT_BOTTOM_LEFT: "Action bottom left",
+    ACT_BOTTOM: "Action bottom",
+    ACT_BOTTOM_RIGHT: "Action bottom right",
+    ACT_LEFT: "Action left",
+    ACT_RIGHT: "Action right",
+    ACT_TOP_LEFT: "Action top left",
+    ACT_TOP: "Action top",
+    ACT_TOP_RIGHT: "Action top right"
+};
+
 export default options;
