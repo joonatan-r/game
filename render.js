@@ -155,15 +155,17 @@ export default class Renderer {
         }
         if (!player.dead) {
             if (options.OBJ_IMG) {
+                this.area[player.pos[0]][player.pos[1]].textContent = "";
                 this.area[player.pos[0]][player.pos[1]].style.backgroundImage = "url(\"./playerImages/player_" + player.image + ".png\")";
                 removeByReference(this.imgCoordsToDelete, this.area[player.pos[0]][player.pos[1]]);
             } else {
                 this.area[player.pos[0]][player.pos[1]].textContent = "@";
-            }
-            if (options.OBJ_BG) {
-                this.area[player.pos[0]][player.pos[1]].className = "player obj-bg"
-            } else {
-                this.area[player.pos[0]][player.pos[1]].className = "player";
+                
+                if (options.OBJ_BG) {
+                    this.area[player.pos[0]][player.pos[1]].className = "player obj-bg"
+                } else {
+                    this.area[player.pos[0]][player.pos[1]].className = "player";
+                }
             }
             this.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
         }
@@ -171,6 +173,7 @@ export default class Renderer {
             if (this.rendered[mob.pos[0]][mob.pos[1]]) {
                 if (options.OBJ_IMG) {
                     if (!mob.image) mob.image = 2;
+                    this.area[mob.pos[0]][mob.pos[1]].textContent = "";
                     this.area[mob.pos[0]][mob.pos[1]].style.backgroundImage = "url(\"./mobImages/mob_" + mob.image + ".png\")";
                     removeByReference(this.imgCoordsToDelete, this.area[mob.pos[0]][mob.pos[1]]);
                 } else {
