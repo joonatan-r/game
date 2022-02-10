@@ -91,96 +91,129 @@ export default class Renderer {
         let visitedTTypeWall = false;
         let selectionPos = null; // used to not erase selection marker on pos when inspecting
     
+        // TODO could still optimize having items etc in areaCache and not overwriting
+
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
-                this.rendered[i][j] = false;
-                this.areaCache[i][j] = this.area[i][j].textContent;
-                this.area[i][j].firstChild 
-                    && this.area[i][j].firstChild.tagName === "IMG"
-                    && this.area[i][j].removeChild(this.area[i][j].firstChild);
+                const areaPos = this.area[i][j];
 
-                if (this.area[i][j].classList.contains("selected")) {
+                this.rendered[i][j] = false;
+                this.areaCache[i][j] = areaPos.textContent;
+                areaPos.firstChild 
+                    && areaPos.firstChild.tagName === "IMG"
+                    && areaPos.removeChild(areaPos.firstChild);
+
+                if (areaPos.classList.contains("selected")) {
                     selectionPos = [i, j];
                 }
-                this.area[i][j].className = "hidden";
-                this.area[i][j].style.backgroundImage !== "none" && (this.imgCoordsToDelete.push(this.area[i][j]));
-                this.area[i][j].customProps.infoKeys = [];
+                areaPos.className = "hidden";
+                areaPos.style.backgroundImage !== "none" && (this.imgCoordsToDelete.push(areaPos));
+                areaPos.customProps.infoKeys = [];
             }
         }
         for (let coords of this.edges) {
             bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
-                if (level[y][x] === levelTiles.transparentBgWall) {
+                const levelTile = level[y][x];
+
+                if (levelTile === levelTiles.transparentBgWall) {
                     visitedTTypeWall = true;
                 } else if (visitedTTypeWall) {
                     visitedTTypeWall = false;
                     return "stop";
                 }
                 if (this.rendered[y][x]) {
-                    return blocksSight(level[y][x]) ? "stop" : "ok";
+                    return blocksSight(levelTile) ? "stop" : "ok";
                 }
-                if (this.getTileToRender(level[y][x]) !== this.areaCache[y][x]) {
-                    this.area[y][x].textContent = this.getTileToRender(level[y][x]);
+                const tileToRender = this.getTileToRender(levelTile);
+                const areaPos = this.area[y][x];
+
+                if (tileToRender !== this.areaCache[y][x]) {
+                    areaPos.textContent = tileToRender;
                 }
-                this.area[y][x].customProps.infoKeys.unshift(level[y][x]);
-                !blocksSight(level[y][x]) && (this.area[y][x].className = "shown");
+                areaPos.customProps.infoKeys.unshift(levelTile);
+                !blocksSight(levelTile) && (areaPos.className = "shown");
                 this.rendered[y][x] = true;
-                return blocksSight(level[y][x]) ? "stop" : "ok";
+                return blocksSight(levelTile) ? "stop" : "ok";
             });
         }
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
-                if (this.rendered[i][j] && (memorized[i][j] === "" || memorized[i][j] !== level[i][j])) {
-                    memorized[i][j] = level[i][j];
-                } else if (!this.rendered[i][j] && options.SHOW_MEMORIZED && memorized[i][j] !== "") {
-                    this.area[i][j].textContent = this.getTileToRender(memorized[i][j]);
+                const levelTile = level[i][j];
+                const areaPos = this.area[i][j];
+                const posRendered = this.rendered[i][j];
+                const posMemorized = memorized[i][j];
 
-                    if (!blocksSight(memorized[i][j])) {
+                if (posRendered && (posMemorized === "" || posMemorized !== levelTile)) {
+                    memorized[i][j] = levelTile;
+                } else if (!posRendered && options.SHOW_MEMORIZED && posMemorized !== "") {
+                    const tileToRender = this.getTileToRender(posMemorized);
+
+                    if (tileToRender !== this.areaCache[i][j]) {
+                        areaPos.textContent = tileToRender;
+                    }
+                    if (!blocksSight(posMemorized)) {
                         if (options.GRAY_MEMORIZED) {
-                            this.area[i][j].className = "mem";
+                            areaPos.className = "mem";
                         } else {
-                            this.area[i][j].className = "";
+                            areaPos.className = "";
                         }
                     }
-                } else if (!this.rendered[i][j]) {
-                    this.area[i][j].textContent = "";
+                } else if (!posRendered && areaPos.textContent !== "") {
+                    areaPos.textContent = "";
                 }
             }
         }
         for (let item of items) {
             if (this.rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
-                this.area[item.pos[0]][item.pos[1]].textContent = item.symbol;
-                options.OBJ_BG && (this.area[item.pos[0]][item.pos[1]].className = "obj-bg");
-                this.area[item.pos[0]][item.pos[1]].customProps.infoKeys.unshift(item.name);
+                const areaPos = this.area[item.pos[0]][item.pos[1]];
+                areaPos.textContent = item.symbol;
+                options.OBJ_BG && (areaPos.className = "obj-bg");
+                areaPos.customProps.infoKeys.unshift(item.name);
             }
         }
         if (!player.dead) {
+            const playerPos = this.area[player.pos[0]][player.pos[1]];
+
             if (options.OBJ_IMG) {
-                this.area[player.pos[0]][player.pos[1]].textContent = "";
-                this.area[player.pos[0]][player.pos[1]].style.backgroundImage = "url(\"./playerImages/player_" + player.image + ".png\")";
-                removeByReference(this.imgCoordsToDelete, this.area[player.pos[0]][player.pos[1]]);
+                const imageToUse = "url(\"./playerImages/player_" + player.image + ".png\")";
+
+                if (playerPos.textContent !== "") {
+                    playerPos.textContent = "";
+                }
+                if (playerPos.style.backgroundImage !== imageToUse) {
+                    playerPos.style.backgroundImage = imageToUse;
+                }
+                removeByReference(this.imgCoordsToDelete, playerPos);
             } else {
-                this.area[player.pos[0]][player.pos[1]].textContent = "@";
+                playerPos.textContent = "@";
                 
                 if (options.OBJ_BG) {
-                    this.area[player.pos[0]][player.pos[1]].className = "player obj-bg"
+                    playerPos.className = "player obj-bg"
                 } else {
-                    this.area[player.pos[0]][player.pos[1]].className = "player";
+                    playerPos.className = "player";
                 }
             }
-            this.area[player.pos[0]][player.pos[1]].customProps.infoKeys.unshift("Player");
+            playerPos.customProps.infoKeys.unshift("Player");
         }
         for (let mob of mobs) {
             if (this.rendered[mob.pos[0]][mob.pos[1]]) {
+                const mobPos = this.area[mob.pos[0]][mob.pos[1]];
+
                 if (options.OBJ_IMG) {
-                    if (!mob.image) mob.image = 2;
-                    this.area[mob.pos[0]][mob.pos[1]].textContent = "";
-                    this.area[mob.pos[0]][mob.pos[1]].style.backgroundImage = "url(\"./mobImages/mob_" + mob.image + ".png\")";
-                    removeByReference(this.imgCoordsToDelete, this.area[mob.pos[0]][mob.pos[1]]);
+                    const imageToUse = "url(\"./mobImages/mob_" + (mob.image || 2) + ".png\")";
+
+                    if ( mobPos.textContent !== "") {
+                        mobPos.textContent = "";
+                    }
+                    if (mobPos.style.backgroundImage !== imageToUse) {
+                        mobPos.style.backgroundImage = imageToUse;
+                    }
+                    removeByReference(this.imgCoordsToDelete, mobPos);
                 } else {
-                    this.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
-                    options.OBJ_BG && (this.area[mob.pos[0]][mob.pos[1]].className = "obj-bg");
+                    mobPos.textContent = mob.symbol;
+                    options.OBJ_BG && (mobPos.className = "obj-bg");
                 }
-                this.area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
+                mobPos.customProps.infoKeys.unshift(mob.name);
             }
         }
         for (let obj of customRenders) {
@@ -195,12 +228,14 @@ export default class Renderer {
     
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
-                if (!isWall(level[i][j])) {
+                const levelTile = level[i][j];
+
+                if (!isWall(levelTile)) {
                     continue;
                 }
                 const classes = [];
 
-                if (!blocksSight(level[i][j]) && level[i][j] !== levelTiles.transparentBgWall) {
+                if (!blocksSight(levelTile) && levelTile !== levelTiles.transparentBgWall) {
                     if (options.USE_BG_IMG) {
                         classes.push("wall-s-bg");
                     } else {
@@ -220,7 +255,7 @@ export default class Renderer {
                     if (level[p.i] && (typeof level[p.i][p.j] !== "undefined")
                         && (this.rendered[p.i][p.j] || (options.SHOW_MEMORIZED && memorized[p.i][p.j]))
                         && (!isWall(level[p.i][p.j]) 
-                        || (blocksSight(level[i][j]) && !blocksSight(level[p.i][p.j])))
+                        || (blocksSight(levelTile) && !blocksSight(level[p.i][p.j])))
                     ) {
                         classes.push(p.side);
                     }
