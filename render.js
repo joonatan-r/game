@@ -178,8 +178,8 @@ export default class Renderer {
                     removeByReference(this.imgCoordsToDelete, this.area[mob.pos[0]][mob.pos[1]]);
                 } else {
                     this.area[mob.pos[0]][mob.pos[1]].textContent = mob.symbol;
+                    options.OBJ_BG && (this.area[mob.pos[0]][mob.pos[1]].className = "obj-bg");
                 }
-                options.OBJ_BG && (this.area[mob.pos[0]][mob.pos[1]].className = "obj-bg");
                 this.area[mob.pos[0]][mob.pos[1]].customProps.infoKeys.unshift(mob.name);
             }
         }
