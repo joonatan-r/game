@@ -117,6 +117,22 @@ export default class GameManager {
         this.timeTracker.timer++;
         if (this.timeTracker.turnsUntilShoot > 0) this.timeTracker.turnsUntilShoot--;
         this.updateInfo();
+        clearTimeout(this.mobVisualTimeout);
+        this.mobVisualTimeout = setTimeout(() => {
+            for (let i = this.mobsUsingVisualTimeout.length - 1; i >= 0; i--) {
+                const mob = this.mobsUsingVisualTimeout[i];
+
+                if (mob.image && mob.image.length > 1) {
+                    if (mob.image.length < 8) {
+                        mob.image = mob.image.slice(0, -5); // change from "_move" to normal
+                    } else {
+                        mob.image = mob.image.slice(0, -7); // change from "_2_move" to normal
+                    }
+                }
+                this.mobsUsingVisualTimeout.splice(i, 1);
+            }
+            this.render.renderAll(this.player, this.levels, this.customRenders);
+        }, 0.7 * options.TURN_DELAY);
     
         for (let mob of this.mobs) {
             if (!options.TURN_BASED && this.timeTracker.timer % mob.speedModulus < 1) {
@@ -136,8 +152,20 @@ export default class GameManager {
             } else {
                 // also works if new pos not next to current for some reason
                 const facing = pixelCoordsToDrc(mob.target[0] - mob.pos[0], mob.target[1] - mob.pos[1]);
+                const moveImage = facing + "_move";
+                const baseImage = facing;
+                const altMoveImage = facing + "_2_move";
+        
+                if (mob.image === moveImage || mob.image === altMoveImage) {
+                    mob.image = baseImage;
+                } else if (mob.prevMoveImage === altMoveImage) {
+                    mob.image = moveImage;
+                    mob.prevMoveImage = moveImage;
+                } else {
+                    mob.image = altMoveImage;
+                    mob.prevMoveImage = altMoveImage;
+                }
                 mob.pos = [mob.target[0], mob.target[1]];
-                mob.image = facing + "_move";
                 this.mobsUsingVisualTimeout.push(mob);
     
                 for (let obj of this.customRenders) {
@@ -152,14 +180,6 @@ export default class GameManager {
                 }
             }
         }
-        clearTimeout(this.mobVisualTimeout);
-        this.mobVisualTimeout = setTimeout(() => {
-            for (let i = this.mobsUsingVisualTimeout.length - 1; i >= 0; i--) {
-                const mob = this.mobsUsingVisualTimeout[i];
-                if (mob.image) mob.image = mob.image.slice(0, -5); // change from "_move" to normal
-                this.mobsUsingVisualTimeout.splice(i, 1);
-            }
-        }, 100);
         this.render.renderAll(this.player, this.levels, this.customRenders);
     
         if (options.INTERRUPT_AUTOTRAVEL_IF_MOBS) {
@@ -372,7 +392,14 @@ export default class GameManager {
     }
 
     resetMoveVisual() {
-        this.player.image = this.player.image.slice(0, -5); // change from "_move" to normal
+        if (this.player.image.length > 1) {
+            if (this.player.image.length < 8) {
+                this.player.image = this.player.image.slice(0, -5); // change from "_move" to normal
+            } else {
+                this.player.image = this.player.image.slice(0, -7); // change from "_2_move" to normal
+            }
+        }
+        this.render.renderAll(this.player, this.levels, this.customRenders);
     }
     
     movePlayer(newPos) {
@@ -381,7 +408,19 @@ export default class GameManager {
         this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, 100);
         // also works if new pos not next to current for some reason
         const facing = pixelCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
-        this.player.image = facing + "_move";
+        const moveImage = facing + "_move";
+        const baseImage = facing;
+        const altMoveImage = facing + "_2_move";
+
+        if (this.player.image === moveImage || this.player.image === altMoveImage) {
+            this.player.image = baseImage;
+        } else if (this.player.prevMoveImage === altMoveImage) {
+            this.player.image = moveImage;
+            this.player.prevMoveImage = moveImage;
+        } else {
+            this.player.image = altMoveImage;
+            this.player.prevMoveImage = altMoveImage;
+        }
         this.player.pos = newPos;
         this.tryFireEvent("onMove");
     
