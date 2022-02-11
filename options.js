@@ -2,7 +2,7 @@ const options = {
     USE_BG_IMG: true, // use the configured background images or colors for levels / always show black background
     USE_DOTS: false, // display dots in empty spaces / display nothing in empty spaces
     OBJ_BG: true, // display black background instead of the configured background in tiles that have a mob/item etc.
-    OBJ_IMG: false, // use image instead of text character for player/mobs etc.
+    OBJ_IMG: true, // use image instead of text character for player/mobs etc.
     SHOW_MEMORIZED: true, // display areas that you have seen before / display black where you can't see currently
     GRAY_MEMORIZED: true, // areas that can't be seen currently but are displayed because they have been seen before are grayed / not
     TURN_BASED: false, // in-game time only goes when you take action / in-game time goes on its own

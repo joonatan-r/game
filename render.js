@@ -42,17 +42,17 @@ export default class Renderer {
             if (i === 5) continue;
             const img = new Image();
             const img2 = new Image();
+            const moveImg = new Image();
+            const moveImg2 = new Image();
+            const moveImg3 = new Image();
+            const moveImg4 = new Image();
             img.src = "./playerImages/player_" + i + ".png";
             img2.src = "./mobImages/mob_" + i + ".png";
-            this.imageCache.push(img, img2);
-        }
-        for (let i = 1; i <= 9; i++) {
-            if (i === 5) continue;
-            const img = new Image();
-            const img2 = new Image();
-            img.src = "./playerImages/player_" + i + "_move.png";
-            img2.src = "./mobImages/mob_" + i + "_move.png";
-            this.imageCache.push(img, img2);
+            moveImg.src = "./playerImages/player_" + i + "_move.png";
+            moveImg2.src = "./mobImages/mob_" + i + "_move.png";
+            moveImg3.src = "./playerImages/player_" + i + "_2_move.png";
+            moveImg4.src = "./mobImages/mob_" + i + "_2_move.png";
+            this.imageCache.push(img, img2, moveImg, moveImg2, moveImg3, moveImg4);
         }
     }
 
