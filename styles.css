@@ -29,11 +29,14 @@ td {
     image-rendering: -webkit-optimize-contrast; /* Webkit (non-standard naming) */
     -ms-interpolation-mode: nearest-neighbor;   /* IE (non-standard property) */
 
+    line-height: 20px;
     background-size: 25px 25px;
     font-size: 20px;
     width: 25px;
+    max-width: 25px;
     min-width: 25px;
     height: 25px;
+    max-height: 25px;
     padding: 0;
     margin: 0;
     box-sizing: border-box;
@@ -98,16 +101,11 @@ p {
 }
 
 .player {
-    /* border but completely inside element */
-    -webkit-box-shadow:inset 0px 0px 0px 1px white;
-    -moz-box-shadow:inset 0px 0px 0px 1px white;
-    box-shadow:inset 0px 0px 0px 1px white;
+    border: 1px solid white;
 }
 
 .selected {
-    -webkit-box-shadow:inset 0px 0px 0px 1px white;
-    -moz-box-shadow:inset 0px 0px 0px 1px white;
-    box-shadow:inset 0px 0px 0px 1px white;
+    border: 1px solid white;
 }
 
 .wall.l {
