@@ -14,6 +14,8 @@ import {
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
 //       in each other must be done with "refer()" for saving to work properly
 
+const info = document.getElementById("info");
+
 export default class GameManager {
     constructor(removeListeners, addListeners, keyIntervals) {
         const initialized = initialize();
@@ -53,6 +55,10 @@ export default class GameManager {
                 }
             }
         }
+        info.onclick = () => {
+            this.actType = { shoot: "melee", melee: "interact", interact: "shoot" }[this.actType];
+            this.updateInfo();
+        }
     }
 
     tryFireEvent(type, entity) {
@@ -66,7 +72,7 @@ export default class GameManager {
     }
 
     posIsValid(pos) {
-        if (pos.length !== 2) return false;
+        if (pos?.length !== 2) return false;
         for (let mob of this.mobs) {
             if (coordsEq(mob.pos, pos)) return false;
         }
@@ -103,7 +109,6 @@ export default class GameManager {
     }
 
     updateInfo() {
-        const info = document.getElementById("info");
         const timeWord = options.TURN_BASED ? "\nTurn: " : "\nTime: ";
         info.textContent = "Level: " + this.levels.currentLvl + timeWord + this.timeTracker.timer 
                            + "\nHealth: " + this.player.health + "\nSelected action: " + this.actType + "\n";
@@ -467,6 +472,7 @@ export default class GameManager {
     }
     
     async autoTravel(coords) {
+        if (coordsEq(coords, this.player.pos)) return;
         const coordsList = [];
         const lvl = this.levels.currentLvl;
         const idx = this.autoTravelStack.length;

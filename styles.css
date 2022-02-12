@@ -83,6 +83,10 @@ p {
     margin-left: 5px;
 }
 
+#info:hover {
+    cursor: pointer;
+}
+
 #loadInputFile {
     display: none;
 }

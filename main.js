@@ -15,8 +15,13 @@ import BuiltinDialogs from "./builtinDialogs.js";
 //       in each other must be done with "refer()" for saving to work properly
 
 const menu = document.getElementById("clickMenu");
-const travelButton = document.getElementById("travelButton");
 const showInfoButton = document.getElementById("showInfoButton");
+const travelButton = document.getElementById("travelButton");
+const travelInDrcButton = document.getElementById("travelInDrcButton");
+const actInDrcButton = document.getElementById("actInDrcButton");
+const inventoryButton = document.getElementById("inventoryButton");
+const pickupButton = document.getElementById("pickupButton");
+const historyButton = document.getElementById("historyButton");
 const mobileInput = document.createElement("textarea");
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 const keyIntervals = {}; // for key repeats when holding key
@@ -60,7 +65,7 @@ function start() {
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
     document.addEventListener("mousedown", clickListener);
-    menuListener.allowTravel = true;
+    menuListener.allowExtraActions = true;
     infoForMobileFix.listenersActive = true;
 }
 
@@ -68,7 +73,7 @@ function removeListeners() {
     document.removeEventListener("keydown", keypressListener);
     document.removeEventListener("mousedown", clickListener);
     infoForMobileFix.listenersActive = false;
-    menuListener.allowTravel = false;
+    menuListener.allowExtraActions = false;
 
     // remove currently active key repeats to disable continuing moving
     for (let key of Object.keys(keyIntervals)) {
@@ -107,7 +112,7 @@ function clickListener(e) {
         menu.style.display = "none";
         return;
     }
-    if (e.target.id === "status" || e.target.id === "showInfoButton" || e.target.id === "travelButton" 
+    if (e.target.id === "status" || e.target.parentNode?.id === "clickMenu"
         || e.target.dataset.ignoreClick || e.button !== 0 || gm.inputType === "selectPos") return;
     // get cursor position in relation to the player symbol and convert to drc
     const rect = gm.area[gm.player.pos[0]][gm.player.pos[1]].getBoundingClientRect();
@@ -156,14 +161,59 @@ function menuListener(e) {
     menu.style.left = e.x + "px";
     menu.style.top = e.y + "px";
     menu.style.display = "block";
-    if (menuListener.allowTravel) {
-        travelButton.style.display = "block";
-        travelButton.onmousedown = () => {
-            gm.autoTravel(e.target.customProps.coords);
-            menu.style.display = "none";
-        };
+    if (menuListener.allowExtraActions) {
+        if (e.target.customProps.infoKeys?.indexOf("Player") !== -1) {
+            inventoryButton.style.display = "block";
+            pickupButton.style.display = "block";
+            historyButton.style.display = "block";
+            inventoryButton.onmousedown = () => {
+                showInventory();
+                menu.style.display = "none";
+            };
+            pickupButton.onmousedown = () => {
+                gm.pickup();
+                menu.style.display = "none";
+            };
+            historyButton.onmousedown = () => {
+                gm.ui.showMsgHistory();
+                menu.style.display = "none";
+            };
+            travelButton.style.display = "none";
+            travelInDrcButton.style.display = "none";
+            actInDrcButton.style.display = "none";
+        } else {
+            travelButton.style.display = "block";
+            travelInDrcButton.style.display = "block";
+            actInDrcButton.style.display = "block";
+            travelButton.onmousedown = () => {
+                gm.autoTravel(e.target.customProps.coords);
+                menu.style.display = "none";
+            };
+            travelInDrcButton.onmousedown = () => {
+                const clickPos = e.target.customProps.coords;
+                const facing = pixelCoordsToDrc(clickPos[0] - gm.player.pos[0], clickPos[1] - gm.player.pos[1]);
+                const newPos = gm.player.pos.slice();
+                movePosToDrc(newPos, facing);
+                gm.movePlayer(newPos);
+                menu.style.display = "none";
+            };
+            actInDrcButton.onmousedown = () => {
+                const clickPos = e.target.customProps.coords;
+                const facing = pixelCoordsToDrc(clickPos[0] - gm.player.pos[0], clickPos[1] - gm.player.pos[1]);
+                doActType(facing);
+                menu.style.display = "none";
+            };
+            inventoryButton.style.display = "none";
+            pickupButton.style.display = "none";
+            historyButton.style.display = "none";
+        }
     } else {
         travelButton.style.display = "none";
+        travelInDrcButton.style.display = "none";
+        actInDrcButton.style.display = "none";
+        inventoryButton.style.display = "none";
+        pickupButton.style.display = "none";
+        historyButton.style.display = "none";
     }
     showInfoButton.onmousedown = () => {
         gm.ui.showMsg(getPosInfo(e.target.customProps.infoKeys));
@@ -191,6 +241,48 @@ function menuListener(e) {
 //         document.body.style.cursor = "default";
 //     }
 // }
+
+function showInventory() {
+    let contentNames = [];
+    
+    for (let item of gm.player.inventory) contentNames.push(item.name);
+
+    if (contentNames.length !== 0) {
+        gm.ui.showDialog("Contents of your inventory:", contentNames, itemIdx => {
+            if (itemIdx < 0) return;
+            gm.ui.showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", 
+                       ["Drop"], actionIdx => {
+                switch (actionIdx) {
+                    case 0:
+                        let item = gm.player.inventory.splice(itemIdx, 1)[0];
+                        item.pos = gm.player.pos.slice();
+                        gm.items.push(item);
+                        gm.ui.showMsg("You drop \"" + contentNames[itemIdx] + "\".");
+                        gm.processTurn();
+                        break;
+                }
+            }, true, true, 1);
+        }, true, true, 0);
+    } else {
+        gm.ui.showMsg("Your inventory is empty.");
+    }
+}
+
+function doActType(actDrc) {
+    switch (gm.actType) {
+        case "shoot":
+            if (gm.timeTracker.turnsUntilShoot === 0) {
+                gm.shoot(gm.player.pos, actDrc);
+            }
+            break;
+        case "melee":
+            gm.melee(actDrc);
+            break;
+        case "interact":
+            gm.interact(actDrc);
+            break;
+    }
+}
 
 function action(key, ctrl) {
     switch(gm.inputType) {
@@ -235,21 +327,7 @@ function action(key, ctrl) {
         case options.CONTROLS.ACT_TOP_LEFT:
         case options.CONTROLS.ACT_TOP:
         case options.CONTROLS.ACT_TOP_RIGHT:
-            const actDrc = inputToDrc(key, options);
-
-            switch (gm.actType) {
-                case "shoot":
-                    if (gm.timeTracker.turnsUntilShoot === 0) {
-                        gm.shoot(gm.player.pos, actDrc);
-                    }
-                    break;
-                case "melee":
-                    gm.melee(actDrc);
-                    break;
-                case "interact":
-                    gm.interact(actDrc);
-                    break;
-            }
+            doActType(inputToDrc(key, options));
             return;
         case options.CONTROLS.ENTER:
             if (gm.level[gm.player.pos[0]][gm.player.pos[1]] === levelTiles.stairsDown 
@@ -272,29 +350,7 @@ function action(key, ctrl) {
             gm.ui.showMsgHistory();
             return;
         case options.CONTROLS.INVENTORY:
-            let contentNames = [];
-            
-            for (let item of gm.player.inventory) contentNames.push(item.name);
-
-            if (contentNames.length !== 0) {
-                gm.ui.showDialog("Contents of your inventory:", contentNames, itemIdx => {
-                    if (itemIdx < 0) return;
-                    gm.ui.showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", 
-                               ["Drop"], actionIdx => {
-                        switch (actionIdx) {
-                            case 0:
-                                let item = gm.player.inventory.splice(itemIdx, 1)[0];
-                                item.pos = gm.player.pos.slice();
-                                gm.items.push(item);
-                                gm.ui.showMsg("You drop \"" + contentNames[itemIdx] + "\".");
-                                gm.processTurn();
-                                break;
-                        }
-                    }, true, true, 1);
-                }, true, true, 0);
-            } else {
-                gm.ui.showMsg("Your inventory is empty.");
-            }
+            showInventory();
             return;
         case options.CONTROLS.MELEE:
             gm.actType = "melee";
