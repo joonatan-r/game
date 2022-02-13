@@ -281,7 +281,7 @@ export function removeByReference(arr, obj) {
     }
 }
 
-export function pixelCoordsToDrc(y, x) {
+export function relativeCoordsToDrc(y, x) {
     if (x === 0) {
         if (y > 0) return 2; // b
         return 8; // t

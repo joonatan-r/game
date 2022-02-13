@@ -1,6 +1,6 @@
 import { levelTiles } from "./levelData.js";
 import {
-    inputToDrc, isWall, movePosToDrc, pixelCoordsToDrc, getPosInfo
+    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo
 } from "./util.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
@@ -118,7 +118,7 @@ function clickListener(e) {
     const rect = gm.area[gm.player.pos[0]][gm.player.pos[1]].getBoundingClientRect();
     const x = e.x - (rect.left + rect.width / 2);
     const y = e.y - (rect.top + rect.height / 2);
-    const drc = pixelCoordsToDrc(y, x);
+    const drc = relativeCoordsToDrc(y, x);
     let doAutoTravel = false;
     
     if (e.altKey) {
@@ -191,7 +191,7 @@ function menuListener(e) {
             };
             travelInDrcButton.onmousedown = () => {
                 const clickPos = e.target.customProps.coords;
-                const facing = pixelCoordsToDrc(clickPos[0] - gm.player.pos[0], clickPos[1] - gm.player.pos[1]);
+                const facing = relativeCoordsToDrc(clickPos[0] - gm.player.pos[0], clickPos[1] - gm.player.pos[1]);
                 const newPos = gm.player.pos.slice();
                 movePosToDrc(newPos, facing);
                 gm.movePlayer(newPos);
@@ -199,7 +199,7 @@ function menuListener(e) {
             };
             actInDrcButton.onmousedown = () => {
                 const clickPos = e.target.customProps.coords;
-                const facing = pixelCoordsToDrc(clickPos[0] - gm.player.pos[0], clickPos[1] - gm.player.pos[1]);
+                const facing = relativeCoordsToDrc(clickPos[0] - gm.player.pos[0], clickPos[1] - gm.player.pos[1]);
                 doActType(facing);
                 menu.style.display = "none";
             };
@@ -226,7 +226,7 @@ function menuListener(e) {
 //         const rect = area[player.pos[0]][player.pos[1]].getBoundingClientRect();
 //         const x = e.x - (rect.left + rect.width / 2);
 //         const y = e.y - (rect.top + rect.height / 2);
-//         const drc = pixelCoordsToDrc(y, x);
+//         const drc = relativeCoordsToDrc(y, x);
 //         document.body.style.cursor = {
 //             1: "sw-resize",
 //             2: "s-resize",

@@ -12,6 +12,7 @@ export default class UI {
     msgMoved = false;
     movePos = [];
     dialogStack = [];
+    dialogDisplayed = false;
 
     constructor(removeListeners, addListeners) {
         this.removeListeners = removeListeners;
@@ -87,8 +88,8 @@ export default class UI {
         if (this.dialogStack.length !== stackDepth && !(stackDepth < 0)) {
             this.dialogStack = [];
         }
-    
         let choiceGroupIdx = null;
+        this.dialogDisplayed = true;
         this.removeListeners();
         !skipLog && this.msgHistory.unshift(text.trim().replaceAll("\n", "\n\t\t"));
     
@@ -261,6 +262,7 @@ export default class UI {
     }
 
     hideDialog() {
+        if (!this.dialogDisplayed) return;
         dialog.style.display = "none";
         document.removeEventListener("keydown", this.dialogKeyListener);
         this.addListeners();

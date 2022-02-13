@@ -6,8 +6,8 @@ import options from "./options.js";
 import Renderer from "./render.js";
 import UI from "./UI.js";
 import {
-    bresenham, coordsEq, getPosInfo, initialize, isNextTo, isWall, movePosToDrc, 
-    pixelCoordsToDrc, 
+    coordsEq, getPosInfo, initialize, isNextTo, movePosToDrc, 
+    relativeCoordsToDrc, 
     projectileFromDrc, removeByReference 
 } from "./util.js";
 
@@ -156,7 +156,7 @@ export default class GameManager {
                 this.shoot(mob.pos, mob.straightLineToTargetDrc, true);
             } else {
                 // also works if new pos not next to current for some reason
-                const facing = pixelCoordsToDrc(mob.target[0] - mob.pos[0], mob.target[1] - mob.pos[1]);
+                const facing = relativeCoordsToDrc(mob.target[0] - mob.pos[0], mob.target[1] - mob.pos[1]);
                 const moveImage = facing + "_move";
                 const baseImage = facing;
                 const altMoveImage = facing + "_2_move";
@@ -412,7 +412,7 @@ export default class GameManager {
         clearTimeout(this.player.moveVisualTimeout);
         this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, 100);
         // also works if new pos not next to current for some reason
-        const facing = pixelCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
+        const facing = relativeCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
         const moveImage = facing + "_move";
         const baseImage = facing;
         const altMoveImage = facing + "_2_move";
