@@ -38,22 +38,29 @@ export default class Renderer {
                 this.areaCache[i][j] = "";
             }
         }
+        this.loadImagesToCache();
+    }
+
+    async loadImagesToCache() {
         for (let i = 1; i <= 9; i++) {
             if (i === 5) continue;
-            const img = new Image();
-            const img2 = new Image();
-            const moveImg = new Image();
-            const moveImg2 = new Image();
-            const moveImg3 = new Image();
-            const moveImg4 = new Image();
-            img.src = "./playerImages/player_" + i + ".png";
-            img2.src = "./mobImages/mob_" + i + ".png";
-            moveImg.src = "./playerImages/player_" + i + "_move.png";
-            moveImg2.src = "./mobImages/mob_" + i + "_move.png";
-            moveImg3.src = "./playerImages/player_" + i + "_2_move.png";
-            moveImg4.src = "./mobImages/mob_" + i + "_2_move.png";
+            const img = await this.createImage("./playerImages/player_" + i + ".png");
+            const img2 = await this.createImage("./mobImages/mob_" + i + ".png");
+            const moveImg = await this.createImage("./playerImages/player_" + i + "_move.png");
+            const moveImg2 = await this.createImage("./mobImages/mob_" + i + "_move.png");
+            const moveImg3 = await this.createImage("./playerImages/player_" + i + "_2_move.png");
+            const moveImg4 = await this.createImage("./mobImages/mob_" + i + "_2_move.png");
             this.imageCache.push(img, img2, moveImg, moveImg2, moveImg3, moveImg4);
         }
+    }
+
+    createImage(src) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        })
     }
 
     getTileToRender(tile) {
