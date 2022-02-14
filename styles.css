@@ -55,6 +55,10 @@ p {
     white-space: pre-wrap;
 }
 
+#clickMenu {
+    z-index: 1;
+}
+
 #clickMenu, #dialog, #msgBox {
     display: none;
     position: absolute;
