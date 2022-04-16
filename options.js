@@ -12,6 +12,7 @@ const options = {
     TRAVEL_REPEAT_START_DELAY: 100, // milliseconds for the delay before holding a key to move starts repeating
     TRAVEL_REPEAT_DELAY: 70, // milliseconds between each move when holding a moving key
     AUTOTRAVEL_REPEAT_DELAY: 50, // milliseconds between each move when autotraveling
+    CONVERT_ORTHOG_INPUTS_TO_DIAG: true, // convert two orthogonal move inputs to the diagonal direction between them
     CONTROLS: {
         ESC: "Escape",
         ENTER: "Enter",
@@ -54,7 +55,8 @@ export const optionNameMap = {
     INTERRUPT_AUTOTRAVEL_IF_MOBS: "Interrupt autotravel if a hostile mob is seen",
     TRAVEL_REPEAT_START_DELAY: "Delay before holding direction starts repeating (ms)",
     TRAVEL_REPEAT_DELAY: "Delay between moves when holding direction (ms)",
-    AUTOTRAVEL_REPEAT_DELAY: "Delay between autotravel moves (ms)"
+    AUTOTRAVEL_REPEAT_DELAY: "Delay between autotravel moves (ms)",
+    CONVERT_ORTHOG_INPUTS_TO_DIAG: "Convert two orthogonal move inputs to the diagonal direction between them"
 };
 
 export const controlNameMap = {

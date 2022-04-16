@@ -14,6 +14,8 @@ import BuiltinDialogs from "./builtinDialogs.js";
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
 //       in each other must be done with "refer()" for saving to work properly
 
+const KEY_IS_PRESSED = "keyIsPressed";
+
 const menu = document.getElementById("clickMenu");
 const showInfoButton = document.getElementById("showInfoButton");
 const travelButton = document.getElementById("travelButton");
@@ -25,6 +27,7 @@ const historyButton = document.getElementById("historyButton");
 const mobileInput = document.createElement("textarea");
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 const keyIntervals = {}; // for key repeats when holding key
+const mergedKeys = {}; // for replacing two orthogonal inputs with the diagonal
 const gm = new GameManager(removeListeners, addListeners, keyIntervals);
 const defaultOptions = localStorage.getItem("gameDefaultOptions");
 let infoForMobileFix = { // use object to pass reference to mobileFix
@@ -46,6 +49,20 @@ if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
 document.addEventListener("keyup", function(e) {
     clearInterval(keyIntervals[e.key]);
     delete keyIntervals[e.key];
+
+    if (Object.keys(mergedKeys).indexOf(e.key) !== -1) {
+        const merged = mergedKeys[e.key].merged;
+        const other = mergedKeys[e.key].other;
+        clearInterval(keyIntervals[merged]);
+        delete keyIntervals[merged];
+        // shouldn't need this but without it a bug can happen where
+        // an interval gets stuck without being cleared
+        clearInterval(keyIntervals[other]);
+        delete keyIntervals[other];
+        delete mergedKeys[other];
+        delete mergedKeys[e.key];
+        setKeyRepeat(other, false, true);
+    }
 });
 // document.addEventListener("mousemove", mouseStyleListener);
 
@@ -82,12 +99,79 @@ function removeListeners() {
     }
 }
 
-async function setKeyRepeat(e) {
-    await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
-    
+function mergeIfOrthogonalKeysPressed(e) {
+    if (!options.CONVERT_ORTHOG_INPUTS_TO_DIAG) {
+        return false;
+    }
+    const mergeKeys = (key, other, merged) => {
+        clearInterval(keyIntervals[other]);
+        delete keyIntervals[other];
+        action(merged, e.ctrlKey);
+        setKeyRepeat(merged, e.ctrlKey, true);
+        mergedKeys[key] = {
+            other,
+            merged
+        }
+        mergedKeys[other] = {
+            other: key,
+            merged
+        }
+    };
+    const checkForMerge = (key, firstKeyToCheck, secondKeyToCheck, firstMerge, secondMerge) => {
+        if (Object.keys(keyIntervals).indexOf(firstKeyToCheck) !== -1) {
+            mergeKeys(key, firstKeyToCheck, firstMerge);
+            return true;
+        } else if (Object.keys(keyIntervals).indexOf(secondKeyToCheck) !== -1) {
+            mergeKeys(key, secondKeyToCheck, secondMerge);
+            return true;
+        }
+        return false;
+    };
+    switch (e.key) {
+        case options.CONTROLS.BOTTOM:
+            return checkForMerge(
+                options.CONTROLS.BOTTOM,
+                options.CONTROLS.LEFT,
+                options.CONTROLS.RIGHT,
+                options.CONTROLS.BOTTOM_LEFT,
+                options.CONTROLS.BOTTOM_RIGHT
+            );
+        case options.CONTROLS.LEFT:
+            return checkForMerge(
+                options.CONTROLS.LEFT,
+                options.CONTROLS.BOTTOM,
+                options.CONTROLS.TOP,
+                options.CONTROLS.BOTTOM_LEFT,
+                options.CONTROLS.TOP_LEFT
+            );
+        case options.CONTROLS.TOP:
+            return checkForMerge(
+                options.CONTROLS.TOP,
+                options.CONTROLS.LEFT,
+                options.CONTROLS.RIGHT,
+                options.CONTROLS.TOP_LEFT,
+                options.CONTROLS.TOP_RIGHT
+            );
+        case options.CONTROLS.RIGHT:
+            return checkForMerge(
+                options.CONTROLS.RIGHT,
+                options.CONTROLS.BOTTOM,
+                options.CONTROLS.TOP,
+                options.CONTROLS.BOTTOM_RIGHT,
+                options.CONTROLS.TOP_RIGHT
+            );
+    }
+    return false;
+}
+
+async function setKeyRepeat(key, ctrlKey, forceImmediate) {
+    keyIntervals[key] = KEY_IS_PRESSED;
+    gm.ui.showMsg("");
+    !forceImmediate && await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
+
     // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
-    if (keyIntervals[e.key] === "tempVal") {
-        keyIntervals[e.key] = setInterval(() => action(e.key, e.ctrlKey), options.TRAVEL_REPEAT_DELAY);
+    if (keyIntervals[key] === KEY_IS_PRESSED) {
+        keyIntervals[key] = setInterval(() => action(key, ctrlKey), options.TRAVEL_REPEAT_DELAY);
     }
 }
 
@@ -95,14 +179,17 @@ function keypressListener(e) {
     if (Object.keys(keyIntervals).indexOf(e.key) !== -1) {
         return;
     }
-    const moveKeyList = [options.CONTROLS.BOTTOM_LEFT, options.CONTROLS.BOTTOM, options.CONTROLS.BOTTOM_RIGHT,
-                         options.CONTROLS.LEFT, options.CONTROLS.RIGHT, options.CONTROLS.TOP_LEFT, 
-                         options.CONTROLS.TOP, options.CONTROLS.TOP_RIGHT];
+    const moveKeyList = [
+        options.CONTROLS.BOTTOM_LEFT, options.CONTROLS.BOTTOM, options.CONTROLS.BOTTOM_RIGHT,
+        options.CONTROLS.LEFT, options.CONTROLS.RIGHT, options.CONTROLS.TOP_LEFT, 
+        options.CONTROLS.TOP, options.CONTROLS.TOP_RIGHT
+    ];
 
     if (moveKeyList.indexOf(e.key) !== -1) {
-        keyIntervals[e.key] = "tempVal";
-        setKeyRepeat(e);
-        gm.ui.showMsg("");
+        if (mergeIfOrthogonalKeysPressed(e)) {
+            return;
+        }
+        setKeyRepeat(e.key, e.ctrlKey);
     }
     action(e.key, e.ctrlKey);
 }
