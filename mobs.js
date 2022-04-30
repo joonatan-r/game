@@ -148,9 +148,10 @@ export const movingAIs = {
         let maxIters = 8;
         let currentDrc, newDrcs;
 
+        if (!mob.alreadyVisited) mob.alreadyVisited = [];
+        // if already visited twice, moving will be stopped, else would just loop the same cycle
+        if (!mob.alreadyVisitedTwice) mob.alreadyVisitedTwice = [];
         if (!posIsValid(mob.target)) {
-            if (!mob.alreadyVisited) mob.alreadyVisited = [];
-
             // better ability to go around obstacles when not backtracking 
             // while blocked on consecutive turns
             mob.alreadyVisited.push(mob.pos);
@@ -160,7 +161,6 @@ export const movingAIs = {
                 if (drcQueue.length === 0) {
                     // no other valid drcs, choose even if excluded
                     excluded = [];
-                    mob.alreadyVisited = [];
                     newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
                 } else {
                     currentDrc = drcQueue.shift();
@@ -170,6 +170,12 @@ export const movingAIs = {
                     if (d.length === 0) continue;
                     if (!level[d[0]] || typeof level[d[0]][d[1]] === "undefined") continue;
                     if (posIsValid(d)) {
+                        for (const coord of mob.alreadyVisitedTwice) {
+                            if (coordsEq(coord, d)) {
+                                mob.target = mob.pos;
+                                return;
+                            }
+                        }
                         mob.target = d;
                         return;
                     } else {
@@ -180,7 +186,21 @@ export const movingAIs = {
                 }
             }
         } else {
+            for (const coord of mob.alreadyVisitedTwice) {
+                if (coordsEq(coord, mob.target)) {
+                    mob.target = mob.pos;
+                    return;
+                }
+            }
+            for (const coord of mob.alreadyVisited) {
+                if (coordsEq(coord, mob.target)) {
+                    mob.alreadyVisited = [];
+                    mob.alreadyVisitedTwice.push(mob.target);
+                    return;
+                }
+            }
             mob.alreadyVisited = [];
+            mob.alreadyVisitedTwice = [];
         }
     },
     towardsStraightLineFromPos: (mob, fromPos, posIsValid, level) => {
