@@ -206,9 +206,13 @@ function clickListener(e) {
     const x = e.x - (rect.left + rect.width / 2);
     const y = e.y - (rect.top + rect.height / 2);
     const drc = relativeCoordsToDrc(y, x);
-    let doAutoTravel = false;
+    const noModifier = !e.altKey && !e.ctrlKey && !e.shiftKey;
     
-    if (e.altKey) {
+    if ((options.CONTROLS.ACTION_MOD === "Alt" && e.altKey)
+        || (options.CONTROLS.ACTION_MOD === "Control" && e.ctrlKey)
+        || (options.CONTROLS.ACTION_MOD === "Shift" && e.shiftKey)
+        || (options.CONTROLS.ACTION_MOD === "None" && noModifier)
+    ) {
         switch (gm.actType) {
             case "shoot":
                 if (gm.timeTracker.turnsUntilShoot === 0) {
@@ -226,12 +230,11 @@ function clickListener(e) {
     }
     gm.ui.showMsg("");
     
-    if ((options.CTRL_CLICK_AUTOTRAVEL && e.ctrlKey) 
-        || (!options.CTRL_CLICK_AUTOTRAVEL && !e.ctrlKey)
+    if ((options.CONTROLS.AUTOMOVE_MOD === "Alt" && e.altKey)
+        || (options.CONTROLS.AUTOMOVE_MOD === "Control" && e.ctrlKey)
+        || (options.CONTROLS.AUTOMOVE_MOD === "Shift" && e.shiftKey)
+        || (options.CONTROLS.AUTOMOVE_MOD === "None" && noModifier)
     ) {
-        doAutoTravel = true;
-    }
-    if (doAutoTravel) {
         if (e.target.tagName !== "TD") return;
         gm.autoTravel(e.target.customProps.coords);
     } else {

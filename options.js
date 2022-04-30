@@ -7,13 +7,15 @@ const options = {
     GRAY_MEMORIZED: true, // areas that can't be seen currently but are displayed because they have been seen before are grayed / not
     TURN_BASED: false, // in-game time only goes when you take action / in-game time goes on its own
     TURN_DELAY: 300, // milliseconds between each turn if not using turn based mode
-    CTRL_CLICK_AUTOTRAVEL: true, // clicking normally moves one time in the direction clicked & holding ctrl autotravels to the place clicked / reversed
     INTERRUPT_AUTOTRAVEL_IF_MOBS: true, // interrupt autotravel if any hostile mobs are displayed / not
     TRAVEL_REPEAT_START_DELAY: 100, // milliseconds for the delay before holding a key to move starts repeating
     TRAVEL_REPEAT_DELAY: 70, // milliseconds between each move when holding a moving key
     AUTOTRAVEL_REPEAT_DELAY: 50, // milliseconds between each move when autotraveling
     CONVERT_ORTHOG_INPUTS_TO_DIAG: true, // convert two orthogonal move inputs to the diagonal direction between them
     CONTROLS: {
+        MOVE_MOD: "Control",
+        AUTOMOVE_MOD: "None",
+        ACTION_MOD: "Alt",
         ESC: "Escape",
         ENTER: "Enter",
         SHOOT: "f",
@@ -51,7 +53,6 @@ export const optionNameMap = {
     GRAY_MEMORIZED: "Gray previously seen tiles",
     TURN_BASED: "Use turn based system instead of realtime",
     TURN_DELAY: "Realtime cycles update speed (ms)",
-    CTRL_CLICK_AUTOTRAVEL: "Autotravel on ctrl click, travel in direction on normal click (false=flipped)",
     INTERRUPT_AUTOTRAVEL_IF_MOBS: "Interrupt autotravel if a hostile mob is seen",
     TRAVEL_REPEAT_START_DELAY: "Delay before holding direction starts repeating (ms)",
     TRAVEL_REPEAT_DELAY: "Delay between moves when holding direction (ms)",
@@ -60,6 +61,9 @@ export const optionNameMap = {
 };
 
 export const controlNameMap = {
+    MOVE_MOD: "Click modifier for move",
+    AUTOMOVE_MOD: "Click modifier for automove",
+    ACTION_MOD: "Click modifier for action",
     ESC: "Escape/cancel",
     ENTER: "Enter",
     SHOOT: "Shoot",

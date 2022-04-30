@@ -43,7 +43,7 @@ export default class BuiltinDialogs {
                     break;
                 case 1:
                     this.loadGame();
-                    this.showStartDialog();
+                    this.showStartDialog(); // only shown in case user cancels
                     break;
                 case 2:
                     this.showOptionsDialog();
@@ -146,14 +146,33 @@ export default class BuiltinDialogs {
                 this.mobileInput.value = "";
                 this.showControlsDialog(this.gm.ui.getPageForIdx(idx));
             };
-            this.removeListeners();
-    
-            if (this.mobileInput) {
-                this.mobileInput.addEventListener("input", mobileChangeInput);
+            if (
+                optKeys[idx] === "MOVE_MOD" || optKeys[idx] === "AUTOMOVE_MOD" || optKeys[idx] === "ACTION_MOD"
+            ) {
+                const modList = ["None", "Control", "Alt", "Shift"];
+                this.gm.ui.showDialog("Set new modifier", modList, optionIdx => {
+                    const oldValue = options.CONTROLS[optKeys[idx]];
+                    const newValue = modList[optionIdx];
+
+                    for (let key of ["MOVE_MOD", "AUTOMOVE_MOD", "ACTION_MOD"]) {
+                        if (options.CONTROLS[key] === newValue) {
+                            options.CONTROLS[key] = oldValue;
+                            break;
+                        }
+                    }
+                    options.CONTROLS[optKeys[idx]] = newValue;
+                    this.showControlsDialog(this.gm.ui.getPageForIdx(idx));
+                }, false, true, -1);
             } else {
-                document.addEventListener("keydown", changeInput);
+                this.removeListeners();
+        
+                if (this.mobileInput) {
+                    this.mobileInput.addEventListener("input", mobileChangeInput);
+                } else {
+                    document.addEventListener("keydown", changeInput);
+                }
+                this.gm.ui.showMsg("Press the new input for \"" + optKeys[idx] + "\"");
             }
-            this.gm.ui.showMsg("Press the new input for \"" + optKeys[idx] + "\"");
         }, false, true, -1, startPage);
     }
     
