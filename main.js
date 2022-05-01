@@ -28,6 +28,7 @@ const mobileInput = document.createElement("textarea");
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 const keyIntervals = {}; // for key repeats when holding key
 const mergedKeys = {}; // for replacing two orthogonal inputs with the diagonal
+const pressedKeys = {};
 const gm = new GameManager(removeListeners, addListeners, keyIntervals);
 const defaultOptions = localStorage.getItem("gameDefaultOptions");
 let infoForMobileFix = { // use object to pass reference to mobileFix
@@ -49,6 +50,7 @@ if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
 document.addEventListener("keyup", function(e) {
     clearInterval(keyIntervals[e.key]);
     delete keyIntervals[e.key];
+    delete pressedKeys[e.key];
 
     if (Object.keys(mergedKeys).indexOf(e.key) !== -1) {
         const merged = mergedKeys[e.key].merged;
@@ -61,7 +63,7 @@ document.addEventListener("keyup", function(e) {
         delete keyIntervals[other];
         delete mergedKeys[other];
         delete mergedKeys[e.key];
-        setKeyRepeat(other, false, true);
+        if (Object.keys(pressedKeys).indexOf(other) !== -1) setKeyRepeat(other, false, true);
     }
 });
 // document.addEventListener("mousemove", mouseStyleListener);
@@ -179,6 +181,7 @@ function keypressListener(e) {
     if (Object.keys(keyIntervals).indexOf(e.key) !== -1) {
         return;
     }
+    pressedKeys[e.key] = true;
     const moveKeyList = [
         options.CONTROLS.BOTTOM_LEFT, options.CONTROLS.BOTTOM, options.CONTROLS.BOTTOM_RIGHT,
         options.CONTROLS.LEFT, options.CONTROLS.RIGHT, options.CONTROLS.TOP_LEFT, 
