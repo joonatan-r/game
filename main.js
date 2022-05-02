@@ -167,6 +167,7 @@ function mergeIfOrthogonalKeysPressed(e) {
 }
 
 async function setKeyRepeat(key, ctrlKey, forceImmediate) {
+    clearInterval(keyIntervals[key]); // just to make sure nothing gets left on
     keyIntervals[key] = KEY_IS_PRESSED;
     gm.ui.showMsg("");
     !forceImmediate && await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
@@ -178,9 +179,7 @@ async function setKeyRepeat(key, ctrlKey, forceImmediate) {
 }
 
 function keypressListener(e) {
-    if (Object.keys(pressedKeys).indexOf(e.key) !== -1
-        || Object.keys(keyIntervals).indexOf(e.key) !== -1
-    ) {
+    if (Object.keys(pressedKeys).indexOf(e.key) !== -1) {
         return;
     }
     pressedKeys[e.key] = true;
