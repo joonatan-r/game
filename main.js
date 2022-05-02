@@ -178,7 +178,9 @@ async function setKeyRepeat(key, ctrlKey, forceImmediate) {
 }
 
 function keypressListener(e) {
-    if (Object.keys(keyIntervals).indexOf(e.key) !== -1) {
+    if (Object.keys(pressedKeys).indexOf(e.key) !== -1
+        || Object.keys(keyIntervals).indexOf(e.key) !== -1
+    ) {
         return;
     }
     pressedKeys[e.key] = true;
