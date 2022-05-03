@@ -15,6 +15,28 @@ import {
 //       in each other must be done with "refer()" for saving to work properly
 
 const info = document.getElementById("info");
+const Pauser = (function() {
+    let pausePromise = Promise.resolve();
+    let resolver;
+
+    return class Pauser {
+        pause() {
+            pausePromise = pausePromise.then(() => {
+                return new Promise(resolve => {
+                    resolver = resolve;
+                });
+            });
+        }
+
+        unpause() {
+            resolver();
+        }
+
+        waitForUnpause() {
+            return pausePromise;
+        }
+    }
+})();
 
 export default class GameManager {
     constructor(removeListeners, addListeners, keyIntervals) {
@@ -25,6 +47,7 @@ export default class GameManager {
         this.area = initialized.area;
         this.rendered = initialized.rendered;
         this.levels = initialized.levels;
+        this.pauser = new Pauser();
         this.render = new Renderer(this.area, this.rendered);
         this.ui = new UI(removeListeners, addListeners);
         this.level = this.levels[this.levels.currentLvl].level;
@@ -202,6 +225,7 @@ export default class GameManager {
             this.mobs.push(mob);
         }
         if (this.setPause.pauseNext && !this.setPause.paused) {
+            this.pauser.pause();
             this.interruptAutoTravel = true;
             this.setPause.paused = true;
             this.setPause.pauseNext = false;
@@ -218,6 +242,7 @@ export default class GameManager {
         } else if (!val && this.setPause.paused) {
             this.turnInterval = setInterval(() => this.processTurn(), options.TURN_DELAY);
             this.setPause.paused = false;
+            this.pauser.unpause();
         }
     }
     
@@ -324,6 +349,7 @@ export default class GameManager {
             obj.pos = bulletPos.slice();
             if (checkHits(bulletPos)) break;
             await new Promise(r => setTimeout(r, 30));
+            await this.pauser.waitForUnpause();
             if (this.levels.currentLvl !== currLvl) break;
             // NOTE: obj can hit something either by it moving into player/mob, or them moving into it.
             // if something moves into it, they handle the extra effects themselves.
