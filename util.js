@@ -459,3 +459,34 @@ export function getSecondBestDirections(drcs, currentDrc, excluded) {
     };
     return retDrcs;
 }
+
+export function getAdjacentOrthogonalDirections(pos, drc) {
+    let alternatives = null;
+
+    if (drc === 1) {
+        const first = pos.slice();
+        const second = pos.slice();
+        movePosToDrc(first, 4);
+        movePosToDrc(second, 2);
+        alternatives = [first, second];
+    } else if (drc === 3) {
+        const first = pos.slice();
+        const second = pos.slice();
+        movePosToDrc(first, 6);
+        movePosToDrc(second, 2);
+        alternatives = [first, second];
+    } else if (drc === 7) {
+        const first = pos.slice();
+        const second = pos.slice();
+        movePosToDrc(first, 4);
+        movePosToDrc(second, 8);
+        alternatives = [first, second];
+    } else if (drc === 9) {
+        const first = pos.slice();
+        const second = pos.slice();
+        movePosToDrc(first, 6);
+        movePosToDrc(second, 8);
+        alternatives = [first, second];
+    }
+    return alternatives;
+}

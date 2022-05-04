@@ -433,8 +433,16 @@ export default class GameManager {
         this.render.renderAll(this.player, this.levels, this.customRenders);
     }
     
-    movePlayer(newPos) {
-        if (!this.posIsValid(newPos)) return;
+    movePlayer(newPos, alternatives) {
+        if (!this.posIsValid(newPos)) {
+            if (!alternatives || !alternatives.length) {
+                return;
+            } else {
+                const firstAlternativePos = alternatives.shift();
+                this.movePlayer(firstAlternativePos, alternatives);
+                return;
+            }
+        }
         clearTimeout(this.player.moveVisualTimeout);
         this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, 100);
         // also works if new pos not next to current for some reason

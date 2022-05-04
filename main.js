@@ -1,6 +1,6 @@
 import { levelTiles } from "./levelData.js";
 import {
-    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo
+    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections
 } from "./util.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
@@ -409,8 +409,10 @@ function action(key, ctrl) {
                 }
                 prevPos && gm.autoTravel(prevPos); // last ok position
             } else {
+                // "slide" along walls if moving diagonally against them
+                const alternatives = getAdjacentOrthogonalDirections(gm.player.pos, drc);
                 movePosToDrc(newPos, drc);
-                gm.movePlayer(newPos);
+                gm.movePlayer(newPos, alternatives);
             }
             break;
         case options.CONTROLS.ACT_BOTTOM_LEFT:
