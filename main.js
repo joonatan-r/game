@@ -63,7 +63,11 @@ document.addEventListener("keyup", function(e) {
         delete keyIntervals[other];
         delete mergedKeys[other];
         delete mergedKeys[e.key];
-        if (Object.keys(pressedKeys).indexOf(other) !== -1) setKeyRepeat(other, false, true);
+        if (Object.keys(pressedKeys).indexOf(other) !== -1
+            && infoForMobileFix.listenersActive // TODO: refactor a more suitable variable
+        ) {
+            setKeyRepeat(other, false, true);
+        }
     }
 });
 // document.addEventListener("mousemove", mouseStyleListener);
@@ -251,11 +255,32 @@ function clickListener(e) {
 
 function menuListener(e) {
     e.preventDefault();
-    if (e.target.tagName !== "TD") return;
+    const clickOnValidPos = e.target.tagName === "TD";
+    if (!clickOnValidPos && !menuListener.allowExtraActions) return;
     menu.style.left = e.x + "px";
     menu.style.top = e.y + "px";
     menu.style.display = "block";
-    if (menuListener.allowExtraActions) {
+
+    if (menuListener.allowExtraActions && !clickOnValidPos) {
+        inventoryButton.style.display = "block";
+        pickupButton.style.display = "block";
+        historyButton.style.display = "block";
+        inventoryButton.onmousedown = () => {
+            showInventory();
+            menu.style.display = "none";
+        };
+        pickupButton.onmousedown = () => {
+            gm.pickup();
+            menu.style.display = "none";
+        };
+        historyButton.onmousedown = () => {
+            gm.ui.showMsgHistory();
+            menu.style.display = "none";
+        };
+        travelButton.style.display = "none";
+        travelInDrcButton.style.display = "none";
+        actInDrcButton.style.display = "none";
+    } else if (menuListener.allowExtraActions) {
         if (e.target.customProps.infoKeys?.indexOf("Player") !== -1) {
             inventoryButton.style.display = "block";
             pickupButton.style.display = "block";
@@ -309,10 +334,15 @@ function menuListener(e) {
         pickupButton.style.display = "none";
         historyButton.style.display = "none";
     }
-    showInfoButton.onmousedown = () => {
-        gm.ui.showMsg(getPosInfo(e.target.customProps.infoKeys));
-        menu.style.display = "none";
-    };
+    if (clickOnValidPos) {
+        showInfoButton.style.display = "block";
+        showInfoButton.onmousedown = () => {
+            gm.ui.showMsg(getPosInfo(e.target.customProps.infoKeys));
+            menu.style.display = "none";
+        };
+    } else {
+        showInfoButton.style.display = "none";
+    }
 }
 
 // function mouseStyleListener(e) {

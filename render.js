@@ -41,26 +41,22 @@ export default class Renderer {
         this.loadImagesToCache();
     }
 
-    async loadImagesToCache() {
+    loadImagesToCache() {
         for (let i = 1; i <= 9; i++) {
             if (i === 5) continue;
-            const img = await this.createImage("./playerImages/player_" + i + ".png");
-            const img2 = await this.createImage("./mobImages/mob_" + i + ".png");
-            const moveImg = await this.createImage("./playerImages/player_" + i + "_move.png");
-            const moveImg2 = await this.createImage("./mobImages/mob_" + i + "_move.png");
-            const moveImg3 = await this.createImage("./playerImages/player_" + i + "_2_move.png");
-            const moveImg4 = await this.createImage("./mobImages/mob_" + i + "_2_move.png");
+            const img = this.createImage("./playerImages/player_" + i + ".png");
+            const img2 = this.createImage("./mobImages/mob_" + i + ".png");
+            const moveImg = this.createImage("./playerImages/player_" + i + "_move.png");
+            const moveImg2 = this.createImage("./mobImages/mob_" + i + "_move.png");
+            const moveImg3 = this.createImage("./playerImages/player_" + i + "_2_move.png");
+            const moveImg4 = this.createImage("./mobImages/mob_" + i + "_2_move.png");
             this.imageCache.push(img, img2, moveImg, moveImg2, moveImg3, moveImg4);
         }
     }
 
     createImage(src) {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.src = src;
-        })
+        const img = new Image();
+        img.src = src;
     }
 
     getTileToRender(tile) {
