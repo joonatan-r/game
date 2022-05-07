@@ -8,7 +8,7 @@ import UI from "./UI.js";
 import {
     coordsEq, getPosInfo, initialize, isNextTo, movePosToDrc, 
     relativeCoordsToDrc, 
-    projectileFromDrc, removeByReference 
+    projectileFromDrc, removeByReference, itemNameWithNumber 
 } from "./util.js";
 
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
@@ -497,7 +497,7 @@ export default class GameManager {
                 if (severalItems) {
                     msg += "There are several items here.";
                 } else {
-                    msg += "There's " + this.items[i].name + " here.";
+                    msg += "There's \"" + itemNameWithNumber(this.items[i]) + "\" here.";
                 }
                 this.ui.showMsg(msg);
                 return;
@@ -544,6 +544,24 @@ export default class GameManager {
         this.inputType = null;
         this.autoTravelStack = [];
     }
+
+    addToInventory(item) {
+        let playerHasItem = false;
+        let oldItem = null;
+
+        for (const invItem of this.player.inventory) {
+            if (invItem.name === item.name) {
+                playerHasItem = true;
+                oldItem = invItem;
+                break;
+            }
+        }
+        if (playerHasItem) {
+            oldItem.number = (oldItem.number || 1) + (item.number || 1);
+        } else {
+            this.player.inventory.push(item);
+        }
+    }
     
     pickup(alwaysDialog) {
         for (let i = 0; i < this.items.length; i++) {
@@ -555,7 +573,7 @@ export default class GameManager {
                 for (let j = 0; j < this.items.length; j++) {
                     if (coordsEq(this.items[i].pos, this.items[j].pos) && !this.items[j].hidden) {
                         itemsHere.push(this.items[j]); // i is also included here
-                        itemNames.push(this.items[j].name);
+                        itemNames.push(itemNameWithNumber(this.items[j]));
                         itemIdxs.push(j);
                     }
                 }
@@ -563,14 +581,14 @@ export default class GameManager {
                     this.ui.showDialog("What do you want to pick up?", itemNames, idx => {
                         if (idx < 0) return;
                         const removed = this.items.splice(itemIdxs[idx], 1)[0];
-                        this.player.inventory.push(removed);
-                        this.ui.showMsg("You pick up " + removed.name + ".");
+                        this.addToInventory(removed);
+                        this.ui.showMsg("You pick up \"" + itemNameWithNumber(removed) + "\".");
                         this.pickup(true); // allow picking up several items from the "same" dialog
                     }, true, true);
                 } else {
                     const removed = this.items.splice(i, 1)[0];
-                    this.player.inventory.push(removed);
-                    this.ui.showMsg("You pick up " + removed.name + ".");
+                    this.addToInventory(removed);
+                    this.ui.showMsg("You pick up \"" + itemNameWithNumber(removed) + "\".");
                 }
                 break;
             }

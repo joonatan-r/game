@@ -81,12 +81,12 @@ const events = {
                     break;
             }
         },
-        "a gate": function(item, gm) {
+        "gate": function(item, gm) {
             let playerHasObject = false;
             let obj = null;
 
-            for (let invItem of gm.player.inventory) {
-                if (invItem.name === "a weird object") {
+            for (const invItem of gm.player.inventory) {
+                if (invItem.name === "weird object") {
                     playerHasObject = true;
                     obj = invItem;
                     break;
@@ -108,11 +108,11 @@ const events = {
                 gm.ui.showMsg("You seem to need something to open this gate.");
             }
         },
-        "a chest": function(item, gm) {
+        "chest": function(item, gm) {
             let playerHasKey = false;
 
             for (let invItem of gm.player.inventory) {
-                if (invItem.name === "a key") {
+                if (invItem.name === "key") {
                     playerHasKey = true;
                     break;
                 }
@@ -122,28 +122,33 @@ const events = {
             }
             switch (item.state) {
                 case 0:
-                    gm.ui.showMsg("You try to loot " + item.name + ", but it's locked.");
+                    gm.ui.showMsg("You try to loot \"" + item.name + "\", but it's locked.");
                     break;
                 case 1:
                     gm.ui.showMsg("You loot a diamond!");
-                    gm.player.inventory.push({
-                        name: "a diamond",
+                    gm.addToInventory({
+                        name: "diamond",
                         symbol: "*"
                     });
                     item.state = 2;
                     break;
                 case 2:
-                    gm.ui.showMsg("You try to loot " + item.name + ", but it's empty.");
+                    gm.ui.showMsg("You try to loot \"" + item.name + "\", but it's empty.");
                     break;
             }
         },
-        "a strange device": function(item, gm) {
+        "strange device": function(item, gm) {
             if (gm.player.health === gm.player.maxHealth) {
                 gm.ui.showMsg("You get a strange feeling.");
             } else {
                 gm.player.health++;
                 gm.ui.showMsg("You feel restored.");
             }
+        }
+    },
+    onUse: {
+        "weird object": function(item, gm) {
+            gm.ui.showMsg("The object emits strange light, then fades again.");
         }
     }
 };

@@ -1,6 +1,6 @@
 import { levelTiles } from "./levelData.js";
 import {
-    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections
+    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber
 } from "./util.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
@@ -367,15 +367,17 @@ function menuListener(e) {
 // }
 
 function showInventory() {
-    let contentNames = [];
+    const contentNames = [];
     
-    for (let item of gm.player.inventory) contentNames.push(item.name);
-
+    for (const item of gm.player.inventory) {
+        contentNames.push(itemNameWithNumber(item));
+    }
     if (contentNames.length !== 0) {
         gm.ui.showDialog("Contents of your inventory:", contentNames, itemIdx => {
             if (itemIdx < 0) return;
+            const actionOptions = gm.player.inventory[itemIdx].usable ? ["Drop", "Use"] : ["Drop"];
             gm.ui.showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", 
-                       ["Drop"], actionIdx => {
+                             actionOptions, actionIdx => {
                 switch (actionIdx) {
                     case 0:
                         let item = gm.player.inventory.splice(itemIdx, 1)[0];
@@ -383,6 +385,9 @@ function showInventory() {
                         gm.items.push(item);
                         gm.ui.showMsg("You drop \"" + contentNames[itemIdx] + "\".");
                         gm.processTurn();
+                        break;
+                    case 1:
+                        gm.tryFireEvent("onUse", gm.player.inventory[itemIdx]);
                         break;
                 }
             }, true, true, 1);

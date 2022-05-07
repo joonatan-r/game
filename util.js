@@ -490,3 +490,7 @@ export function getAdjacentOrthogonalDirections(pos, drc) {
     }
     return alternatives;
 }
+
+export function itemNameWithNumber(item) {
+    return item.number > 1 ? item.name + " (" + item.number + ")" : item.name; 
+}
