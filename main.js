@@ -207,7 +207,7 @@ function clickListener(e) {
         menu.style.display = "none";
         return;
     }
-    if (e.target.id === "status" || e.target.parentNode?.id === "clickMenu"
+    if (e.target.id === "status" || e.target.id === "info" || e.target.parentNode?.id === "clickMenu"
         || e.target.dataset.ignoreClick || e.button !== 0 || gm.inputType === "selectPos") return;
     // get cursor position in relation to the player symbol and convert to drc
     const rect = gm.area[gm.player.pos[0]][gm.player.pos[1]].getBoundingClientRect();
