@@ -8,7 +8,7 @@ import UI from "./UI.js";
 import {
     coordsEq, getPosInfo, initialize, isNextTo, movePosToDrc, 
     relativeCoordsToDrc, 
-    projectileFromDrc, removeByReference, itemNameWithNumber 
+    projectileFromDrc, removeByReference, itemNameWithNumber, getClosestTravelPoint 
 } from "./util.js";
 
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
@@ -598,13 +598,28 @@ export default class GameManager {
     tryChangeLvl() {
         const tps = this.levels[this.levels.currentLvl].travelPoints;
     
-        for (let lvl of Object.keys(tps)) {
+        for (const lvl of Object.keys(tps)) {
             let idx = 0; // for tracking which point in lvl to travel to if several
     
-            for (let coords of tps[lvl]) {
+            for (const coords of tps[lvl]) {
                 if (coordsEq(coords, this.player.pos)) {
                     if (typeof this.levels[lvl] === "undefined") {
-                        createNewLvl(this.levels, this.level, this.player);
+                        createNewLvl(lvl, this.levels, this.level, this.player);
+                    }
+                    if (typeof this.levels[lvl].travelPoints[this.levels.currentLvl] === "undefined") {
+                        // if no travelpoint to connect to this level, choose most appropriate placeholder
+                        this.levels[lvl].travelPoints[this.levels.currentLvl] = [
+                            getClosestTravelPoint(this.levels[lvl].tempTravelPoints, this.player.pos, this.level)
+                        ];
+                    }
+                    if (this.levels[lvl].tempTravelPoints) {
+                        // if there are placeholder travelpoints, change them into actual travelpoints that
+                        // point to new levels to be generated
+                        for (const tpsToGenerate of this.levels[lvl].tempTravelPoints) {
+                            this.levels[lvl].travelPoints[this.levels.generatedIdx + 1] = [tpsToGenerate];
+                            this.levels.generatedIdx++;
+                        }
+                        delete this.levels[lvl].tempTravelPoints;
                     }
                     this.level = this.levels[lvl].level;
                     this.player.pos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();

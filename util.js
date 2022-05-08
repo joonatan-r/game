@@ -1,4 +1,4 @@
-import { levelData, levelCharMap, levelTiles, infoTable } from "./levelData.js";
+import { levelData, levelCharMap, levelTiles, infoTable, PLACEHOLDER_TP } from "./levelData.js";
 
 export function initialize() {
     const table = document.getElementById("table");
@@ -74,6 +74,12 @@ export function initialize() {
                     // NOTE: currently if multiple passages between two lvls, they are always connected
                     // in the order they appear in the lvls
                     for (let name of travelNames) {
+                        // placeholder travelpoints connect to generated levels, will be properly added later
+                        if (name === PLACEHOLDER_TP) {
+                            if (!levels[lvlName].tempTravelPoints) levels[lvlName].tempTravelPoints = [];
+                            levels[lvlName].tempTravelPoints.push(travelCoords.shift());
+                            continue;
+                        }
                         if (!levels[lvlName].travelPoints[name]) levels[lvlName].travelPoints[name] = [];
                         levels[lvlName].travelPoints[name].push(travelCoords.shift());
                     }
@@ -493,4 +499,37 @@ export function getAdjacentOrthogonalDirections(pos, drc) {
 
 export function itemNameWithNumber(item) {
     return item.number > 1 ? item.name + " (" + item.number + ")" : item.name; 
+}
+
+export function getClosestSide(pos, level) {
+    const distances = {
+        top: pos[0],
+        bottom: level.length - 1 - pos[0],
+        left: pos[1],
+        right: level[0].length - 1 - pos[1]
+    };
+    return Object.keys(distances).sort((a,b) => distances[a] - distances[b])[0];
+};
+
+export function getClosestTravelPoint(tps, pos, level) {
+    const closestSide = getClosestSide(pos, level);
+    const opposites = {
+        top: "bottom",
+        bottom: "top",
+        left: "right",
+        right: "left"
+    };
+    let closestTp = null;
+
+    for (const tp of tps) {
+        if (opposites[closestSide] === getClosestSide(tp, level)) {
+            closestTp = tp;
+            break;
+        }
+    }
+    if (closestTp) {
+        removeByReference(tps, closestTp);
+        return closestTp;
+    }
+    return tps.shift();
 }

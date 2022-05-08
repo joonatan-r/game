@@ -1,5 +1,5 @@
 import { levelCharMap, levelTiles, levelTilesRaw } from "./levelData.js";
-import { getRandomInt } from "./util.js";
+import { getClosestSide, getRandomInt } from "./util.js";
 import { createRandomMobSpawning } from "./mobs.js";
 
 const SIZE_Y = 23;
@@ -311,34 +311,37 @@ function generateLevel(startPoint) {
     return level;
 }
 
-export function createNewLvl(levels, level, player) {
-    // NOTE: currently the travel point to the generated lvl must be on lvl edge
-
+export function createNewLvl(name, levels, level, player) {
     const startPos = [];
     const frontOfStartPos = [];
-    let name = "" + levels.generatedIdx;
     let newTravelPos = null;
+    const closestSide = getClosestSide(player.pos, level);
 
-    if (player.pos[0] === 0) {
-        startPos[0] = level.length - 1;
-        startPos[1] = player.pos[1];
-        frontOfStartPos[0] = level.length - 2;
-        frontOfStartPos[1] = player.pos[1];
-    } else if (player.pos[0] === level.length - 1) {
-        startPos[0] = 0;
-        startPos[1] = player.pos[1];
-        frontOfStartPos[0] = 1
-        frontOfStartPos[1] = player.pos[1];
-    } else if (player.pos[1] === 0) {
-        startPos[0] = player.pos[0];
-        startPos[1] = level[0].length - 1;
-        frontOfStartPos[0] = player.pos[0];
-        frontOfStartPos[1] = level[0].length - 2;
-    } else if (player.pos[1] === level[0].length - 1) {
-        startPos[0] = player.pos[0];
-        startPos[1] = 0;
-        frontOfStartPos[0] = player.pos[0];
-        frontOfStartPos[1] = 1;
+    switch (closestSide) {
+        case "top":
+            startPos[0] = level.length - 1;
+            startPos[1] = player.pos[1];
+            frontOfStartPos[0] = level.length - 2;
+            frontOfStartPos[1] = player.pos[1];
+            break;
+        case "bottom":
+            startPos[0] = 0;
+            startPos[1] = player.pos[1];
+            frontOfStartPos[0] = 1
+            frontOfStartPos[1] = player.pos[1];
+            break;
+        case "left":
+            startPos[0] = player.pos[0];
+            startPos[1] = level[0].length - 1;
+            frontOfStartPos[0] = player.pos[0];
+            frontOfStartPos[1] = level[0].length - 2;
+            break;
+        case "right":
+            startPos[0] = player.pos[0];
+            startPos[1] = 0;
+            frontOfStartPos[0] = player.pos[0];
+            frontOfStartPos[1] = 1;
+            break;
     }
     const generatedLvl = generateLevel(startPos);
     generatedLvl[startPos[0]][startPos[1]] = levelTilesRaw.doorWay;
@@ -372,7 +375,13 @@ export function createNewLvl(levels, level, player) {
     }
     // travel point to next to-be-generated lvl
     while (newTravelPos === null) newTravelPos = tryAddTravelPoint(openEdges, startPos);
-    travelPoints["" + (levels.generatedIdx + 1)] = [[newTravelPos[0], newTravelPos[1]]];
+
+    // random chance to connect to this level if not yet existing, instead of a new generated one
+    if (levels["Crossroads"].tempTravelPoints && Math.random() < 0.2) {
+        travelPoints["Crossroads"] = [[newTravelPos[0], newTravelPos[1]]];
+    } else {
+        travelPoints[levels.generatedIdx + 1] = [[newTravelPos[0], newTravelPos[1]]];
+    }
     generatedLvl[newTravelPos[0]][newTravelPos[1]] = levelTiles.doorWay;
     // because generation uses smaller level rectangle, start pos is shifted, this just ensures
     // the player doesn't need to move diagonally out of the start point
