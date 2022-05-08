@@ -28,4 +28,10 @@ export function addItems(levels) {
         blocksTravel: true,
         pos: [13, 16]
     });
+    levels["Strange cavern"].items.push({
+        name: "strange device",
+        symbol: "+",
+        blocksTravel: true,
+        pos: [12, 15]
+    });
 }

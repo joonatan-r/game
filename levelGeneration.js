@@ -1,5 +1,5 @@
 import { levelCharMap, levelTiles, levelTilesRaw } from "./levelData.js";
-import { getClosestSide, getRandomInt } from "./util.js";
+import { bresenham, coordsEq, getClosestSide, getRandomInt } from "./util.js";
 import { createRandomMobSpawning } from "./mobs.js";
 
 const SIZE_Y = 23;
@@ -315,6 +315,7 @@ export function createNewLvl(name, levels, level, player) {
     const startPos = [];
     const frontOfStartPos = [];
     let newTravelPos = null;
+    let extraTravelPos = null;
     const closestSide = getClosestSide(player.pos, level);
 
     switch (closestSide) {
@@ -382,6 +383,32 @@ export function createNewLvl(name, levels, level, player) {
     } else {
         travelPoints[levels.generatedIdx + 1] = [[newTravelPos[0], newTravelPos[1]]];
     }
+    // after that, random chance to also connect here
+    if (!levels["Strange cavern"].accessible
+        && !levels["Crossroads"].tempTravelPoints
+        && Math.random() < 0.2
+    ) {
+        const candidates = [];
+        
+        // TODO refactor for reusability
+        for (let i = 0; i < level.length; i++) {
+            candidates.push([i, 0]);
+        }
+        while (extraTravelPos === null) extraTravelPos = tryAddExtraTravelPoint(candidates, startPos, newTravelPos);
+
+        travelPoints["Strange cavern"] = [[extraTravelPos[0], extraTravelPos[1]]];
+        generatedLvl[extraTravelPos[0]][extraTravelPos[1]] = levelTiles.doorWay;
+        levels["Strange cavern"].accessible = true;
+        const frontOfTravelPos = [extraTravelPos[0], 1];
+        bresenham(frontOfTravelPos[0], frontOfTravelPos[1], frontOfStartPos[0], frontOfStartPos[1], (y, x) => {
+            if (generatedLvl[y][x] === levelTiles.floor) { // add corridor to make sure accessible
+                return "stop";
+            }
+            generatedLvl[y][x] = levelTiles.floor;
+            generatedLvl[y + 1] && (generatedLvl[y + 1][x] = levelTiles.floor);
+            return "ok";
+        });
+    }
     generatedLvl[newTravelPos[0]][newTravelPos[1]] = levelTiles.doorWay;
     // because generation uses smaller level rectangle, start pos is shifted, this just ensures
     // the player doesn't need to move diagonally out of the start point
@@ -404,6 +431,15 @@ export function createNewLvl(name, levels, level, player) {
 function tryAddTravelPoint(openEdges, startPos) {
     for (const pos of openEdges) {
         if (pos[0] !== startPos[0] && pos[1] !== startPos[1] && Math.random() < 1 / openEdges.length) {
+            return pos;
+        }
+    }
+    return null;
+}
+
+function tryAddExtraTravelPoint(candidates, startPos, exitPos) {
+    for (const pos of candidates) {
+        if (!coordsEq(pos, startPos) && !coordsEq(pos, exitPos) && Math.random() < 1 / candidates.length) {
             return pos;
         }
     }

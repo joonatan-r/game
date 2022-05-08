@@ -83,6 +83,8 @@ export function initialize() {
                         if (!levels[lvlName].travelPoints[name]) levels[lvlName].travelPoints[name] = [];
                         levels[lvlName].travelPoints[name].push(travelCoords.shift());
                     }
+                    // NOTE: level with no predefined travelpoint also gets "accessible" set to true to keep
+                    // track if a path to it has been generated
                     level = [[]];
                     yIdx = 0;
                     xIdx = 0;
