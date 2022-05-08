@@ -405,7 +405,8 @@ export function createNewLvl(name, levels, level, player) {
                 return "stop";
             }
             generatedLvl[y][x] = levelTiles.floor;
-            generatedLvl[y + 1] && (generatedLvl[y + 1][x] = levelTiles.floor);
+            // widen by putting floor under as well, but don't overwrite the edge wall
+            y + 1 < level.length - 1 && (generatedLvl[y + 1][x] = levelTiles.floor);
             return "ok";
         });
     }
