@@ -139,6 +139,7 @@ export const movingAIs = {
         // if already visited twice, moving will be stopped, else would just loop the same cycle
         if (!mob.alreadyVisitedTwice) mob.alreadyVisitedTwice = [];
         if (mob.prevTargetPos && !coordsEq(mob.prevTargetPos, targetPos)) {
+            mob.alreadyVisited = [];
             mob.alreadyVisitedTwice = [];
         }
         mob.prevTargetPos = targetPos.slice();
@@ -149,27 +150,33 @@ export const movingAIs = {
             mob.target = [y, x];
             return "stop";
         });
-        const drcs = getCoordsNextTo(mob.pos);
-        const drcQueue = [mob.target];
-        let excluded = [];
-        let maxIters = 8;
-        let currentDrc, newDrcs;
+
+        for (const coord of mob.alreadyVisited) {
+            if (coordsEq(coord, mob.pos)) {
+                mob.alreadyVisitedTwice.push(mob.pos);
+            }
+        }
+        mob.alreadyVisited.push(mob.pos);
 
         if (!posIsValid(mob.target)) {
+            const drcs = getCoordsNextTo(mob.pos);
+            const drcQueue = [mob.target];
             // better ability to go around obstacles when not backtracking 
             // while blocked on consecutive turns
-            mob.alreadyVisited.push(mob.pos);
-            excluded.push(...mob.alreadyVisited);
+            let excluded = [...mob.alreadyVisited];
+            let maxIters = 16;
+            let currentDrc, newDrcs;
 
             while (maxIters--) {
                 if (drcQueue.length === 0) {
                     // no other valid drcs, choose even if excluded
-                    excluded = [];
-                    newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
+                    // put prev position to excluded to not just go back immediately
+                    excluded = mob.prevPos ? [mob.prevPos] : [];
                 } else {
                     currentDrc = drcQueue.shift();
-                    newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
                 }
+                newDrcs = getSecondBestDirections(drcs, currentDrc, excluded);
+                
                 for (let d of newDrcs) {
                     if (d.length === 0) continue;
                     if (!level[d[0]] || typeof level[d[0]][d[1]] === "undefined") continue;
@@ -181,6 +188,7 @@ export const movingAIs = {
                             }
                         }
                         mob.target = d;
+                        mob.prevPos = mob.pos;
                         return;
                     } else {
                         // push invalid drc to queue to later getSecondBestDirections based on it
@@ -196,12 +204,7 @@ export const movingAIs = {
                     return;
                 }
             }
-            for (const coord of mob.alreadyVisited) {
-                if (coordsEq(coord, mob.target)) {
-                    mob.alreadyVisitedTwice.push(mob.target);
-                }
-            }
-            mob.alreadyVisited = [];
+            mob.prevPos = mob.pos;
         }
     },
     towardsStraightLineFromPos: (mob, fromPos, posIsValid, level) => {
