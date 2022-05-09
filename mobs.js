@@ -135,6 +135,13 @@ export const movingAIs = {
         }
     },
     towardsPos: (mob, targetPos, posIsValid, level) => {
+        if (!mob.alreadyVisited) mob.alreadyVisited = [];
+        // if already visited twice, moving will be stopped, else would just loop the same cycle
+        if (!mob.alreadyVisitedTwice) mob.alreadyVisitedTwice = [];
+        if (mob.prevTargetPos && !coordsEq(mob.prevTargetPos, targetPos)) {
+            mob.alreadyVisitedTwice = [];
+        }
+        mob.prevTargetPos = targetPos.slice();
         bresenham(mob.pos[0], mob.pos[1], targetPos[0], targetPos[1], (y, x) => {
             if (coordsEq([y, x], mob.pos)) {
                 return "ok";
@@ -148,9 +155,6 @@ export const movingAIs = {
         let maxIters = 8;
         let currentDrc, newDrcs;
 
-        if (!mob.alreadyVisited) mob.alreadyVisited = [];
-        // if already visited twice, moving will be stopped, else would just loop the same cycle
-        if (!mob.alreadyVisitedTwice) mob.alreadyVisitedTwice = [];
         if (!posIsValid(mob.target)) {
             // better ability to go around obstacles when not backtracking 
             // while blocked on consecutive turns
@@ -194,13 +198,10 @@ export const movingAIs = {
             }
             for (const coord of mob.alreadyVisited) {
                 if (coordsEq(coord, mob.target)) {
-                    mob.alreadyVisited = [];
                     mob.alreadyVisitedTwice.push(mob.target);
-                    return;
                 }
             }
             mob.alreadyVisited = [];
-            mob.alreadyVisitedTwice = [];
         }
     },
     towardsStraightLineFromPos: (mob, fromPos, posIsValid, level) => {
