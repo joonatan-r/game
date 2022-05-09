@@ -8,7 +8,7 @@ import UI from "./UI.js";
 import {
     coordsEq, getPosInfo, initialize, isNextTo, movePosToDrc, 
     relativeCoordsToDrc, 
-    projectileFromDrc, removeByReference, itemNameWithNumber, getClosestTravelPoint 
+    projectileFromDrc, removeByReference, itemNameWithNumber, getClosestTravelPoint, dijkstra 
 } from "./util.js";
 
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
@@ -94,7 +94,7 @@ export default class GameManager {
         }
     }
 
-    posIsValid(pos) {
+    posIsValid(pos, disallowFakeWalls) {
         if (pos?.length !== 2) return false;
         for (let mob of this.mobs) {
             if (coordsEq(mob.pos, pos)) return false;
@@ -110,6 +110,7 @@ export default class GameManager {
             || this.level[pos[0]][pos[1]] === levelTiles.wall
             || this.level[pos[0]][pos[1]] === levelTiles.seeThroughWall
             || this.level[pos[0]][pos[1]] === levelTiles.transparentBgWall
+            || (disallowFakeWalls && this.level[pos[0]][pos[1]] === levelTiles.fakeWall)
         ) {
             return false;
         }
@@ -507,7 +508,8 @@ export default class GameManager {
     
     async autoTravel(coords) {
         if (coordsEq(coords, this.player.pos)) return;
-        const coordsList = [];
+        const coordsList = dijkstra(this.player.pos, coords, this.level, this.posIsValid);
+        coordsList.shift(); // first element is player pos
         const lvl = this.levels.currentLvl;
         const idx = this.autoTravelStack.length;
         this.autoTravelStack.push(true);
@@ -517,20 +519,7 @@ export default class GameManager {
         }
         this.interruptAutoTravel = false;
         this.inputType = "autoMove";
-        const placeHolderPlayer = { pos: this.player.pos.slice() };
-        let currCoords = [];
-        let maxIters = 50;
-        
-        while (!coordsEq(currCoords, coords) && maxIters--) {
-            movingAIs["towardsPos"](placeHolderPlayer, coords, this.posIsValid, this.level);
 
-            if (coordsEq(currCoords, placeHolderPlayer.target)) {
-                break;
-            }
-            placeHolderPlayer.pos = placeHolderPlayer.target.slice();
-            currCoords = placeHolderPlayer.target;
-            coordsList.push(currCoords);
-        }
         for (let coord of coordsList) {
             // new coord may not be next to player if e.g. a mob blocks the way
             if (!this.autoTravelStack[idx] || this.interruptAutoTravel || this.levels.currentLvl !== lvl || !isNextTo(this.player.pos, coord)) {

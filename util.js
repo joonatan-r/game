@@ -208,6 +208,80 @@ export function bresenham(y0, x0, y1, x1, onNewPos) {
     }
 }
 
+export function dijkstra(startPos, targetPos, level, posIsValid) {
+    const INF = 1000;
+    const nodes = {};
+    let reachable = true;
+
+    for (let i = 0; i < level.length; i++) {
+        for (let j = 0; j < level[0].length; j++) {
+            const isStartNode = coordsEq(startPos, [i, j]);
+            nodes[i + "_" + j] = {
+                value: [i, j],
+                visited: false,
+                d: isStartNode ? 0 : INF,
+                // disallow fake walls in posIsValid so player can't find them with autoTravel
+                neighbors: getCoordsNextTo([i, j]).filter(pos => posIsValid(pos, true)),
+                prevNode: null
+            };
+        }
+    }
+    const targetNode = nodes[targetPos[0] + "_" + targetPos[1]];
+    let currentNode = nodes[startPos[0] + "_" + startPos[1]];
+    let nodeToTravelTo = targetNode;
+
+    while (1) {
+        for (const neighbor of currentNode.neighbors) {
+            const neighborNode = nodes[neighbor[0] + "_" + neighbor[1]];
+            const distanceThroughCurrent = currentNode.d + 1; // neighbors are always at distance 1
+
+            if (distanceThroughCurrent < neighborNode.d) {
+                neighborNode.d = distanceThroughCurrent;
+                neighborNode.prevNode = currentNode;
+            }
+        }
+        currentNode.visited = true;
+        let closestUnvisited = null;
+
+        for (const node of Object.values(nodes)) {
+            if (!node.visited && (!closestUnvisited || node.d < closestUnvisited.d)) {
+                closestUnvisited = node;
+            }
+        }
+        if (!closestUnvisited || closestUnvisited.d === INF) {
+            reachable = false;
+            break;
+        }
+        if (closestUnvisited === targetNode) {
+            break;
+        }
+        currentNode = closestUnvisited;
+    }
+    if (!reachable) {
+        let closestNode = null;
+        let smallestDistance = null;
+
+        for (const node of Object.values(nodes)) {
+            // squared distance, can still use for min search
+            const distanceToTarget = (node.value[0] - targetNode.value[0])*(node.value[0] - targetNode.value[0]) + 
+                                        (node.value[1] - targetNode.value[1])*(node.value[1] - targetNode.value[1]);
+            if (node.visited && (!closestNode || distanceToTarget < smallestDistance)) {
+                closestNode = node;
+                smallestDistance = distanceToTarget;
+            } 
+        }
+        nodeToTravelTo = closestNode;
+    }
+    const path = [nodeToTravelTo.value];
+    let node = nodeToTravelTo.prevNode;
+
+    while (node) {
+        path.unshift(node.value);
+        node = node.prevNode;
+    }
+    return path;
+}
+
 makeTextFile.textFile = null;
 
 export function makeTextFile(text) {
