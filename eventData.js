@@ -4,6 +4,8 @@ import { coordsEq, removeByReference } from "./util.js";
 const events = {
     onStart: function(gm) {
         if (gm.timeTracker.timer === 0) {
+            // No message when starting a random game
+            if (gm.levels.currentLvl === "The Beginning") return;
             gm.setPause(true);
             gm.ui.showDialog("Hello, adventurer!", ["Continue"], () => {
                 gm.setPause(false);

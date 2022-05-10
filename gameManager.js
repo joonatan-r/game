@@ -583,6 +583,18 @@ export default class GameManager {
             }
         }
     }
+
+    tryGenerateTravelPoints(lvl) {
+        if (this.levels[lvl].tempTravelPoints) {
+            // if there are placeholder travelpoints, change them into actual travelpoints that
+            // point to new levels to be generated
+            for (const tpsToGenerate of this.levels[lvl].tempTravelPoints) {
+                this.levels[lvl].travelPoints[this.levels.generatedIdx + 1] = [tpsToGenerate];
+                this.levels.generatedIdx++;
+            }
+            delete this.levels[lvl].tempTravelPoints;
+        }
+    }
     
     tryChangeLvl() {
         const tps = this.levels[this.levels.currentLvl].travelPoints;
@@ -601,15 +613,7 @@ export default class GameManager {
                             getClosestTravelPoint(this.levels[lvl].tempTravelPoints, this.player.pos, this.level)
                         ];
                     }
-                    if (this.levels[lvl].tempTravelPoints) {
-                        // if there are placeholder travelpoints, change them into actual travelpoints that
-                        // point to new levels to be generated
-                        for (const tpsToGenerate of this.levels[lvl].tempTravelPoints) {
-                            this.levels[lvl].travelPoints[this.levels.generatedIdx + 1] = [tpsToGenerate];
-                            this.levels.generatedIdx++;
-                        }
-                        delete this.levels[lvl].tempTravelPoints;
-                    }
+                    this.tryGenerateTravelPoints(lvl);
                     this.level = this.levels[lvl].level;
                     this.player.pos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
                     this.mobs = this.levels[lvl].mobs;

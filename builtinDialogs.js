@@ -34,30 +34,46 @@ export default class BuiltinDialogs {
     }
 
     showStartDialog() {
-        this.gm.ui.showDialog("Start", ["New game", "Load game", "Options", "Controls", "Save configs as default"], idx => {
-            switch (idx) {
-                case 0:
-                    addMobs(this.gm.levels);
-                    addItems(this.gm.levels);
-                    this.start();
-                    break;
-                case 1:
-                    this.loadGame();
-                    this.showStartDialog(); // only shown in case user cancels
-                    break;
-                case 2:
-                    this.showOptionsDialog();
-                    break;
-                case 3:
-                    this.showControlsDialog();
-                    break;
-                case 4:
-                    localStorage.setItem("gameDefaultOptions", JSON.stringify(options));
-                    this.gm.ui.showMsg("Saved default options");
-                    this.showStartDialog();
-                    break;
-            }
-        }, false, true, 0);
+        this.gm.ui.showDialog(
+            "Start",
+            ["New story game", "New random game", "Load game", "Options", "Controls", "Save configs as default"],
+            idx => {
+                switch (idx) {
+                    case 0:
+                        addMobs(this.gm.levels);
+                        addItems(this.gm.levels);
+                        this.start();
+                        break;
+                    case 1:
+                        this.gm.level = this.gm.levels["The Beginning"].level;
+                        this.gm.player.pos = [14, 15];
+                        this.gm.mobs = this.gm.levels["The Beginning"].mobs;
+                        this.gm.items = this.gm.levels["The Beginning"].items;
+                        this.gm.levels.currentLvl = "The Beginning";
+                        this.gm.tryGenerateTravelPoints("The Beginning");
+                        this.start();
+                        break;
+                    case 2:
+                        this.loadGame();
+                        this.showStartDialog(); // only shown in case user cancels
+                        break;
+                    case 3:
+                        this.showOptionsDialog();
+                        break;
+                    case 4:
+                        this.showControlsDialog();
+                        break;
+                    case 5:
+                        localStorage.setItem("gameDefaultOptions", JSON.stringify(options));
+                        this.gm.ui.showMsg("Saved default options");
+                        this.showStartDialog();
+                        break;
+                }
+            },
+            false,
+            true,
+            0
+        );
     }
     
     showOptionsDialog(startPage) {
