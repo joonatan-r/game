@@ -233,7 +233,12 @@ export function dijkstra(startPos, targetPos, level, posIsValid) {
     while (1) {
         for (const neighbor of currentNode.neighbors) {
             const neighborNode = nodes[neighbor[0] + "_" + neighbor[1]];
-            const distanceThroughCurrent = currentNode.d + 1; // neighbors are always at distance 1
+            // prefer orthogonal neighbors by having slightly longer distance to diagonal ones,
+            // they are equal in terms of game logic but visually further away diagonally
+            const distanceThroughCurrent = (
+                neighborNode.value[0] === currentNode.value[0] ||
+                neighborNode.value[1] === currentNode.value[1]
+            ) ? currentNode.d + 2 : currentNode.d + 3;
 
             if (distanceThroughCurrent < neighborNode.d) {
                 neighborNode.d = distanceThroughCurrent;
