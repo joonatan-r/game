@@ -289,7 +289,7 @@ function generateLevel(startPoint) {
         }
     }
     // too open level, retry (NOTE: a bit inefficient)
-    if (wallNbr < 0.4*SIZE_Y*SIZE_X) {
+    if (wallNbr < 0.5*SIZE_Y*SIZE_X) {
         return generateLevel(startPoint);
     }
     // generation uses a smaller level rectangle, now add walls around

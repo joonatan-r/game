@@ -20,25 +20,36 @@ export default class Renderer {
     constructor(area, rendered) { // NOTE: area has to be initialized before
         this.area = area;
         this.rendered = rendered;
-        this.areaCache = [];
         this.edges = [];
         this.imageCache = [];
-        this.imgCoordsToDelete = []; // used to not replace imgs unless necessary
+        this.queuePromise = Promise.resolve();
 
         if (options.USE_DOTS) {
             this.tileConversion[levelTiles.floor] = "\u00B7";
         }
         for (let i = 0; i < area.length; i++) {
-            this.areaCache.push([]);
           
             for (let j = 0; j < area[0].length; j++) {
                 if (i === 0 || j === 0 || i === area.length - 1 || j === area[0].length - 1) {
                     this.edges.push([i, j]);
                 }
-                this.areaCache[i][j] = "";
             }
         }
         this.loadImagesToCache();
+    }
+
+    // Can be used as a semaphore to execute changes in an async task. All other async tasks
+    // wait until the previous is ready before proceeding. Usage: await this function's return
+    // value, execute changes, and call the return value to release the lock. 
+
+    async addToQueue() {
+        return new Promise(resolve => {
+            this.queuePromise = this.queuePromise.then(() => {
+                return new Promise(queueResolve => {
+                    resolve(queueResolve);
+                });
+            });
+        });
     }
 
     loadImagesToCache() {
@@ -86,32 +97,46 @@ export default class Renderer {
         }
     }
 
-    renderAll(player, levels, customRenders) {
+    // TODO could add to buffer variables area, rendered, areacache (?), memorized
+    // and only update all once at the end
+
+    async renderAll(player, levels, customRenders) {
         let level = levels[levels.currentLvl].level;
         let mobs = levels[levels.currentLvl].mobs;
         let items = levels[levels.currentLvl].items;
         let memorized = levels[levels.currentLvl].memorized;
         let visitedTTypeWall = false;
         let selectionPos = null; // used to not erase selection marker on pos when inspecting
+
+        const areaBuffer = [];
+        const renderedBuffer = [];
+        const memorizedBuffer = [];
+        const imgCoordsToDelete = []; // used to not replace imgs unless necessary
     
-        // TODO could still optimize having items etc in areaCache and not overwriting
+        // TODO could still optimize having items etc in cache and not overwriting
 
         for (let i = 0; i < level.length; i++) {
-            for (let j = 0; j < level[0].length; j++) {
-                const areaPos = this.area[i][j];
+            areaBuffer.push([]);
+            renderedBuffer.push([]);
+            memorizedBuffer.push([]);
 
-                this.rendered[i][j] = false;
-                this.areaCache[i][j] = areaPos.textContent;
-                areaPos.firstChild 
-                    && areaPos.firstChild.tagName === "IMG"
-                    && areaPos.removeChild(areaPos.firstChild);
+            for (let j = 0; j < level[0].length; j++) {
+                areaBuffer[i][j] = {
+                    className: "hidden",
+                    classList: [],
+                    style: {},
+                    customProps: {
+                        infoKeys: []
+                    }
+                };
+                renderedBuffer[i][j] = false;
+                memorizedBuffer[i][j] = memorized[i][j];
+                const areaPos = this.area[i][j];
 
                 if (areaPos.classList.contains("selected")) {
                     selectionPos = [i, j];
                 }
-                areaPos.className = "hidden";
-                areaPos.style.backgroundImage !== "none" && (this.imgCoordsToDelete.push(areaPos));
-                areaPos.customProps.infoKeys = [];
+                areaPos.style.backgroundImage !== "none" && (imgCoordsToDelete.push(areaBuffer[i][j]));
             }
         }
         for (let coords of this.edges) {
@@ -124,58 +149,51 @@ export default class Renderer {
                     visitedTTypeWall = false;
                     return "stop";
                 }
-                if (this.rendered[y][x]) {
+                if (renderedBuffer[y][x]) {
                     return blocksSight(levelTile) ? "stop" : "ok";
                 }
                 const tileToRender = this.getTileToRender(levelTile);
-                const areaPos = this.area[y][x];
-
-                if (tileToRender !== this.areaCache[y][x]) {
-                    areaPos.textContent = tileToRender;
-                }
-                areaPos.customProps.infoKeys.unshift(levelTile);
-                !blocksSight(levelTile) && (areaPos.className = "shown");
-                this.rendered[y][x] = true;
+                areaBuffer[y][x].textContent = tileToRender;
+                areaBuffer[y][x].customProps.infoKeys.unshift(levelTile);
+                !blocksSight(levelTile) && (areaBuffer[y][x].className = "shown");
+                renderedBuffer[y][x] = true;
                 return blocksSight(levelTile) ? "stop" : "ok";
             });
         }
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
                 const levelTile = level[i][j];
-                const areaPos = this.area[i][j];
-                const posRendered = this.rendered[i][j];
-                const posMemorized = memorized[i][j];
+                const posRendered = renderedBuffer[i][j];
+                const posMemorized = memorizedBuffer[i][j];
 
                 if (posRendered && (posMemorized === "" || posMemorized !== levelTile)) {
-                    memorized[i][j] = levelTile;
+                    memorizedBuffer[i][j] = levelTile;
                 } else if (!posRendered && options.SHOW_MEMORIZED && posMemorized !== "") {
                     const tileToRender = this.getTileToRender(posMemorized);
+                    areaBuffer[i][j].textContent = tileToRender;
 
-                    if (tileToRender !== this.areaCache[i][j]) {
-                        areaPos.textContent = tileToRender;
-                    }
                     if (!blocksSight(posMemorized)) {
                         if (options.GRAY_MEMORIZED) {
-                            areaPos.className = "mem";
+                            areaBuffer[i][j].className = "mem";
                         } else {
-                            areaPos.className = "";
+                            areaBuffer[i][j].className = "";
                         }
                     }
-                } else if (!posRendered && areaPos.textContent !== "") {
-                    areaPos.textContent = "";
+                } else if (!posRendered && areaBuffer[i][j].textContent !== "") {
+                    areaBuffer[i][j].textContent = "";
                 }
             }
         }
         for (let item of items) {
-            if (this.rendered[item.pos[0]][item.pos[1]] && !item.hidden) {
-                const areaPos = this.area[item.pos[0]][item.pos[1]];
+            if (renderedBuffer[item.pos[0]][item.pos[1]] && !item.hidden) {
+                const areaPos = areaBuffer[item.pos[0]][item.pos[1]];
                 areaPos.textContent = item.symbol;
                 options.OBJ_BG && (areaPos.className = "obj-bg");
                 areaPos.customProps.infoKeys.unshift(item.name);
             }
         }
         if (!player.dead) {
-            const playerPos = this.area[player.pos[0]][player.pos[1]];
+            const playerPos = areaBuffer[player.pos[0]][player.pos[1]];
 
             if (options.OBJ_IMG) {
                 const imageToUse = "url(\"./playerImages/player_" + player.image + ".png\")";
@@ -186,7 +204,7 @@ export default class Renderer {
                 if (playerPos.style.backgroundImage !== imageToUse) {
                     playerPos.style.backgroundImage = imageToUse;
                 }
-                removeByReference(this.imgCoordsToDelete, playerPos);
+                removeByReference(imgCoordsToDelete, playerPos);
             } else {
                 playerPos.textContent = "@";
                 
@@ -199,8 +217,8 @@ export default class Renderer {
             playerPos.customProps.infoKeys.unshift("Player");
         }
         for (let mob of mobs) {
-            if (this.rendered[mob.pos[0]][mob.pos[1]]) {
-                const mobPos = this.area[mob.pos[0]][mob.pos[1]];
+            if (renderedBuffer[mob.pos[0]][mob.pos[1]]) {
+                const mobPos = areaBuffer[mob.pos[0]][mob.pos[1]];
 
                 if (options.OBJ_IMG) {
                     const imageToUse = "url(\"./mobImages/mob_" + (mob.image || 2) + ".png\")";
@@ -211,7 +229,7 @@ export default class Renderer {
                     if (mobPos.style.backgroundImage !== imageToUse) {
                         mobPos.style.backgroundImage = imageToUse;
                     }
-                    removeByReference(this.imgCoordsToDelete, mobPos);
+                    removeByReference(imgCoordsToDelete, mobPos);
                 } else {
                     mobPos.textContent = mob.symbol;
                     options.OBJ_BG && (mobPos.className = "obj-bg");
@@ -220,11 +238,11 @@ export default class Renderer {
             }
         }
         for (let obj of customRenders) {
-            if (this.rendered[obj.pos[0]][obj.pos[1]]) {
-                this.area[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
+            if (renderedBuffer[obj.pos[0]][obj.pos[1]]) {
+                areaBuffer[obj.pos[0]][obj.pos[1]].textContent = obj.symbol;
             }
         }
-        for (const pos of this.imgCoordsToDelete) {
+        for (const pos of imgCoordsToDelete) {
             pos.style.backgroundImage = "none";
         }
         // add walls last to check where to put them by what tiles are rendered
@@ -256,17 +274,38 @@ export default class Renderer {
                 
                 for (let p of paramList) {
                     if (level[p.i] && (typeof level[p.i][p.j] !== "undefined")
-                        && (this.rendered[p.i][p.j] || (options.SHOW_MEMORIZED && memorized[p.i][p.j]))
+                        && (renderedBuffer[p.i][p.j] || (options.SHOW_MEMORIZED && memorizedBuffer[p.i][p.j]))
                         && (!isWall(level[p.i][p.j]) 
                         || (blocksSight(levelTile) && !blocksSight(level[p.i][p.j])))
                     ) {
                         classes.push(p.side);
                     }
                 }
-                this.area[i][j].classList.add(...classes);
+                areaBuffer[i][j].classList.push(...classes);
             }
         }
-        selectionPos && this.area[selectionPos[0]][selectionPos[1]].classList.add("selected");
+        selectionPos && areaBuffer[selectionPos[0]][selectionPos[1]].classList.push("selected");
+
+        // execute changes from buffer
+
+        const resolve = await this.addToQueue();
+
+        for (let i = 0; i < level.length; i++) {
+            for (let j = 0; j < level[0].length; j++) {
+                const areaPos = this.area[i][j];
+                const buffer = areaBuffer[i][j];
+                if (areaPos.className !== buffer.className) areaPos.className = buffer.className;
+                areaPos.classList.add(...buffer.classList);
+                areaPos.customProps.infoKeys = buffer.customProps.infoKeys;
+                if (buffer.style.backgroundImage && areaPos.style.backgroundImage !== buffer.style.backgroundImage) {
+                    areaPos.style.backgroundImage = buffer.style.backgroundImage;
+                }
+                if (areaPos.textContent !== buffer.textContent) areaPos.textContent = buffer.textContent;
+                this.rendered[i][j] = renderedBuffer[i][j];
+                memorized[i][j] = memorizedBuffer[i][j];
+            }
+        }
+        resolve();
     }
 
     async shotEffect(shotPos, player, levels, customRenders) {
