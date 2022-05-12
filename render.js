@@ -97,9 +97,6 @@ export default class Renderer {
         }
     }
 
-    // TODO could add to buffer variables area, rendered, areacache (?), memorized
-    // and only update all once at the end
-
     async renderAll(player, levels, customRenders) {
         let level = levels[levels.currentLvl].level;
         let mobs = levels[levels.currentLvl].mobs;
@@ -112,8 +109,6 @@ export default class Renderer {
         const renderedBuffer = [];
         const memorizedBuffer = [];
         const imgCoordsToDelete = []; // used to not replace imgs unless necessary
-    
-        // TODO could still optimize having items etc in cache and not overwriting
 
         for (let i = 0; i < level.length; i++) {
             areaBuffer.push([]);
