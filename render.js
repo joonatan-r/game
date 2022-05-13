@@ -1,5 +1,5 @@
 import { levelTiles } from "./levelData.js";
-import { bresenham, isWall, removeByReference } from "./util.js";
+import { bresenham, coordsEq, isWall, removeByReference } from "./util.js";
 import options from "./options.js";
 
 function blocksSight(tile) {
@@ -97,6 +97,25 @@ export default class Renderer {
         }
     }
 
+    renderSymbolAtPos(symbol, pos, player, levels) {
+        let level = levels[levels.currentLvl].level;
+        let visitedTTypeWall = false;
+        bresenham(player.pos[0], player.pos[1], pos[0], pos[1], (y,x) => {
+            const levelTile = level[y][x];
+
+            if (levelTile === levelTiles.transparentBgWall) {
+                visitedTTypeWall = true;
+            } else if (visitedTTypeWall) {
+                visitedTTypeWall = false;
+                return "stop";
+            }
+            if (coordsEq([y, x], pos)) {
+                this.area[y][x].textContent = symbol;
+            }
+            return blocksSight(levelTile) ? "stop" : "ok";
+        });
+    }
+
     async renderAll(player, levels, customRenders) {
         let level = levels[levels.currentLvl].level;
         let mobs = levels[levels.currentLvl].mobs;
@@ -117,8 +136,7 @@ export default class Renderer {
 
             for (let j = 0; j < level[0].length; j++) {
                 areaBuffer[i][j] = {
-                    className: "hidden",
-                    classList: [],
+                    classList: ["hidden"],
                     style: {},
                     customProps: {
                         infoKeys: []
@@ -150,7 +168,7 @@ export default class Renderer {
                 const tileToRender = this.getTileToRender(levelTile);
                 areaBuffer[y][x].textContent = tileToRender;
                 areaBuffer[y][x].customProps.infoKeys.unshift(levelTile);
-                !blocksSight(levelTile) && (areaBuffer[y][x].className = "shown");
+                !blocksSight(levelTile) && (areaBuffer[y][x].classList[0] = "shown");
                 renderedBuffer[y][x] = true;
                 return blocksSight(levelTile) ? "stop" : "ok";
             });
@@ -169,9 +187,9 @@ export default class Renderer {
 
                     if (!blocksSight(posMemorized)) {
                         if (options.GRAY_MEMORIZED) {
-                            areaBuffer[i][j].className = "mem";
+                            areaBuffer[i][j].classList[0] = "mem";
                         } else {
-                            areaBuffer[i][j].className = "";
+                            areaBuffer[i][j].classList[0] = "shown";
                         }
                     }
                 } else if (!posRendered && areaBuffer[i][j].textContent !== "") {
@@ -183,7 +201,7 @@ export default class Renderer {
             if (renderedBuffer[item.pos[0]][item.pos[1]] && !item.hidden) {
                 const areaPos = areaBuffer[item.pos[0]][item.pos[1]];
                 areaPos.textContent = item.symbol;
-                options.OBJ_BG && (areaPos.className = "obj-bg");
+                options.OBJ_BG && (areaPos.classList[0] = "obj-bg");
                 areaPos.customProps.infoKeys.unshift(item.name);
             }
         }
@@ -204,9 +222,9 @@ export default class Renderer {
                 playerPos.textContent = "@";
                 
                 if (options.OBJ_BG) {
-                    playerPos.className = "player obj-bg"
+                    playerPos.classList = ["player", "obj-bg"];
                 } else {
-                    playerPos.className = "player";
+                    playerPos.classList[0] = "player";
                 }
             }
             playerPos.customProps.infoKeys.unshift("Player");
@@ -227,7 +245,7 @@ export default class Renderer {
                     removeByReference(imgCoordsToDelete, mobPos);
                 } else {
                     mobPos.textContent = mob.symbol;
-                    options.OBJ_BG && (mobPos.className = "obj-bg");
+                    options.OBJ_BG && (mobPos.classList[0] = "obj-bg");
                 }
                 mobPos.customProps.infoKeys.unshift(mob.name);
             }
@@ -289,8 +307,8 @@ export default class Renderer {
             for (let j = 0; j < level[0].length; j++) {
                 const areaPos = this.area[i][j];
                 const buffer = areaBuffer[i][j];
-                if (areaPos.className !== buffer.className) areaPos.className = buffer.className;
-                areaPos.classList.add(...buffer.classList);
+                const newClassName = buffer.classList.reduce((old, val) => old + " " + val);
+                if (areaPos.className !== newClassName) areaPos.className = newClassName;
                 areaPos.customProps.infoKeys = buffer.customProps.infoKeys;
                 if (buffer.style.backgroundImage && areaPos.style.backgroundImage !== buffer.style.backgroundImage) {
                     areaPos.style.backgroundImage = buffer.style.backgroundImage;

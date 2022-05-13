@@ -327,6 +327,7 @@ export default class GameManager {
         };
         
         while (1) {
+            this.render.renderSymbolAtPos(obj.symbol, obj.pos, this.player, this.levels);
             this.render.renderAll(this.player, this.levels, this.customRenders);
             movePosToDrc(bulletPos, drc);
     
@@ -396,6 +397,7 @@ export default class GameManager {
             disappearOnHit: true
         };
         this.customRenders.push(obj);
+        this.render.renderSymbolAtPos(obj.symbol, obj.pos, this.player, this.levels);
         this.render.renderAll(this.player, this.levels, this.customRenders);
     
         for (let mob of this.mobs) {
