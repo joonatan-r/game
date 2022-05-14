@@ -321,7 +321,19 @@ export default class Renderer {
         resolve();
     }
 
-    async shotEffect(shotPos, player, levels, customRenders) {
+    async shotEffect(shotPos, player, levels, customRenders, skipIfExists) {
+        if (skipIfExists) {
+            for (const c of customRenders) {
+                if (coordsEq(c.pos, shotPos) && c.symbol === "x"
+                    || coordsEq(c.pos, [shotPos[0] - 1, shotPos[1] - 1]) && c.symbol === "\\"
+                    || coordsEq(c.pos, [shotPos[0] - 1, shotPos[1] + 1]) && c.symbol === "/"
+                    || coordsEq(c.pos, [shotPos[0] + 1, shotPos[1] + 1]) && c.symbol === "\\"
+                    || coordsEq(c.pos, [shotPos[0] + 1, shotPos[1] - 1]) && c.symbol === "/"
+                ) {
+                    return;
+                }
+            }
+        }
         const currLvl = levels.currentLvl;
         let obj, obj0, obj1, obj2, obj3;
 

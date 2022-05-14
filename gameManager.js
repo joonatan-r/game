@@ -168,6 +168,7 @@ export default class GameManager {
                 continue;
             }
             if (mob.isHostile && isNextTo(this.player.pos, mob.pos)) {
+                this.render.shotEffect(this.player.pos, this.player, this.levels, this.customRenders, true);
                 this.changePlayerHealth(-3);
                 continue;
             }
