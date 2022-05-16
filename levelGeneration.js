@@ -8,6 +8,8 @@ const SIDE_X_MAX = SIZE_X / 6;
 const SIDE_Y_MAX = SIZE_Y / 10;
 let level = [];
 let rects = [];
+let isValid = true;
+let nbrFilled = 0;
 let visitedWalls = [0, 0, 0, 0];
 let toBeFilledQueue = [];
 let edgesToBeFilledQueue = [];
@@ -101,9 +103,15 @@ class Rect {
                             : Directions.left;
                         break;
                 }
+                if (i === 0 && j === 0) {
+                    this.middlePoint = coords; // in case actual middle outside level first set this
+                }
                 if (coords[0] < 0 || coords[1] < 0 || coords[0] >= SIZE_Y || coords[1] >= SIZE_X) {
                     // NOTE: now this side won't have any edge points
                     continue;
+                }
+                if (i === Math.floor(height / 2) && j === Math.floor(width / 2)) {
+                    this.middlePoint = coords;
                 }
                 if (i === 0 || j === 0 || i === height - 1 || j === width - 1) {
                     let edgeDir;
@@ -155,14 +163,26 @@ class Rect {
                 }
             }
         }
+        if (version === 2) {
+            for (const coords of edgesToBeFilledQueue) {
+                if (level[coords[0]][coords[1]] === levelTilesRaw.floor) {
+                    toBeFilledQueue = [];
+                    edgesToBeFilledQueue = [];
+                    isValid = false;
+                    return;
+                }
+            }
+        }
         if (version !== 0 || filling !== levelTilesRaw.wall) {
             for (const coords of toBeFilledQueue) {
                 level[coords[0]][coords[1]] = filling;
+                nbrFilled++;
             }
         }
         // edges will always be open to prevent unreachable areas
         for (const coords of edgesToBeFilledQueue) {
             level[coords[0]][coords[1]] = levelTilesRaw.floor;
+            nbrFilled++;
         }
         toBeFilledQueue = [];
         edgesToBeFilledQueue = [];
@@ -216,14 +236,40 @@ function addRect(version) {
         startInfo.pos,
         dir,
         side,
+        version
     );
     rects.unshift(rect);
 }
 
-function generateLevel(startPoint) {
+function addRoom(version) {
+    let counter = 0;
+    let rect;
+    isValid = false;
+
+    while (!isValid && counter++ < 100) {
+        let roomPos = [getRandomInt(0, SIZE_Y - 1), getRandomInt(0, SIZE_X - 1)];
+
+        while (level[roomPos[0]][roomPos[1]] === levelTilesRaw.floor) {
+            roomPos = [getRandomInt(0, SIZE_Y - 1), getRandomInt(0, SIZE_X - 1)];
+        }
+        isValid = true;
+        rect = new Rect(
+            getRandomInt(3, 7),
+            getRandomInt(3, 11),
+            roomPos,
+            getRandomInt(0,3),
+            getRandomInt(0,1),
+            version
+        );
+    }
+    rects.unshift(rect);
+}
+
+function generateLevel(startPoint, version) {
     let genStartPoint = startPoint.slice();
     level = [];
     rects = [];
+    nbrFilled = 0;
     visitedWalls = [0, 0, 0, 0];
     toBeFilledQueue = [];
     edgesToBeFilledQueue = [];
@@ -236,9 +282,7 @@ function generateLevel(startPoint) {
             level[i][j] = levelTilesRaw.wall;
         }
     }
-    let version = Math.random() < 0.7 ? 0 : 1;
     let startDir;
-    // console.log(version)
 
     if (genStartPoint[0] > SIZE_Y - 1) {
         genStartPoint[0] = SIZE_Y - 1
@@ -268,29 +312,78 @@ function generateLevel(startPoint) {
     rects.unshift(startRect);
     let wallNbr = 0;
     let doLoop = true;
+    let counter = 0;
 
-    while (doLoop) {
-        addRect(version);
-
-        let sum = 0;
-
-        for (const wall of visitedWalls) {
-            sum += wall;
-        }
-        if (sum > 3) {
-            doLoop = false;
-        }
-    }
-    for (let i = 0; i < SIZE_Y; i++) {
-        for (let j = 0; j < SIZE_X; j++) {
-            if (level[i][j] === levelTilesRaw.wall) {
-                wallNbr++;
+    if (version === 0) {
+        while (1) {
+            addRect(version);
+    
+            let sum = 0;
+    
+            for (const wall of visitedWalls) {
+                sum += wall;
+            }
+            if (sum > 3) {
+                break;
             }
         }
-    }
-    // too open level, retry (NOTE: a bit inefficient)
-    if (wallNbr < 0.5*SIZE_Y*SIZE_X) {
-        return generateLevel(startPoint);
+        for (let i = 0; i < SIZE_Y; i++) {
+            for (let j = 0; j < SIZE_X; j++) {
+                if (level[i][j] === levelTilesRaw.wall) {
+                    wallNbr++;
+                }
+            }
+        }
+        // too open level, retry (NOTE: a bit inefficient)
+        if (wallNbr < 0.5*SIZE_Y*SIZE_X) {
+            return generateLevel(startPoint, version);
+        }
+    } else if (version === 2) {
+        while (1) {
+            addRoom(version);
+            if (counter++ > 100 || nbrFilled > 0.3*SIZE_Y*SIZE_X) break;
+        }
+        for (const rect of rects) {
+            let min = { rect: null, distance: null };
+            
+            for (const rect2 of rects) {
+                if (!rect2.taken && rect !== rect2) {
+                    const distance = (rect2.middlePoint[0] - rect.middlePoint[0])*(rect2.middlePoint[0] - rect.middlePoint[0]) + 
+                                        (rect2.middlePoint[1] - rect.middlePoint[1])*(rect2.middlePoint[1] - rect.middlePoint[1]);
+                    
+                    if (min.rect === null || distance < min.distance) {
+                        min = {
+                            rect: rect2,
+                            distance: distance
+                        };
+                    }
+                }
+            }
+            if (min.rect === null) break; // last one
+            rect.taken = true;
+            let dir1, dir2;
+    
+            if (rect.middlePoint[0] >= min.rect.middlePoint[0]) {
+                dir1 = -1 // up
+            } else if (rect.middlePoint[0] < min.rect.middlePoint[0]) {
+                dir1 = 1 // down
+            }
+            if (rect.middlePoint[1] >= min.rect.middlePoint[1]) {
+                dir2 = -1 // left
+            } else if (rect.middlePoint[1] < min.rect.middlePoint[1]) {
+                dir2 = 1 // right
+            }
+            let start = rect.middlePoint.slice();
+    
+            while (start[0] !== min.rect.middlePoint[0]) {
+                level[start[0]][start[1]] = levelTilesRaw.floor;
+                start[0] += dir1;
+            }
+            while (start[1] !== min.rect.middlePoint[1]) {
+                level[start[0]][start[1]] = levelTilesRaw.floor;
+                start[1] += dir2;
+            }
+        }
     }
     // generation uses a smaller level rectangle, now add walls around
     // (travel points will be inside the encasing walls) 
@@ -344,33 +437,88 @@ export function createNewLvl(name, levels, level, player) {
             frontOfStartPos[1] = 1;
             break;
     }
-    const generatedLvl = generateLevel(startPos);
+    // NOTE: "version 1" currently not used
+    const version = Math.random() < 0.5 ? 0 : 2;
+    const generatedLvl = generateLevel(startPos, version);
     generatedLvl[startPos[0]][startPos[1]] = levelTilesRaw.doorWay;
     const newMemorized = [];
     const travelPoints = {};
     const openEdges = [];
     travelPoints[levels.currentLvl] = [startPos];
 
-    for (let i = 0; i < level.length; i++) {
-        newMemorized.push([]);
-
-        for (let j = 0; j < level[0].length; j++) {
-            newMemorized[i][j] = "";
-
-            if (Object.keys(levelCharMap).indexOf(generatedLvl[i][j]) !== -1) {
-                generatedLvl[i][j] = levelCharMap[generatedLvl[i][j]];
+    if (version === 2) {
+        const mins = {
+            top: null,
+            right: null,
+            down: null,
+            left: null
+        };
+    
+        for (let i = 0; i < level.length; i++) {
+            for (let j = 0; j < level[0].length; j++) {
+                if (generatedLvl[i][j] === levelTilesRaw.floor && (mins.top === null || i <= mins.top)) {
+                    mins.top = i;
+                }
+                if (generatedLvl[i][j] === levelTilesRaw.floor && (mins.right === null || j >= mins.right)) {
+                    mins.right = j;
+                }
+                if (generatedLvl[i][j] === levelTilesRaw.floor && (mins.down === null || i >= mins.down)) {
+                    mins.down = i;
+                }
+                if (generatedLvl[i][j] === levelTilesRaw.floor && (mins.left === null || j <= mins.left)) {
+                    mins.left = j;
+                }
             }
-            if (i === 1 && generatedLvl[i][j] === levelTiles.floor) {
-                openEdges.push([0, j]);
+        }
+        for (let i = 0; i < level.length; i++) {
+            for (let j = 0; j < level[0].length; j++) {
+                if (generatedLvl[i][j] === levelTilesRaw.floor && (i === mins.top)) {
+                    openEdges.push([i - 1, j]);
+                }
+                if (generatedLvl[i][j] === levelTilesRaw.floor && (j === mins.right)) {
+                    openEdges.push([i, j + 1]);
+                }
+                if (generatedLvl[i][j] === levelTilesRaw.floor && (i === mins.down)) {
+                    openEdges.push([i + 1, j]);
+                }
+                if (generatedLvl[i][j] === levelTilesRaw.floor && (j === mins.left)) {
+                    openEdges.push([i, j - 1]);
+                }
             }
-            if (j === 1 && generatedLvl[i][j] === levelTiles.floor) {
-                openEdges.push([i, 0]);
+        }
+        for (let i = 0; i < level.length; i++) {
+            newMemorized.push([]);
+    
+            for (let j = 0; j < level[0].length; j++) {
+                newMemorized[i][j] = "";
+    
+                if (Object.keys(levelCharMap).indexOf(generatedLvl[i][j]) !== -1) {
+                    generatedLvl[i][j] = levelCharMap[generatedLvl[i][j]];
+                }
             }
-            if (i === level.length - 2 && generatedLvl[i][j] === levelTiles.floor) {
-                openEdges.push([level.length - 1, j]);
-            }
-            if (j === level[0].length - 2 && generatedLvl[i][j] === levelTiles.floor) {
-                openEdges.push([i, level[0].length - 1]);
+        }
+    } else if (version === 0) {
+        for (let i = 0; i < level.length; i++) {
+            newMemorized.push([]);
+    
+            for (let j = 0; j < level[0].length; j++) {
+                newMemorized[i][j] = "";
+    
+                if (Object.keys(levelCharMap).indexOf(generatedLvl[i][j]) !== -1) {
+                    generatedLvl[i][j] = levelCharMap[generatedLvl[i][j]];
+                }
+                if (i === 1 && generatedLvl[i][j] === levelTiles.floor) {
+                    openEdges.push([0, j]);
+                }
+                if (j === 1 && generatedLvl[i][j] === levelTiles.floor) {
+                    openEdges.push([i, 0]);
+                }
+                if (i === level.length - 2 && generatedLvl[i][j] === levelTiles.floor) {
+                    openEdges.push([level.length - 1, j]);
+                }
+                if (j === level[0].length - 2 && generatedLvl[i][j] === levelTiles.floor) {
+                    openEdges.push([i, level[0].length - 1]);
+                }
             }
         }
     }
