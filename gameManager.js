@@ -118,6 +118,7 @@ export default class GameManager {
     }
 
     gameOver(msg) {
+        this.ui.hideDialog(); // in case player was in a dialog
         this.ui.showMsg(msg);
         !options.TURN_BASED && clearInterval(this.turnInterval);
         this.interruptAutoTravel = true;
@@ -257,6 +258,7 @@ export default class GameManager {
     }
     
     mobDie(mob) {
+        this.tryFireEvent("onDeath", mob);
         // delete all properties of mob, so all references to it recognize deletion
         for (let prop in mob) if (mob.hasOwnProperty(prop)) delete mob[prop];
         removeByReference(this.mobs, mob);

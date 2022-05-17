@@ -148,9 +148,69 @@ const events = {
             }
         }
     },
+    onDeath: {
+        "Make": function(mob, gm) {
+            Math.random() < 0.15 && gm.levels[gm.levels.currentLvl].items.push({
+                name: "strange potion",
+                symbol: "!",
+                usable: "true",
+                pos: mob.pos.slice()
+            });
+            Math.random() < 0.25 && gm.levels[gm.levels.currentLvl].items.push({
+                name: "gold",
+                symbol: "$",
+                pos: mob.pos.slice()
+            });
+        },
+        "Pekka": function(mob, gm) {
+            Math.random() < 0.33 && gm.levels[gm.levels.currentLvl].items.push({
+                name: "strange potion",
+                symbol: "!",
+                usable: "true",
+                pos: mob.pos.slice()
+            });
+            Math.random() < 0.25 && gm.levels[gm.levels.currentLvl].items.push({
+                name: "gold",
+                symbol: "$",
+                pos: mob.pos.slice()
+            });
+        },
+        "Jorma": function(mob, gm) {
+            Math.random() < 0.33 && gm.levels[gm.levels.currentLvl].items.push({
+                name: "strange potion",
+                symbol: "!",
+                usable: "true",
+                pos: mob.pos.slice()
+            });
+            Math.random() < 0.25 && gm.levels[gm.levels.currentLvl].items.push({
+                name: "gold",
+                symbol: "$",
+                pos: mob.pos.slice()
+            });
+        }
+    },
     onUse: {
         "weird object": function(item, gm) {
             gm.ui.showMsg("The object emits strange light, then fades again.");
+        },
+        "strange potion": function(item, gm) {
+            if (Math.random() < 0.2) {
+                gm.player.maxHealth--;
+                gm.player.health--;
+                gm.ui.showMsg("You feel really bad.");
+
+                if (gm.player.health < 1) gm.gameOver("You die..."); 
+            } else {
+                gm.player.maxHealth++;
+                gm.player.health++;
+                gm.ui.showMsg("You feel great!");
+            }
+            for (const invItem of gm.player.inventory) {
+                if (invItem.name === "strange potion") {
+                    invItem.number > 1 ? invItem.number-- : removeByReference(gm.player.inventory, invItem);
+                    break;
+                }
+            }
         }
     }
 };
