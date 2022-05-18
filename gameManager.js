@@ -626,7 +626,7 @@ export default class GameManager {
                     this.levels.currentLvl = lvl;
                     this.customRenders = [];
                     this.render.setBg(this.levels);
-                    this.tryFireEvent("onEnterLevel", lvl);
+                    this.tryFireEvent("onEnterLevel");
                     return;
                 }
                 idx++;

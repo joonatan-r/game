@@ -28,28 +28,34 @@ const events = {
             }
         }
     },
-    onEnterLevel: {
-        "Start of uncharted": function(gm) {
-            const memorized = gm.levels["Start of uncharted"].memorized;
-            let previouslyVisited = false;
-
-            // TODO maybe improved way to check if previously visited
-
-            for (const i of memorized) {
-                for (const j of i) {
-                    if (j !== "") {
-                        previouslyVisited = true;
-                        break;
+    onEnterLevel: function(gm) {
+        const lvl = gm.levels.currentLvl;
+        switch (lvl) {
+            case "Start of uncharted":
+                const memorized = gm.levels["Start of uncharted"].memorized;
+                let previouslyVisited = false;
+    
+                // TODO maybe improved way to check if previously visited
+    
+                for (const i of memorized) {
+                    for (const j of i) {
+                        if (j !== "") {
+                            previouslyVisited = true;
+                            break;
+                        }
                     }
+                    if (previouslyVisited) break;
                 }
-                if (previouslyVisited) break;
-            }
-            if (!previouslyVisited) {
-                gm.setPause(true);
-                gm.ui.showDialog("A great wall blocks the path. There seems to be only one closed gate.", ["Continue"], () => {
-                    gm.setPause(false);
-                });
-            }
+                if (!previouslyVisited) {
+                    gm.setPause(true);
+                    gm.ui.showDialog("A great wall blocks the path. There seems to be only one closed gate.", ["Continue"], () => {
+                        gm.setPause(false);
+                    });
+                }
+                return;
+        }
+        if (gm.levels[lvl].spawnRate === 0) {
+            gm.ui.showMsg("This level seems safe from enemies.");
         }
     },
     onInteract: {

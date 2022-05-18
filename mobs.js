@@ -7,6 +7,12 @@ import { hostileMobTypes } from "./mobData.js";
 // NOTE: with current implementation, movingAIs towards* can't be directly used by a mob
 
 export function createRandomMobSpawning() {
+    if (Math.random() < 0.1) {
+        return {
+            rate: 0,
+            distribution: {}
+        };
+    }
     const spawningMobs = [];
     const probs = [];
     const distribution = {};
