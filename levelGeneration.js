@@ -13,6 +13,7 @@ let nbrFilled = 0;
 let visitedWalls = [0, 0, 0, 0];
 let toBeFilledQueue = [];
 let edgesToBeFilledQueue = [];
+let outerEdges = [];
 let filling = levelTilesRaw.floor;
 
 for (let i = 0; i < SIZE_Y; i++) {
@@ -129,6 +130,22 @@ class Rect {
                     } else if (j === 0 ) {
                         edgeDir = OppositeDrcs[coordsDirs[1]];
                     }
+                    if (version === 2) {
+                        switch (edgeDir) {
+                            case Directions.down:
+                                outerEdges.push([coords[0] - 1, coords[1]]);
+                                break;
+                            case Directions.left:
+                                outerEdges.push([coords[0], coords[1] - 1]);
+                                break;
+                            case Directions.up:
+                                outerEdges.push([coords[0] + 1, coords[1]]);
+                                break;
+                            case Directions.right:
+                                outerEdges.push([coords[0], coords[1] + 1]);
+                                break;
+                        }
+                    }
                     this.edges.push({
                         pos: coords,
                         dir: edgeDir,
@@ -164,10 +181,11 @@ class Rect {
             }
         }
         if (version === 2) {
-            for (const coords of edgesToBeFilledQueue) {
-                if (level[coords[0]][coords[1]] === levelTilesRaw.floor) {
+            for (const coords of outerEdges) {
+                if (level[coords[0]] && level[coords[0]][coords[1]] === levelTilesRaw.floor) {
                     toBeFilledQueue = [];
                     edgesToBeFilledQueue = [];
+                    outerEdges = [];
                     isValid = false;
                     return;
                 }
@@ -186,6 +204,7 @@ class Rect {
         }
         toBeFilledQueue = [];
         edgesToBeFilledQueue = [];
+        outerEdges = [];
     }
 }
 
@@ -254,8 +273,8 @@ function addRoom(version) {
         }
         isValid = true;
         rect = new Rect(
-            getRandomInt(3, 7),
-            getRandomInt(3, 11),
+            getRandomInt(3, 6),
+            getRandomInt(3, 10),
             roomPos,
             getRandomInt(0,3),
             getRandomInt(0,1),
@@ -273,6 +292,7 @@ function generateLevel(startPoint, version) {
     visitedWalls = [0, 0, 0, 0];
     toBeFilledQueue = [];
     edgesToBeFilledQueue = [];
+    outerEdges = [];
     filling = levelTilesRaw.floor;
     
     for (let i = 0; i < SIZE_Y; i++) {
@@ -341,7 +361,7 @@ function generateLevel(startPoint, version) {
     } else if (version === 2) {
         while (1) {
             addRoom(version);
-            if (counter++ > 100 || nbrFilled > 0.3*SIZE_Y*SIZE_X) break;
+            if (counter++ > 100 || nbrFilled > 0.25*SIZE_Y*SIZE_X) break;
         }
         for (const rect of rects) {
             let min = { rect: null, distance: null };
@@ -548,13 +568,28 @@ export function createNewLvl(name, levels, level, player) {
         generatedLvl[extraTravelPos[0]][extraTravelPos[1]] = levelTiles.doorWay;
         levels["Strange cavern"].accessible = true;
         const frontOfTravelPos = [extraTravelPos[0], 1];
+        const extraFloors = [];
         bresenham(frontOfTravelPos[0], frontOfTravelPos[1], frontOfStartPos[0], frontOfStartPos[1], (y, x) => {
             if (generatedLvl[y][x] === levelTiles.floor) { // add corridor to make sure accessible
-                return "stop";
+                let isExtraFloor = false;
+                for (const floorCoord of extraFloors) {
+                    if (coordsEq(floorCoord, [y, x])) {
+                        isExtraFloor = true;
+                        break;
+                    }
+                }
+                // stop when encountering floor tile, but not if it's one that was previously added
+                // below by this function
+                if (!isExtraFloor) {
+                    return "stop";
+                }
             }
             generatedLvl[y][x] = levelTiles.floor;
             // widen by putting floor under as well, but don't overwrite the edge wall
-            y + 1 < level.length - 1 && (generatedLvl[y + 1][x] = levelTiles.floor);
+            if (y + 1 < level.length - 1) {
+                generatedLvl[y + 1][x] = levelTiles.floor;
+                extraFloors.push([y + 1, x]);
+            }
             return "ok";
         });
     }

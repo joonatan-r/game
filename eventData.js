@@ -54,7 +54,8 @@ const events = {
                 }
                 return;
         }
-        if (gm.levels[lvl].spawnRate === 0) {
+        // only consider generated levels, whose name is a number
+        if (!isNaN(lvl) && gm.levels[lvl].spawnRate === 0) {
             gm.ui.showMsg("This level seems safe from enemies.");
         }
     },
