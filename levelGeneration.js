@@ -133,13 +133,13 @@ class Rect {
                     if (version === 2) {
                         switch (edgeDir) {
                             case Directions.down:
-                                outerEdges.push([coords[0] - 1, coords[1]]);
+                                outerEdges.push([coords[0] + 1, coords[1]]);
                                 break;
                             case Directions.left:
                                 outerEdges.push([coords[0], coords[1] - 1]);
                                 break;
                             case Directions.up:
-                                outerEdges.push([coords[0] + 1, coords[1]]);
+                                outerEdges.push([coords[0] - 1, coords[1]]);
                                 break;
                             case Directions.right:
                                 outerEdges.push([coords[0], coords[1] + 1]);
