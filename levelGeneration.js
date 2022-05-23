@@ -330,8 +330,6 @@ function generateLevel(startPoint, version) {
         version,
     );
     rects.unshift(startRect);
-    let wallNbr = 0;
-    let doLoop = true;
     let counter = 0;
 
     if (version === 0) {
@@ -347,15 +345,8 @@ function generateLevel(startPoint, version) {
                 break;
             }
         }
-        for (let i = 0; i < SIZE_Y; i++) {
-            for (let j = 0; j < SIZE_X; j++) {
-                if (level[i][j] === levelTilesRaw.wall) {
-                    wallNbr++;
-                }
-            }
-        }
         // too open level, retry (NOTE: a bit inefficient)
-        if (wallNbr < 0.5*SIZE_Y*SIZE_X) {
+        if (isLevelTooOpen(level)) {
             return generateLevel(startPoint, version);
         }
     } else if (version === 2) {
@@ -628,4 +619,19 @@ function tryAddExtraTravelPoint(candidates, startPos, exitPos) {
         }
     }
     return null;
+}
+
+function isLevelTooOpen(level) {
+    for (let j = 0; j < SIZE_X; j++) {
+        let wallsInColumn = 0;
+        
+        for (let i = 0; i < SIZE_Y; i++) {
+            if (level[i][j] === levelTilesRaw.wall) {
+                wallsInColumn++;
+                if (wallsInColumn > 2) break;
+            }
+        }
+        if (wallsInColumn < 3) return true;
+    }
+    return false;
 }
