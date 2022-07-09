@@ -1,5 +1,5 @@
 import { levelCharMap, levelTiles, levelTilesRaw } from "./levelData.js";
-import { bresenham, coordsEq, getClosestSide, getRandomInt } from "./util.js";
+import { bresenham, coordsEq, getClosestSide, getCoordsNextTo, getRandomInt } from "./util.js";
 import { createRandomMobSpawning } from "./mobs.js";
 
 const SIZE_Y = 23;
@@ -182,7 +182,17 @@ class Rect {
         }
         if (version === 2) {
             for (const coords of outerEdges) {
-                if (level[coords[0]] && level[coords[0]][coords[1]] === levelTilesRaw.floor) {
+                let isAdjacentToFloor = false;
+
+                for (const adjacentCoords of getCoordsNextTo(coords)) {
+                    if (level[adjacentCoords[0]] 
+                        && level[adjacentCoords[0]][adjacentCoords[1]] === levelTilesRaw.floor
+                    ) {
+                        isAdjacentToFloor = true;
+                        break;
+                    }
+                }
+                if (isAdjacentToFloor || level[coords[0]] && level[coords[0]][coords[1]] === levelTilesRaw.floor) {
                     toBeFilledQueue = [];
                     edgesToBeFilledQueue = [];
                     outerEdges = [];
