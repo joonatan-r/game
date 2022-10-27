@@ -326,6 +326,13 @@ export default class GameManager {
                     return true;
                 }
             }
+            for (const obj2 of this.customRenders) {
+                if (obj2.blockShots && coordsEq(checkPos, obj2.pos)) {
+                    this.hitCustomRenderEffect(obj);
+                    // NOTE: no turn based handling as currently only used in realtime version
+                    return true;
+                }
+            }
             return false;
         };
         
@@ -397,7 +404,8 @@ export default class GameManager {
             symbol: projectileFromDrc[drc],
             pos: meleePos,
             damageMobs: true,
-            disappearOnHit: true
+            disappearOnHit: true,
+            blockShots: true
         };
         this.customRenders.push(obj);
         this.render.renderSymbolAtPos(obj.symbol, obj.pos, this.player, this.levels);

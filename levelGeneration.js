@@ -1,5 +1,5 @@
 import { levelCharMap, levelTiles, levelTilesRaw } from "./levelData.js";
-import { bresenham, coordsEq, getClosestSide, getCoordsNextTo, getRandomInt } from "./util.js";
+import { bresenham, coordsEq, getClosestSide, getCoordsNextTo, getRandomInt, isNextTo } from "./util.js";
 import { createRandomMobSpawning } from "./mobs.js";
 
 const SIZE_Y = 23;
@@ -395,14 +395,51 @@ function generateLevel(startPoint, version) {
                 dir2 = 1 // right
             }
             let start = rect.middlePoint.slice();
+            const toBeFlooredQueue = [];
     
             while (start[0] !== min.rect.middlePoint[0]) {
-                level[start[0]][start[1]] = levelTilesRaw.floor;
+                toBeFlooredQueue.push(start.slice());
                 start[0] += dir1;
             }
             while (start[1] !== min.rect.middlePoint[1]) {
-                level[start[0]][start[1]] = levelTilesRaw.floor;
+                toBeFlooredQueue.push(start.slice());
                 start[1] += dir2;
+            }
+            // don't start flooring the tunnel until on the last edge position of the start
+            // rect, and stop as soon as next to the target rect
+            for (let i = 0; i < toBeFlooredQueue.length; i++) {
+                const currentPos = toBeFlooredQueue[i];
+                const nextPos = i > toBeFlooredQueue.length - 1
+                    ? null
+                    : toBeFlooredQueue[i + 1];
+                let nextIsNextToStart = false;
+                let currentIsNextToTarget = false;
+                
+                for (const edge of rect.edges) {
+                    // ignore if already floor (= inside the rect) or diagonally adjacent
+                    if (nextPos && isNextTo(edge.pos, nextPos, false) && 
+                        (!level[nextPos[0]] || level[nextPos[0]][nextPos[1]] !== levelTilesRaw.floor)
+                    ) {
+                        nextIsNextToStart = true;
+                        break;
+                    }
+                }
+                for (const edge of min.rect.edges) {
+                    if (isNextTo(edge.pos, currentPos, false) && 
+                        (!level[currentPos[0]] || level[currentPos[0]][currentPos[1]] !== levelTilesRaw.floor)
+                    ) {
+                        currentIsNextToTarget = true;
+                        break;
+                    }
+                }
+                if (nextIsNextToStart) {
+                    continue;
+                }
+                level[currentPos[0]][currentPos[1]] = levelTilesRaw.floor;
+
+                if (currentIsNextToTarget) {
+                    break;
+                }
             }
         }
     }
