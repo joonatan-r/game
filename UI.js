@@ -33,7 +33,26 @@ export default class UI {
             e.stopPropagation();
             document.removeEventListener("mousemove", this.msgMoveListener);
             this.movingMsg = false;
+            localStorage.setItem(
+                "gameMsgBoxPos", 
+                JSON.stringify({ left: msgBox.style.left, top: msgBox.style.top })
+            );
         };
+        const msgBoxPos = localStorage.getItem("gameMsgBoxPos");
+        const dialogPos = localStorage.getItem("gameDialogPos");
+        
+        if (msgBoxPos) {
+            const newMsgBoxPos = JSON.parse(msgBoxPos);
+            msgBox.style.left = newMsgBoxPos.left;
+            msgBox.style.top = newMsgBoxPos.top;
+            this.msgMoved = true;
+        }
+        if (dialogPos) {
+            const newDialogPos = JSON.parse(dialogPos);
+            dialog.style.left = newDialogPos.left;
+            dialog.style.top = newDialogPos.top;
+            this.dialogMoved = true;
+        }
     }
 
     dialogMoveListener(e) {
@@ -250,6 +269,10 @@ export default class UI {
             e.stopPropagation();
             document.removeEventListener("mousemove", this.dialogMoveListener);
             this.movingDialog = false;
+            localStorage.setItem(
+                "gameDialogPos",
+                JSON.stringify({ left: dialog.style.left, top: dialog.style.top })
+            );
         };
 
         if (startPage > 0) {
