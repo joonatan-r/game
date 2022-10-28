@@ -93,7 +93,7 @@ export default class BuiltinDialogs {
                     if (e.key === "Escape") {
                         input = "";
                         document.removeEventListener("keydown", inputListener);
-                        this.gm.ui.showMsg("");
+                        this.gm.ui.hideMsgs();
                         this.showOptionsDialog(this.gm.ui.getPageForIdx(idx));
                     } else if (e.key === "Enter") {
                         const val = Number(input);
@@ -103,11 +103,11 @@ export default class BuiltinDialogs {
                         }
                         input = "";
                         document.removeEventListener("keydown", inputListener);
-                        this.gm.ui.showMsg("");
+                        this.gm.ui.hideMsgs();
                         this.showOptionsDialog(this.gm.ui.getPageForIdx(idx));
                     } else {
                         input += e.key;
-                        this.gm.ui.showMsg("");
+                        this.gm.ui.hideMsgs();
                         this.gm.ui.showMsg("New value: " + input);
                     }
                 };
@@ -131,7 +131,7 @@ export default class BuiltinDialogs {
         }
         this.gm.ui.showDialog("Controls", optList, idx => {
             const changeInput = e => {
-                this.gm.ui.showMsg("");
+                this.gm.ui.hideMsgs();
     
                 for (let [key, val] of Object.entries(options.CONTROLS)) {
                     if ((val === e.key && key !== optKeys[idx])) {
@@ -146,7 +146,7 @@ export default class BuiltinDialogs {
                 this.showControlsDialog(this.gm.ui.getPageForIdx(idx));
             };
             const mobileChangeInput = () => {
-                this.gm.ui.showMsg("");
+                this.gm.ui.hideMsgs();
     
                 for (let [key, val] of Object.entries(options.CONTROLS)) {
                     if ((val === this.mobileInput.value && key !== optKeys[idx])) {

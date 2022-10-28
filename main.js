@@ -173,7 +173,6 @@ function mergeIfOrthogonalKeysPressed(e) {
 async function setKeyRepeat(key, ctrlKey, forceImmediate) {
     clearInterval(keyIntervals[key]); // just to make sure nothing gets left on
     keyIntervals[key] = KEY_IS_PRESSED;
-    gm.ui.showMsg("");
     !forceImmediate && await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
 
     // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
@@ -235,9 +234,7 @@ function clickListener(e) {
                 break;
         }
         return;
-    }
-    gm.ui.showMsg("");
-    
+    }    
     if ((options.CONTROLS.AUTOMOVE_MOD === "Alt" && e.altKey)
         || (options.CONTROLS.AUTOMOVE_MOD === "Control" && e.ctrlKey)
         || (options.CONTROLS.AUTOMOVE_MOD === "Shift" && e.shiftKey)

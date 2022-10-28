@@ -668,7 +668,7 @@ export default class GameManager {
                 this.ui.showMsg(getPosInfo(this.area[this.selectPos.currentPos[0]][this.selectPos.currentPos[1]].customProps.infoKeys));
                 break;
             case options.CONTROLS.ESC:
-                this.ui.showMsg("");
+                this.ui.hideMsgs();
                 this.area[prevPos[0]][prevPos[1]].classList.remove("selected");
                 this.inputType = null;
                 return;
