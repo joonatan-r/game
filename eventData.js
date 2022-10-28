@@ -73,7 +73,8 @@ const events = {
                             idx => {
                                 switch (idx) {
                                     case 0:
-                                        gm.ui.showMsg("[" + mob.name + "]: I think there's something hidden in the area past the gate.");
+                                        gm.ui.showMsg("[" + mob.name + "]: I think there's something hidden in the area past the gate. [Note entry added]");
+                                        gm.player.noteEntries.push("Secrets in the uncharted");
                                         mob.state = 2;
                                         break;
                                     case 1:
@@ -218,6 +219,26 @@ const events = {
                     break;
                 }
             }
+        }
+    },
+    onShowNoteEntry: {
+        // NOTE: use dialog level 2 as this is shown from pause menu. if later shown elsewhere, instead
+        // of string entry could call with object that has entry as name and additional property to check
+        // the dialog level here
+        "Secrets in the uncharted": function(gm) {
+            gm.ui.showDialog(
+                `
+A scared traveller said that there could be something hidden at the start of the uncharted.
+I should search the area behind the gate for any secrets.
+                `,
+                [],
+                idx => {
+                    idx === -1 && gm.setPause(false);
+                },
+                true,
+                true,
+                2
+            );
         }
     }
 };

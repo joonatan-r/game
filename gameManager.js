@@ -61,6 +61,7 @@ export default class GameManager {
         this.player.maxHealth = 4;
         this.player.health = this.player.maxHealth;
         this.player.inventory = [];
+        this.player.noteEntries = [];
         this.player.pos = [9, 5];
         this.player.image = 2;
         this.customRenders = []; // retain "animations", can also be damaging zones
