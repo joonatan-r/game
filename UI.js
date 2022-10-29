@@ -9,6 +9,7 @@ const info = document.getElementById("info");
 export default class UI {
     msgHistory = [];
     msgQueue = [];
+    msgTimeOutQueue = [];
     dialogMoved = false;
     msgMoved = false;
     movePos = [];
@@ -76,27 +77,34 @@ export default class UI {
         }
         msgBox.style.display = "block";
         this.msgQueue.unshift(msg);
-        if (this.msgQueue.length > 10) this.msgQueue.pop();
+        this.msgTimeOutQueue.unshift(
+            setTimeout(() => {
+                this.msgQueue.pop();
+                this.msgTimeOutQueue.pop();
+        
+                if (!this.msgQueue.length) {
+                    msgBox.style.display = "none";
+                } else {
+                    status.textContent = this.msgQueue.join("\n");
+                }
+            }, 5000) // hide each individual message after 5 seconds
+        );
+
+        if (this.msgQueue.length > 10) {
+            clearTimeout(this.msgTimeOutQueue[this.msgTimeOutQueue.length - 1]);
+            this.msgQueue.pop();
+            this.msgTimeOutQueue.pop();
+        }
         status.textContent = this.msgQueue.join("\n");
         msg = msg.trim().replaceAll("\n", "\n\t\t"); // more readable in history
         this.msgHistory.unshift(msg);
-        clearTimeout(this.msgClearTimeOut);
-        this.msgClearTimeOut = setTimeout(() => this.hideMsgs(), 5000);
     }
     
-    hideMsgs(onlyOldest) {
-        if (onlyOldest) {
-            this.msgQueue.pop();
-
-            if (!this.msgQueue.length) {
-                msgBox.style.display = "none";
-            } else {
-                status.textContent = this.msgQueue.join("\n");
-            }
-        } else {
-            this.msgQueue = [];
-            msgBox.style.display = "none";
-        }
+    hideMsgs() {
+        this.msgQueue = [];
+        for (const t of this.msgTimeOutQueue) clearTimeout(t);
+        this.msgTimeOutQueue = [];
+        msgBox.style.display = "none";
     }
 
     getPageForIdx(idx) {
