@@ -85,17 +85,17 @@ export default class UI {
                 if (!this.msgQueue.length) {
                     msgBox.style.display = "none";
                 } else {
-                    status.textContent = this.msgQueue.join("\n");
+                    status.textContent = this.msgQueue.join("\n\n");
                 }
             }, 5000) // hide each individual message after 5 seconds
         );
 
-        if (this.msgQueue.length > 10) {
+        if (this.msgQueue.length > 7) {
             clearTimeout(this.msgTimeOutQueue[this.msgTimeOutQueue.length - 1]);
             this.msgQueue.pop();
             this.msgTimeOutQueue.pop();
         }
-        status.textContent = this.msgQueue.join("\n");
+        status.textContent = this.msgQueue.join("\n\n");
         msg = msg.trim().replaceAll("\n", "\n\t\t"); // more readable in history
         this.msgHistory.unshift(msg);
     }
