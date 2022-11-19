@@ -10,8 +10,6 @@ export default class UI {
     msgHistory = [];
     msgQueue = [];
     msgTimeOutQueue = [];
-    dialogMoved = false;
-    msgMoved = false;
     movePos = [];
     dialogStack = [];
     dialogDisplayed = false;
@@ -21,6 +19,7 @@ export default class UI {
         this.addListeners = addListeners;
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
         this.msgMoveListener = this.msgMoveListener.bind(this);
+        this.infoMoveListener = this.infoMoveListener.bind(this);
 
         msgBox.onmousedown = e => {
             e.stopPropagation();
@@ -40,41 +39,71 @@ export default class UI {
                 JSON.stringify({ left: msgBox.style.left, top: msgBox.style.top })
             );
         };
+        info.onmousedown = e => {
+            e.stopPropagation();
+    
+            if (!this.movingInfo) {
+                this.movePos = [e.pageX - info.offsetLeft, e.pageY - info.offsetTop];
+                document.addEventListener("mousemove", this.infoMoveListener);
+                this.movingInfo = true;
+            }
+        };
+        info.onmouseup = e => {
+            e.stopPropagation();
+            document.removeEventListener("mousemove", this.infoMoveListener);
+            this.movingInfo = false;
+            localStorage.setItem(
+                "gameInfoPos", 
+                JSON.stringify({ left: info.style.left, top: info.style.top })
+            );
+        };
         const msgBoxPos = localStorage.getItem("gameMsgBoxPos");
         const dialogPos = localStorage.getItem("gameDialogPos");
+        const infoPos = localStorage.getItem("gameInfoPos");
+        const tableRect = table.getBoundingClientRect();
         
         if (msgBoxPos) {
             const newMsgBoxPos = JSON.parse(msgBoxPos);
             msgBox.style.left = newMsgBoxPos.left;
             msgBox.style.top = newMsgBoxPos.top;
-            this.msgMoved = true;
+        } else {
+            msgBox.style.top = (tableRect.top + tableRect.height + 5) + "px";
+            // msgBox.style.left = (info.clientWidth + 25) + "px";
         }
         if (dialogPos) {
             const newDialogPos = JSON.parse(dialogPos);
             dialog.style.left = newDialogPos.left;
             dialog.style.top = newDialogPos.top;
-            this.dialogMoved = true;
+        } else {
+            dialog.style.left = tableRect.left + "px";
+            dialog.style.top = tableRect.top + "px";
+        }
+        if (infoPos) {
+            const newInfoPos = JSON.parse(infoPos);
+            info.style.left = newInfoPos.left;
+            info.style.top = newInfoPos.top;
+        } else {
+            info.style.left = (tableRect.left + tableRect.width + 10) + "px";
+            info.style.top = tableRect.top + "px";
         }
     }
 
     dialogMoveListener(e) {
         dialog.style.left = (e.clientX - this.movePos[0]) + "px";
         dialog.style.top = (e.clientY - this.movePos[1]) + "px";
-        this.dialogMoved = true;
     }
 
     msgMoveListener(e) {
         msgBox.style.left = (e.clientX - this.movePos[0]) + "px";
         msgBox.style.top = (e.clientY - this.movePos[1]) + "px";
-        this.msgMoved = true;
+    }
+
+    infoMoveListener(e) {
+        info.style.left = (e.clientX - this.movePos[0]) + "px";
+        info.style.top = (e.clientY - this.movePos[1]) + "px";
     }
 
     showMsg(msg) {
-        if (!this.msgMoved) {
-            const tableRect = table.getBoundingClientRect();
-            msgBox.style.top = (tableRect.top + tableRect.height + 5) + "px";
-            // msgBox.style.left = (info.clientWidth + 25) + "px";
-        }
         msgBox.style.display = "block";
         this.msgQueue.unshift(msg);
         this.msgTimeOutQueue.unshift(
@@ -121,10 +150,6 @@ export default class UI {
     // before opening again.
 
     showDialog(text, choices, onSelect, allowEsc, skipLog, stackDepth, startPage) {
-        if (!this.dialogMoved) {
-            dialog.style.left = table.getBoundingClientRect().left + "px";
-            dialog.style.top = table.getBoundingClientRect().top + "px";
-        }
         if (this.dialogStack.length !== stackDepth && !(stackDepth < 0)) {
             this.dialogStack = [];
         }

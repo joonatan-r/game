@@ -79,10 +79,6 @@ export default class GameManager {
                 }
             }
         }
-        info.onclick = () => {
-            this.actType = { shoot: "melee", melee: "interact", interact: "shoot" }[this.actType];
-            this.updateInfo();
-        }
     }
 
     tryFireEvent(type, entity) {
@@ -437,6 +433,16 @@ export default class GameManager {
         this.processTurn();
     }
 
+    centerPlayer(startPos, newPos) {
+        const table = document.getElementById("table");
+        const left = Number(table.style.marginLeft.slice(0, -2));
+        const top = Number(table.style.marginTop.slice(0, -2));
+        const pixelsY = 25 * (newPos[0] - startPos[0]);
+        const pixelsX = 25 * (newPos[1] - startPos[1]);
+        table.style.marginTop = (top - pixelsY) + "px";
+        table.style.marginLeft = (left - pixelsX) + "px";
+    }
+
     resetMoveVisual() {
         if (this.player.image.length > 1) {
             if (this.player.image.length < 8) {
@@ -459,7 +465,7 @@ export default class GameManager {
             }
         }
         clearTimeout(this.player.moveVisualTimeout);
-        this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, 100);
+        this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, 200);
         // also works if new pos not next to current for some reason
         const facing = relativeCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
         const moveImage = facing + "_move";
@@ -475,6 +481,7 @@ export default class GameManager {
             this.player.image = altMoveImage;
             this.player.prevMoveImage = altMoveImage;
         }
+        options.KEEP_PLAYER_CENTERED && this.centerPlayer(this.player.pos, newPos);
         this.player.pos = newPos;
         this.tryFireEvent("onMove");
     
@@ -629,7 +636,9 @@ export default class GameManager {
                     }
                     this.tryGenerateTravelPoints(lvl);
                     this.level = this.levels[lvl].level;
-                    this.player.pos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
+                    const newPos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
+                    options.KEEP_PLAYER_CENTERED && this.centerPlayer(this.player.pos, newPos);
+                    this.player.pos = newPos;
                     this.mobs = this.levels[lvl].mobs;
                     this.items = this.levels[lvl].items;
                     this.levels.currentLvl = lvl;

@@ -78,6 +78,11 @@ bd.showStartDialog();
 function start() {
     document.addEventListener("contextmenu", menuListener);
     gm.updateInfo();
+
+    if (options.KEEP_PLAYER_CENTERED) {
+        const levelCenter = [Math.floor(gm.level.length / 2), Math.floor(gm.level[0].length / 2)]
+        gm.centerPlayer(levelCenter, gm.player.pos);
+    }
     gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
     gm.render.setBg(gm.levels);
     !options.TURN_BASED && clearInterval(gm.turnInterval); // clear turnInterval in case it was already running
