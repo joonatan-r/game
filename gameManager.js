@@ -485,7 +485,7 @@ export default class GameManager {
                 this.player.image = this.player.image.slice(0, -7); // change from "_2_move" to normal
             }
         }
-        if (options.OBJ_IMG) {
+        if (options.OBJ_IMG && !this.player.dead) {
             playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + this.player.image + ".png\")";
         }
         this.player.prevMoveDrc = null;
