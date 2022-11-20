@@ -1,6 +1,6 @@
 import { levelTiles } from "./levelData.js";
 import {
-    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber
+    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber, coordsEq
 } from "./util.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
@@ -16,6 +16,7 @@ import BuiltinDialogs from "./builtinDialogs.js";
 
 const KEY_IS_PRESSED = "keyIsPressed";
 
+const playerVisual = document.getElementById("playerImg");
 const menu = document.getElementById("clickMenu");
 const showInfoButton = document.getElementById("showInfoButton");
 const travelButton = document.getElementById("travelButton");
@@ -78,10 +79,19 @@ bd.showStartDialog();
 function start() {
     document.addEventListener("contextmenu", menuListener);
     gm.updateInfo();
+    const levelCenter = [Math.floor(gm.level.length / 2), Math.floor(gm.level[0].length / 2)];
 
+    if (options.OBJ_IMG) {
+        const td = Array.from(document.getElementsByTagName("TD")).filter(td => coordsEq(td.customProps.coords, levelCenter))[0];
+        const rect = td.getBoundingClientRect();
+        playerVisual.style.top = rect.top + "px";
+        playerVisual.style.left = rect.left + "px";
+        playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + gm.player.image + ".png\")";
+    }
     if (options.KEEP_PLAYER_CENTERED) {
-        const levelCenter = [Math.floor(gm.level.length / 2), Math.floor(gm.level[0].length / 2)]
         gm.centerPlayer(levelCenter, gm.player.pos);
+    } else {
+        gm.movePlayerVisual(levelCenter, gm.player.pos);
     }
     gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
     gm.render.setBg(gm.levels);

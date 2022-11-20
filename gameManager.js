@@ -14,6 +14,8 @@ import {
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
 //       in each other must be done with "refer()" for saving to work properly
 
+const playerVisual = document.getElementById("playerImg");
+const table = document.getElementById("table");
 const info = document.getElementById("info");
 const Pauser = (function() {
     let pausePromise = Promise.resolve();
@@ -129,6 +131,7 @@ export default class GameManager {
             clearInterval(this.keyIntervals[key]);
             delete this.keyIntervals[key];
         }
+        playerVisual.style.backgroundImage = "none";
     }
 
     updateInfo() {
@@ -434,14 +437,44 @@ export default class GameManager {
         this.processTurn();
     }
 
-    centerPlayer(startPos, newPos) {
-        const table = document.getElementById("table");
+    // NOTE: no smooth animation if using text symbol for player
+    // TODO: maybe later optimize to not change style if same as before
+
+    centerPlayer(startPos, newPos, noTransition) {
+        if (noTransition || !options.OBJ_IMG) {
+            table.style.transition = "none";
+        } else {
+            if (this.autoTravelStack.length) {
+                table.style.transition = "margin " + options.AUTOTRAVEL_REPEAT_DELAY + "ms";
+            } else {
+                table.style.transition = "margin " + options.TRAVEL_REPEAT_DELAY + "ms";
+            }
+        }
         const left = Number(table.style.marginLeft.slice(0, -2));
         const top = Number(table.style.marginTop.slice(0, -2));
         const pixelsY = 25 * (newPos[0] - startPos[0]);
         const pixelsX = 25 * (newPos[1] - startPos[1]);
         table.style.marginTop = (top - pixelsY) + "px";
         table.style.marginLeft = (left - pixelsX) + "px";
+    }
+
+    movePlayerVisual(startPos, newPos, noTransition) {
+        if (!options.OBJ_IMG) return; // handled in render instead
+        if (noTransition) {
+            playerVisual.style.transition = "none";
+        } else {
+            if (this.autoTravelStack.length) {
+                playerVisual.style.transition = "top " + options.AUTOTRAVEL_REPEAT_DELAY + "ms, left " + options.AUTOTRAVEL_REPEAT_DELAY + "ms";
+            } else {
+                playerVisual.style.transition = "top " + options.TRAVEL_REPEAT_DELAY + "ms, left " + options.TRAVEL_REPEAT_DELAY + "ms";
+            }
+        }
+        const left = Number(playerVisual.style.left.slice(0, -2));
+        const top = Number(playerVisual.style.top.slice(0, -2));
+        const pixelsY = 25 * (newPos[0] - startPos[0]);
+        const pixelsX = 25 * (newPos[1] - startPos[1]);
+        playerVisual.style.top = (top + pixelsY) + "px";
+        playerVisual.style.left = (left + pixelsX) + "px";
     }
 
     resetMoveVisual() {
@@ -452,7 +485,9 @@ export default class GameManager {
                 this.player.image = this.player.image.slice(0, -7); // change from "_2_move" to normal
             }
         }
-        this.render.renderAll(this.player, this.levels, this.customRenders);
+        if (options.OBJ_IMG) {
+            playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + this.player.image + ".png\")";
+        }
         this.player.prevMoveDrc = null;
     }
     
@@ -488,8 +523,15 @@ export default class GameManager {
         } else {
             this.player.moveCounter++;
         }
+        if (options.KEEP_PLAYER_CENTERED) {
+            this.centerPlayer(this.player.pos, newPos);
+        } else {
+            this.movePlayerVisual(this.player.pos, newPos);
+        }
+        if (options.OBJ_IMG) {
+            playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + this.player.image + ".png\")";
+        }
         this.player.prevMoveDrc = facing;
-        options.KEEP_PLAYER_CENTERED && this.centerPlayer(this.player.pos, newPos);
         this.player.pos = newPos;
         this.tryFireEvent("onMove");
     
@@ -645,7 +687,12 @@ export default class GameManager {
                     this.tryGenerateTravelPoints(lvl);
                     this.level = this.levels[lvl].level;
                     const newPos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
-                    options.KEEP_PLAYER_CENTERED && this.centerPlayer(this.player.pos, newPos);
+
+                    if (options.KEEP_PLAYER_CENTERED) {
+                        this.centerPlayer(this.player.pos, newPos, true);
+                    } else {
+                        this.movePlayerVisual(this.player.pos, newPos, true);
+                    }
                     this.player.pos = newPos;
                     this.mobs = this.levels[lvl].mobs;
                     this.items = this.levels[lvl].items;

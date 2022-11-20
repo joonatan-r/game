@@ -205,19 +205,21 @@ export default class Renderer {
                 areaPos.customProps.infoKeys.unshift(item.name);
             }
         }
-        if (!player.dead) {
+        if (!player.dead && !options.OBJ_IMG) {
             const playerPos = areaBuffer[player.pos[0]][player.pos[1]];
 
             if (options.OBJ_IMG) {
-                const imageToUse = "url(\"./playerImages/player_" + player.image + ".png\")";
+                // TODO: clean this, not used anymore with the smoother animation
 
-                if (playerPos.textContent !== "") {
-                    playerPos.textContent = "";
-                }
-                if (playerPos.style.backgroundImage !== imageToUse) {
-                    playerPos.style.backgroundImage = imageToUse;
-                }
-                removeByReference(imgCoordsToDelete, playerPos);
+                // const imageToUse = "url(\"./playerImages/player_" + player.image + ".png\")";
+
+                // if (playerPos.textContent !== "") {
+                //     playerPos.textContent = "";
+                // }
+                // if (playerPos.style.backgroundImage !== imageToUse) {
+                //     playerPos.style.backgroundImage = imageToUse;
+                // }
+                // removeByReference(imgCoordsToDelete, playerPos);
             } else {
                 playerPos.textContent = "@";
                 
