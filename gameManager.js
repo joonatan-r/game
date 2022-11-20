@@ -64,6 +64,7 @@ export default class GameManager {
         this.player.noteEntries = [];
         this.player.pos = [9, 5];
         this.player.image = 2;
+        this.player.moveCounter = 0;
         this.customRenders = []; // retain "animations", can also be damaging zones
         this.interruptAutoTravel = false;
         this.referenced = []; // for retaining object references when saving
@@ -452,6 +453,7 @@ export default class GameManager {
             }
         }
         this.render.renderAll(this.player, this.levels, this.customRenders);
+        this.player.prevMoveDrc = null;
     }
     
     movePlayer(newPos, alternatives) {
@@ -472,15 +474,21 @@ export default class GameManager {
         const baseImage = facing;
         const altMoveImage = facing + "_2_move";
 
-        if (this.player.image === moveImage || this.player.image === altMoveImage) {
-            this.player.image = baseImage;
-        } else if (this.player.prevMoveImage === altMoveImage) {
-            this.player.image = moveImage;
-            this.player.prevMoveImage = moveImage;
+        if (this.player.prevMoveDrc !== facing || this.player.moveCounter > 1) {
+            if (this.player.image === moveImage || this.player.image === altMoveImage) {
+                this.player.image = baseImage;
+            } else if (this.player.prevMoveImage === altMoveImage) {
+                this.player.image = moveImage;
+                this.player.prevMoveImage = moveImage;
+            } else {
+                this.player.image = altMoveImage;
+                this.player.prevMoveImage = altMoveImage;
+            }
+            this.player.moveCounter = 0;
         } else {
-            this.player.image = altMoveImage;
-            this.player.prevMoveImage = altMoveImage;
+            this.player.moveCounter++;
         }
+        this.player.prevMoveDrc = facing;
         options.KEEP_PLAYER_CENTERED && this.centerPlayer(this.player.pos, newPos);
         this.player.pos = newPos;
         this.tryFireEvent("onMove");
