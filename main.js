@@ -67,7 +67,8 @@ document.addEventListener("keyup", function(e) {
         if (Object.keys(pressedKeys).indexOf(other) !== -1
             && infoForMobileFix.listenersActive // TODO: refactor a more suitable variable
         ) {
-            setKeyRepeat(other, false, true);
+            action(other, false)
+            setKeyRepeatImmediate(other, false);
         }
     }
 });
@@ -128,7 +129,7 @@ function mergeIfOrthogonalKeysPressed(e) {
         clearInterval(keyIntervals[other]);
         delete keyIntervals[other];
         action(merged, e.ctrlKey);
-        setKeyRepeat(merged, e.ctrlKey, true);
+        setKeyRepeatImmediate(merged, e.ctrlKey);
         mergedKeys[key] = {
             other,
             merged
@@ -185,15 +186,20 @@ function mergeIfOrthogonalKeysPressed(e) {
     return false;
 }
 
-async function setKeyRepeat(key, ctrlKey, forceImmediate) {
+async function setKeyRepeat(key, ctrlKey) {
     clearInterval(keyIntervals[key]); // just to make sure nothing gets left on
     keyIntervals[key] = KEY_IS_PRESSED;
-    !forceImmediate && await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
+    await new Promise(r => setTimeout(r, options.TRAVEL_REPEAT_START_DELAY));
 
     // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
     if (keyIntervals[key] === KEY_IS_PRESSED) {
         keyIntervals[key] = setInterval(() => action(key, ctrlKey), options.TRAVEL_REPEAT_DELAY);
     }
+}
+
+function setKeyRepeatImmediate(key, ctrlKey) {
+    clearInterval(keyIntervals[key]); // just to make sure nothing gets left on
+    keyIntervals[key] = setInterval(() => action(key, ctrlKey), options.TRAVEL_REPEAT_DELAY);
 }
 
 function keypressListener(e) {
