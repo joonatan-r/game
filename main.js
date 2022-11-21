@@ -28,6 +28,7 @@ const historyButton = document.getElementById("historyButton");
 const mobileInput = document.createElement("textarea");
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 const keyIntervals = {}; // for key repeats when holding key
+const onNextKeyIntervals = {};
 const mergedKeys = {}; // for replacing two orthogonal inputs with the diagonal
 const pressedKeys = {};
 const gm = new GameManager(removeListeners, addListeners, keyIntervals);
@@ -49,26 +50,32 @@ if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
 
 // listeners that won't be removed
 document.addEventListener("keyup", function(e) {
-    clearInterval(keyIntervals[e.key]);
+    clearKeyRepeat(e.key);
     delete keyIntervals[e.key];
     delete pressedKeys[e.key];
 
     if (Object.keys(mergedKeys).indexOf(e.key) !== -1) {
         const merged = mergedKeys[e.key].merged;
         const other = mergedKeys[e.key].other;
-        clearInterval(keyIntervals[merged]);
-        delete keyIntervals[merged];
         // shouldn't need this but without it a bug can happen where
         // an interval gets stuck without being cleared
-        clearInterval(keyIntervals[other]);
+        clearKeyRepeat(other);
         delete keyIntervals[other];
         delete mergedKeys[other];
         delete mergedKeys[e.key];
         if (Object.keys(pressedKeys).indexOf(other) !== -1
             && infoForMobileFix.listenersActive // TODO: refactor a more suitable variable
         ) {
-            action(other, false)
-            setKeyRepeatImmediate(other, false);
+            onNextKeyIntervals[merged] = () => {
+                delete onNextKeyIntervals[merged];
+                action(other, false);
+                clearKeyRepeat(merged);
+                delete keyIntervals[merged];
+                // only start interval if still pressed
+                if (Object.keys(pressedKeys).indexOf(other) !== -1) {
+                    setKeyRepeatImmediate(other, false);
+                }
+            };
         }
     }
 });
@@ -116,9 +123,32 @@ function removeListeners() {
 
     // remove currently active key repeats to disable continuing moving
     for (let key of Object.keys(keyIntervals)) {
+        // NOTE: not using clearKeyRepeat to not execute any callbacks
         clearInterval(keyIntervals[key]);
         delete keyIntervals[key];
     }
+}
+
+function bothMergeKeysPressed(key) {
+    switch (key) {
+        case options.CONTROLS.BOTTOM_LEFT:
+            if (Object.keys(pressedKeys).indexOf(options.CONTROLS.BOTTOM) !== -1 
+                && Object.keys(pressedKeys).indexOf(options.CONTROLS.LEFT) !== -1) return true;
+            break;
+        case options.CONTROLS.BOTTOM_RIGHT:
+            if (Object.keys(pressedKeys).indexOf(options.CONTROLS.BOTTOM) !== -1 
+                && Object.keys(pressedKeys).indexOf(options.CONTROLS.RIGHT) !== -1) return true;
+            break;
+        case options.CONTROLS.TOP_LEFT:
+            if (Object.keys(pressedKeys).indexOf(options.CONTROLS.TOP) !== -1 
+                && Object.keys(pressedKeys).indexOf(options.CONTROLS.LEFT) !== -1) return true;
+            break;
+        case options.CONTROLS.TOP_RIGHT:
+            if (Object.keys(pressedKeys).indexOf(options.CONTROLS.TOP) !== -1 
+                && Object.keys(pressedKeys).indexOf(options.CONTROLS.RIGHT) !== -1) return true;
+            break;
+    }
+    return false;
 }
 
 function mergeIfOrthogonalKeysPressed(e) {
@@ -126,18 +156,25 @@ function mergeIfOrthogonalKeysPressed(e) {
         return false;
     }
     const mergeKeys = (key, other, merged) => {
-        clearInterval(keyIntervals[other]);
-        delete keyIntervals[other];
-        action(merged, e.ctrlKey);
-        setKeyRepeatImmediate(merged, e.ctrlKey);
-        mergedKeys[key] = {
-            other,
-            merged
-        }
-        mergedKeys[other] = {
-            other: key,
-            merged
-        }
+        // NOTE: now happens only at the next "movement cycle". Could be immediate, but that feels
+        // a bit weird when using smooth animation with transitions
+        onNextKeyIntervals[other] = () => {
+            delete onNextKeyIntervals[other];
+            action(merged, e.ctrlKey);
+            if (bothMergeKeysPressed(merged)) {
+                clearKeyRepeat(other);
+                delete keyIntervals[other];
+                setKeyRepeatImmediate(merged, e.ctrlKey);
+                mergedKeys[key] = {
+                    other,
+                    merged
+                }
+                mergedKeys[other] = {
+                    other: key,
+                    merged
+                }
+            }
+        };
     };
     const checkForMerge = (key, firstKeyToCheck, secondKeyToCheck, firstMerge, secondMerge) => {
         if (Object.keys(keyIntervals).indexOf(firstKeyToCheck) !== -1) {
@@ -186,6 +223,23 @@ function mergeIfOrthogonalKeysPressed(e) {
     return false;
 }
 
+function addToKeyIntervals(key, ctrlKey) {
+    keyIntervals[key] = setInterval(() => {
+        if (onNextKeyIntervals[key]) {
+            onNextKeyIntervals[key]();
+        } else {
+            action(key, ctrlKey);
+        }
+    }, options.TRAVEL_REPEAT_DELAY);
+}
+
+function clearKeyRepeat(key) {
+    if (onNextKeyIntervals[key]) {
+        onNextKeyIntervals[key]();
+    }
+    clearInterval(keyIntervals[key]);
+}
+
 async function setKeyRepeat(key, ctrlKey) {
     clearInterval(keyIntervals[key]); // just to make sure nothing gets left on
     keyIntervals[key] = KEY_IS_PRESSED;
@@ -193,13 +247,13 @@ async function setKeyRepeat(key, ctrlKey) {
 
     // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
     if (keyIntervals[key] === KEY_IS_PRESSED) {
-        keyIntervals[key] = setInterval(() => action(key, ctrlKey), options.TRAVEL_REPEAT_DELAY);
+        addToKeyIntervals(key, ctrlKey);
     }
 }
 
 function setKeyRepeatImmediate(key, ctrlKey) {
     clearInterval(keyIntervals[key]); // just to make sure nothing gets left on
-    keyIntervals[key] = setInterval(() => action(key, ctrlKey), options.TRAVEL_REPEAT_DELAY);
+    addToKeyIntervals(key, ctrlKey);
 }
 
 function keypressListener(e) {
