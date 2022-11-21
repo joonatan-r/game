@@ -445,9 +445,9 @@ export default class GameManager {
             table.style.transition = "none";
         } else {
             if (this.autoTravelStack.length) {
-                table.style.transition = "margin " + options.AUTOTRAVEL_REPEAT_DELAY + "ms";
+                table.style.transition = "margin " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
             } else {
-                table.style.transition = "margin " + options.TRAVEL_REPEAT_DELAY + "ms";
+                table.style.transition = "margin " + options.TRAVEL_REPEAT_DELAY + "ms linear";
             }
         }
         const left = Number(table.style.marginLeft.slice(0, -2));
@@ -464,9 +464,13 @@ export default class GameManager {
             playerVisual.style.transition = "none";
         } else {
             if (this.autoTravelStack.length) {
-                playerVisual.style.transition = "top " + options.AUTOTRAVEL_REPEAT_DELAY + "ms, left " + options.AUTOTRAVEL_REPEAT_DELAY + "ms";
+                playerVisual.style.transition = "top " + 
+                    options.AUTOTRAVEL_REPEAT_DELAY + "ms linear, left " + 
+                    options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
             } else {
-                playerVisual.style.transition = "top " + options.TRAVEL_REPEAT_DELAY + "ms, left " + options.TRAVEL_REPEAT_DELAY + "ms";
+                playerVisual.style.transition = "top " + 
+                    options.TRAVEL_REPEAT_DELAY + "ms linear, left " + 
+                    options.TRAVEL_REPEAT_DELAY + "ms linear";
             }
         }
         const left = Number(playerVisual.style.left.slice(0, -2));
@@ -502,7 +506,7 @@ export default class GameManager {
             }
         }
         clearTimeout(this.player.moveVisualTimeout);
-        this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, 200);
+        this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, options.TRAVEL_REPEAT_DELAY * 3);
         // also works if new pos not next to current for some reason
         const facing = relativeCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
         const moveImage = facing + "_move";

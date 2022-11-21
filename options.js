@@ -9,7 +9,7 @@ const options = {
     TURN_BASED: false, // in-game time only goes when you take action / in-game time goes on its own
     TURN_DELAY: 300, // milliseconds between each turn if not using turn based mode
     INTERRUPT_AUTOTRAVEL_IF_MOBS: true, // interrupt autotravel if any hostile mobs are displayed / not
-    TRAVEL_REPEAT_START_DELAY: 100, // milliseconds for the delay before holding a key to move starts repeating
+    TRAVEL_REPEAT_START_DELAY: 70, // milliseconds for the delay before holding a key to move starts repeating
     TRAVEL_REPEAT_DELAY: 70, // milliseconds between each move when holding a moving key
     AUTOTRAVEL_REPEAT_DELAY: 50, // milliseconds between each move when autotraveling
     CONVERT_ORTHOG_INPUTS_TO_DIAG: true, // convert two orthogonal move inputs to the diagonal direction between them
@@ -24,7 +24,7 @@ const options = {
         INVENTORY: "i",
         MELEE: "r",
         INTERACT: "t",
-        PICKUP: ",",
+        PICKUP: " ",
         INSPECT: ";",
         BOTTOM_LEFT: "z",
         BOTTOM: "s",
@@ -35,7 +35,7 @@ const options = {
         TOP: "w",
         TOP_RIGHT: "e",
         ACT_BOTTOM_LEFT: "1",
-        ACT_BOTTOM: "2",
+        ACT_BOTTOM: "5",
         ACT_BOTTOM_RIGHT: "3",
         ACT_LEFT: "4",
         ACT_RIGHT: "6",
