@@ -71,8 +71,10 @@ document.addEventListener("keyup", function(e) {
                 action(other, false);
                 clearKeyRepeat(merged);
                 delete keyIntervals[merged];
-                // only start interval if still pressed
-                if (Object.keys(pressedKeys).indexOf(other) !== -1) {
+                // only start interval if still pressed and listeners active
+                if (Object.keys(pressedKeys).indexOf(other) !== -1
+                    && infoForMobileFix.listenersActive // TODO: refactor a more suitable variable
+                ) {
                     setKeyRepeatImmediate(other, false);
                 }
             };
@@ -156,25 +158,41 @@ function mergeIfOrthogonalKeysPressed(e) {
         return false;
     }
     const mergeKeys = (key, other, merged) => {
-        // NOTE: now happens only at the next "movement cycle". Could be immediate, but that feels
-        // a bit weird when using smooth animation with transitions
-        onNextKeyIntervals[other] = () => {
-            delete onNextKeyIntervals[other];
+        if (options.IMMEDIATE_DIAG_MOVE_WHEN_CONVERTING_ORTHOG) {
             action(merged, e.ctrlKey);
-            if (bothMergeKeysPressed(merged)) {
-                clearKeyRepeat(other);
-                delete keyIntervals[other];
-                setKeyRepeatImmediate(merged, e.ctrlKey);
-                mergedKeys[key] = {
-                    other,
-                    merged
-                }
-                mergedKeys[other] = {
-                    other: key,
-                    merged
-                }
+            clearKeyRepeat(other);
+            delete keyIntervals[other];
+            setKeyRepeatImmediate(merged, e.ctrlKey);
+            mergedKeys[key] = {
+                other,
+                merged
             }
-        };
+            mergedKeys[other] = {
+                other: key,
+                merged
+            }
+        } else {
+            onNextKeyIntervals[other] = () => {
+                delete onNextKeyIntervals[other];
+                action(merged, e.ctrlKey);
+                // only start interval if still pressed and listeners active
+                if (bothMergeKeysPressed(merged)
+                    && infoForMobileFix.listenersActive // TODO: refactor a more suitable variable
+                ) {
+                    clearKeyRepeat(other);
+                    delete keyIntervals[other];
+                    setKeyRepeatImmediate(merged, e.ctrlKey);
+                    mergedKeys[key] = {
+                        other,
+                        merged
+                    }
+                    mergedKeys[other] = {
+                        other: key,
+                        merged
+                    }
+                }
+            };
+        }
     };
     const checkForMerge = (key, firstKeyToCheck, secondKeyToCheck, firstMerge, secondMerge) => {
         if (Object.keys(keyIntervals).indexOf(firstKeyToCheck) !== -1) {

@@ -14,9 +14,10 @@ export default class UI {
     dialogStack = [];
     dialogDisplayed = false;
 
-    constructor(removeListeners, addListeners) {
+    constructor(removeListeners, addListeners, pauser) {
         this.removeListeners = removeListeners;
         this.addListeners = addListeners;
+        this.pauser = pauser;
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
         this.msgMoveListener = this.msgMoveListener.bind(this);
         this.infoMoveListener = this.infoMoveListener.bind(this);
@@ -107,7 +108,8 @@ export default class UI {
         msgBox.style.display = "block";
         this.msgQueue.unshift(msg);
         this.msgTimeOutQueue.unshift(
-            setTimeout(() => {
+            setTimeout(async () => {
+                await this.pauser.waitForUnpause();
                 this.msgQueue.pop();
                 this.msgTimeOutQueue.pop();
         
@@ -116,7 +118,7 @@ export default class UI {
                 } else {
                     status.textContent = this.msgQueue.join("\n\n");
                 }
-            }, 5000) // hide each individual message after 5 seconds
+            }, 5000) // hide each individual message after 5 seconds (unless paused)
         );
 
         if (this.msgQueue.length > 7) {

@@ -13,6 +13,7 @@ const options = {
     TRAVEL_REPEAT_DELAY: 70, // milliseconds between each move when holding a moving key
     AUTOTRAVEL_REPEAT_DELAY: 50, // milliseconds between each move when autotraveling
     CONVERT_ORTHOG_INPUTS_TO_DIAG: true, // convert two orthogonal move inputs to the diagonal direction between them
+    IMMEDIATE_DIAG_MOVE_WHEN_CONVERTING_ORTHOG: false, // when orthogonal inputs are converted, make a move immediately instead of keeping speed constant
     CONTROLS: {
         MOVE_MOD: "Control",
         AUTOMOVE_MOD: "None",
@@ -59,7 +60,8 @@ export const optionNameMap = {
     TRAVEL_REPEAT_START_DELAY: "Delay before holding direction starts repeating (ms)",
     TRAVEL_REPEAT_DELAY: "Delay between moves when holding direction (ms)",
     AUTOTRAVEL_REPEAT_DELAY: "Delay between autotravel moves (ms)",
-    CONVERT_ORTHOG_INPUTS_TO_DIAG: "Convert two orthogonal move inputs to the diagonal direction between them"
+    CONVERT_ORTHOG_INPUTS_TO_DIAG: "Convert two orthogonal move inputs to the diagonal direction between them",
+    IMMEDIATE_DIAG_MOVE_WHEN_CONVERTING_ORTHOG: "When orthogonal move inputs are converted, move immediately"
 };
 
 export const controlNameMap = {
