@@ -63,7 +63,10 @@ const events = {
         "Scared Traveller": function(mob, gm) {
             switch (mob.state) {
                 case 0:
-                    gm.ui.showMsg("[" + mob.name + "]: Why are you here? Turn back while you still can!");
+                    gm.setPause(true);
+                    gm.ui.showDialog("[" + mob.name + "]:\n\nWhy are you here? Turn back while you still can!", ["Continue"], () => {
+                        gm.setPause(false);
+                    });
                     mob.state = 1;
                     break;
                 case 1:
@@ -73,21 +76,31 @@ const events = {
                             idx => {
                                 switch (idx) {
                                     case 0:
-                                        gm.ui.showMsg("[" + mob.name + "]: I think there's something hidden in the area past the gate. [Note entry added]");
+                                        gm.ui.showDialog(
+                                            "[" + mob.name + "]:\n\nI think there's something hidden in the area past the gate. [Note entry added]",
+                                            ["Continue"], 
+                                            () => {
+                                                gm.setPause(false);
+                                            }
+                                        );
                                         gm.player.noteEntries.push("Secrets in the uncharted");
                                         mob.state = 2;
                                         break;
                                     case 1:
-                                        gm.ui.showMsg("[" + mob.name + "]: Fair enough.");
+                                        gm.ui.showDialog("[" + mob.name + "]:\n\nFair enough.", ["Continue"], () => {
+                                            gm.setPause(false);
+                                        });
                                         mob.state = 2;
                                         break;
                                 }
-                                gm.setPause(false);
                             }
                     );
                     break;
                 case 2:
-                    gm.ui.showMsg("[" + mob.name + "]: I gotta get out of here...");
+                    gm.setPause(true);
+                    gm.ui.showDialog("[" + mob.name + "]:\n\nI gotta get out of here...", ["Continue"], () => {
+                        gm.setPause(false);
+                    });
                     break;
             }
         },

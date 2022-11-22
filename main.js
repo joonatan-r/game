@@ -463,8 +463,12 @@ function showInventory() {
         contentNames.push(itemNameWithNumber(item));
     }
     if (contentNames.length !== 0) {
+        gm.setPause(true);
         gm.ui.showDialog("Contents of your inventory:", contentNames, itemIdx => {
-            if (itemIdx < 0) return;
+            if (itemIdx < 0) {
+                gm.setPause(false);
+                return;
+            }
             const actionOptions = gm.player.inventory[itemIdx].usable ? ["Drop", "Use"] : ["Drop"];
             gm.ui.showDialog("What do you want to do with \"" + contentNames[itemIdx] + "\"?", 
                              actionOptions, actionIdx => {
@@ -480,6 +484,7 @@ function showInventory() {
                         gm.tryFireEvent("onUse", gm.player.inventory[itemIdx]);
                         break;
                 }
+                gm.setPause(false);
             }, true, true, 1);
         }, true, true, 0);
     } else {

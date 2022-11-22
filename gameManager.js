@@ -51,7 +51,8 @@ export default class GameManager {
         this.levels = initialized.levels;
         this.pauser = new Pauser();
         this.render = new Renderer(this.area, this.rendered);
-        this.ui = new UI(removeListeners, addListeners, this.pauser);
+        // use a new pause function to preserve "this" properly
+        this.ui = new UI(removeListeners, addListeners, this.pauser, val => this.setPause(val));
         this.level = this.levels[this.levels.currentLvl].level;
         this.mobs = this.levels[this.levels.currentLvl].mobs;
         this.items = this.levels[this.levels.currentLvl].items;

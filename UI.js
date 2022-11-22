@@ -14,10 +14,11 @@ export default class UI {
     dialogStack = [];
     dialogDisplayed = false;
 
-    constructor(removeListeners, addListeners, pauser) {
+    constructor(removeListeners, addListeners, pauser, setPause) {
         this.removeListeners = removeListeners;
         this.addListeners = addListeners;
         this.pauser = pauser;
+        this.setPause = setPause;
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
         this.msgMoveListener = this.msgMoveListener.bind(this);
         this.infoMoveListener = this.infoMoveListener.bind(this);
@@ -346,8 +347,12 @@ export default class UI {
 
     showMsgHistory(startPage) {
         if (this.msgHistory.length) {
+            this.setPause(true);
             this.showDialog("Message history:", this.msgHistory, idx => {
-                if (idx < 0) return;
+                if (idx < 0) {
+                    this.setPause(false);
+                    return;
+                }
                 this.showMsgHistory(this.getPageForIdx(idx));
             }, true, true, null, startPage);
         }
