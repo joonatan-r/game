@@ -643,7 +643,11 @@ export default class GameManager {
                     }
                 }
                 if (itemsHere.length > 1 || alwaysDialog) {
+                    this.setPause(true);
                     this.ui.showDialog("What do you want to pick up?", itemNames, idx => {
+                        // only unpause if closing the dialog or picking up the last item,
+                        // otherwise one update cycle would trigger before opening the dialog again
+                        if (idx < 0 || itemsHere.length < 2) this.setPause(false);
                         if (idx < 0) return;
                         const removed = this.items.splice(itemIdxs[idx], 1)[0];
                         this.addToInventory(removed);

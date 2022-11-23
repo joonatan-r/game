@@ -7,12 +7,12 @@ const events = {
             // No message when starting a random game
             if (gm.levels.currentLvl === "The Beginning") return;
             gm.setPause(true);
-            gm.ui.showDialog("Hello, adventurer!", ["Continue"], () => {
+            gm.ui.showDialog("Hello, adventurer!", ["[Continue]"], () => {
                 gm.setPause(false);
             });
         } else {
             gm.setPause(true);
-            gm.ui.showDialog("Welcome back, adventurer!", ["Continue"], () => {
+            gm.ui.showDialog("Welcome back, adventurer!", ["[Continue]"], () => {
                 gm.setPause(false);
             });
         }
@@ -48,7 +48,7 @@ const events = {
                 }
                 if (!previouslyVisited) {
                     gm.setPause(true);
-                    gm.ui.showDialog("A great wall blocks the path. There seems to be only one closed gate.", ["Continue"], () => {
+                    gm.ui.showDialog("A great wall blocks the path. There seems to be only one closed gate.", ["[Continue]"], () => {
                         gm.setPause(false);
                     });
                 }
@@ -64,7 +64,7 @@ const events = {
             switch (mob.state) {
                 case 0:
                     gm.setPause(true);
-                    gm.ui.showDialog("[" + mob.name + "]:\n\nWhy are you here? Turn back while you still can!", ["Continue"], () => {
+                    gm.ui.showDialog("[" + mob.name + "]:\n\nWhy are you here? Turn back while you still can!", ["[Continue]"], () => {
                         gm.setPause(false);
                     });
                     mob.state = 1;
@@ -77,8 +77,8 @@ const events = {
                                 switch (idx) {
                                     case 0:
                                         gm.ui.showDialog(
-                                            "[" + mob.name + "]:\n\nI think there's something hidden in the area past the gate. [Note entry added]",
-                                            ["Continue"], 
+                                            "[" + mob.name + "]:\n\nI think there's something hidden in the area past the gate.\n[Note entry added]",
+                                            ["[Continue]"], 
                                             () => {
                                                 gm.setPause(false);
                                             }
@@ -87,7 +87,7 @@ const events = {
                                         mob.state = 2;
                                         break;
                                     case 1:
-                                        gm.ui.showDialog("[" + mob.name + "]:\n\nFair enough.", ["Continue"], () => {
+                                        gm.ui.showDialog("[" + mob.name + "]:\n\nFair enough.", ["[Continue]"], () => {
                                             gm.setPause(false);
                                         });
                                         mob.state = 2;
@@ -98,7 +98,7 @@ const events = {
                     break;
                 case 2:
                     gm.setPause(true);
-                    gm.ui.showDialog("[" + mob.name + "]:\n\nI gotta get out of here...", ["Continue"], () => {
+                    gm.ui.showDialog("[" + mob.name + "]:\n\nI gotta get out of here...", ["[Continue]"], () => {
                         gm.setPause(false);
                     });
                     break;
