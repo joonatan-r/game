@@ -265,6 +265,7 @@ async function setKeyRepeat(key, ctrlKey) {
 
     // check that the keypress hasn't been stopped already (keyIntervals values are deleted on keyup)
     if (keyIntervals[key] === KEY_IS_PRESSED) {
+        action(key, ctrlKey);
         addToKeyIntervals(key, ctrlKey);
     }
 }
