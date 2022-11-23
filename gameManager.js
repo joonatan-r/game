@@ -441,12 +441,14 @@ export default class GameManager {
     // NOTE: no smooth animation if using text symbol for player
     // TODO: maybe later optimize to not change style if same as before
 
-    centerPlayer(startPos, newPos, noTransition) {
+    centerPlayer(startPos, newPos, noTransition, isFirst) {
         if (noTransition || !options.OBJ_IMG) {
             table.style.transition = "none";
         } else {
             if (this.autoTravelStack.length) {
                 table.style.transition = "margin " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
+            } else if (isFirst) {
+                table.style.transition = "margin " + options.TRAVEL_REPEAT_START_DELAY + "ms linear";
             } else {
                 table.style.transition = "margin " + options.TRAVEL_REPEAT_DELAY + "ms linear";
             }
@@ -459,7 +461,7 @@ export default class GameManager {
         table.style.marginLeft = (left - pixelsX) + "px";
     }
 
-    movePlayerVisual(startPos, newPos, noTransition) {
+    movePlayerVisual(startPos, newPos, noTransition, isFirst) {
         if (!options.OBJ_IMG) return; // handled in render instead
         if (noTransition) {
             playerVisual.style.transition = "none";
@@ -468,6 +470,10 @@ export default class GameManager {
                 playerVisual.style.transition = "top " + 
                     options.AUTOTRAVEL_REPEAT_DELAY + "ms linear, left " + 
                     options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
+            } else if (isFirst) {
+                playerVisual.style.transition = "top " + 
+                    options.TRAVEL_REPEAT_START_DELAY + "ms linear, left " + 
+                    options.TRAVEL_REPEAT_START_DELAY + "ms linear";
             } else {
                 playerVisual.style.transition = "top " + 
                     options.TRAVEL_REPEAT_DELAY + "ms linear, left " + 
@@ -495,8 +501,12 @@ export default class GameManager {
         }
         this.player.prevMoveDrc = null;
     }
+
+    moveCounterTimer() {
+        this.player.moveCounter = 1;
+    }
     
-    movePlayer(newPos, alternatives) {
+    movePlayer(newPos, alternatives, isFirst) {
         if (!this.posIsValid(newPos)) {
             if (!alternatives || !alternatives.length) {
                 return;
@@ -506,15 +516,15 @@ export default class GameManager {
                 return;
             }
         }
-        clearTimeout(this.player.moveVisualTimeout);
-        this.player.moveVisualTimeout = setTimeout(this.resetMoveVisual, options.TRAVEL_REPEAT_DELAY * 3);
+        clearTimeout(this.player.moveVisualResetTimeout);
+        this.player.moveVisualResetTimeout = setTimeout(this.resetMoveVisual, options.TRAVEL_REPEAT_DELAY * 3);
         // also works if new pos not next to current for some reason
         const facing = relativeCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
         const moveImage = facing + "_move";
         const baseImage = facing;
         const altMoveImage = facing + "_2_move";
 
-        if (this.player.prevMoveDrc !== facing || this.player.moveCounter > 1) {
+        if (this.player.prevMoveDrc !== facing || this.player.moveCounter > 0) {
             if (this.player.image === moveImage || this.player.image === altMoveImage) {
                 this.player.image = baseImage;
             } else if (this.player.prevMoveImage === altMoveImage) {
@@ -525,13 +535,13 @@ export default class GameManager {
                 this.player.prevMoveImage = altMoveImage;
             }
             this.player.moveCounter = 0;
-        } else {
-            this.player.moveCounter++;
+            clearTimeout(this.player.moveVisualTimeout);
+            this.player.moveVisualTimeout = setTimeout(this.moveCounterTimer, 150);
         }
         if (options.KEEP_PLAYER_CENTERED) {
-            this.centerPlayer(this.player.pos, newPos);
+            this.centerPlayer(this.player.pos, newPos, false, isFirst);
         } else {
-            this.movePlayerVisual(this.player.pos, newPos);
+            this.movePlayerVisual(this.player.pos, newPos, false, isFirst);
         }
         if (options.OBJ_IMG) {
             playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + this.player.image + ".png\")";

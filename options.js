@@ -9,7 +9,7 @@ const options = {
     TURN_BASED: false, // in-game time only goes when you take action / in-game time goes on its own
     TURN_DELAY: 300, // milliseconds between each turn if not using turn based mode
     INTERRUPT_AUTOTRAVEL_IF_MOBS: true, // interrupt autotravel if any hostile mobs are displayed / not
-    TRAVEL_REPEAT_START_DELAY: 70, // milliseconds for the delay before holding a key to move starts repeating
+    TRAVEL_REPEAT_START_DELAY: 100, // milliseconds for the delay before holding a key to move starts repeating
     TRAVEL_REPEAT_DELAY: 70, // milliseconds between each move when holding a moving key
     AUTOTRAVEL_REPEAT_DELAY: 50, // milliseconds between each move when autotraveling
     CONVERT_ORTHOG_INPUTS_TO_DIAG: true, // convert two orthogonal move inputs to the diagonal direction between them

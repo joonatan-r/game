@@ -99,9 +99,9 @@ function start() {
         playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + gm.player.image + ".png\")";
     }
     if (options.KEEP_PLAYER_CENTERED) {
-        gm.centerPlayer(levelCenter, gm.player.pos);
+        gm.centerPlayer(levelCenter, gm.player.pos, true);
     } else {
-        gm.movePlayerVisual(levelCenter, gm.player.pos);
+        gm.movePlayerVisual(levelCenter, gm.player.pos, true);
     }
     gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
     gm.render.setBg(gm.levels);
@@ -292,7 +292,7 @@ function keypressListener(e) {
         }
         setKeyRepeat(e.key, e.ctrlKey);
     }
-    action(e.key, e.ctrlKey);
+    action(e.key, e.ctrlKey, true);
 }
 
 function clickListener(e) {
@@ -509,7 +509,7 @@ function doActType(actDrc) {
     }
 }
 
-function action(key, ctrl) {
+function action(key, ctrl, isFirst) {
     switch(gm.inputType) {
         case "autoMove":
             if (key === options.CONTROLS.ESC) gm.interruptAutoTravel = true;
@@ -543,7 +543,7 @@ function action(key, ctrl) {
                 // "slide" along walls if moving diagonally against them
                 const alternatives = getAdjacentOrthogonalDirections(gm.player.pos, drc);
                 movePosToDrc(newPos, drc);
-                gm.movePlayer(newPos, alternatives);
+                gm.movePlayer(newPos, alternatives, isFirst);
             }
             break;
         case options.CONTROLS.ACT_BOTTOM_LEFT:
