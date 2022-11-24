@@ -37,6 +37,8 @@ let infoForMobileFix = { // use object to pass reference to mobileFix
     listenersActive: false,
     action: action
 };
+let isFirstMove = true;
+let prevPlayerPos = gm.player.pos.slice();
 
 if (defaultOptions) {
     const newOptions = JSON.parse(defaultOptions);
@@ -68,13 +70,13 @@ document.addEventListener("keyup", function(e) {
         ) {
             onNextKeyIntervals[merged] = () => {
                 delete onNextKeyIntervals[merged];
-                action(other, false);
                 clearKeyRepeat(merged);
                 delete keyIntervals[merged];
                 // only start interval if still pressed and listeners active
                 if (Object.keys(pressedKeys).indexOf(other) !== -1
                     && infoForMobileFix.listenersActive // TODO: refactor a more suitable variable
                 ) {
+                    action(other, false);
                     setKeyRepeatImmediate(other, false);
                 }
             };
@@ -158,8 +160,18 @@ function mergeIfOrthogonalKeysPressed(e) {
         return false;
     }
     const mergeKeys = (key, other, merged) => {
-        if (options.IMMEDIATE_DIAG_MOVE_WHEN_CONVERTING_ORTHOG) {
-            action(merged, e.ctrlKey);
+        if (options.IMMEDIATE_DIAG_MOVE_WHEN_CONVERTING_ORTHOG || isFirstMove) {
+            // If it is the first move, player started movement by pressing the orthogonal
+            // keys almost at the same time. The movement from the first has already happened,
+            // so the first move here should be to the other direction to preserve consistent motion.
+            // However, if the first move was blocked (player didn't move), the move should also be diagonal.
+            if (isFirstMove 
+                && (gm.player.pos[0] - prevPlayerPos[0] !== 0 || gm.player.pos[1] - prevPlayerPos[1] !== 0)
+            ) {
+                action(key, e.ctrlKey);
+            } else {
+                action(merged, e.ctrlKey);
+            }
             clearKeyRepeat(other);
             delete keyIntervals[other];
             setKeyRepeatImmediate(merged, e.ctrlKey);
@@ -246,6 +258,7 @@ function addToKeyIntervals(key, ctrlKey) {
         if (onNextKeyIntervals[key]) {
             onNextKeyIntervals[key]();
         } else {
+            isFirstMove = false;
             action(key, ctrlKey);
         }
     }, options.TRAVEL_REPEAT_DELAY);
@@ -285,14 +298,17 @@ function keypressListener(e) {
         options.CONTROLS.LEFT, options.CONTROLS.RIGHT, options.CONTROLS.TOP_LEFT, 
         options.CONTROLS.TOP, options.CONTROLS.TOP_RIGHT
     ];
+    const isFirst = !Object.keys(keyIntervals).length;
 
     if (moveKeyList.indexOf(e.key) !== -1) {
         if (mergeIfOrthogonalKeysPressed(e)) {
             return;
         }
+        isFirstMove = isFirst; // still use previous value for checking merges
+        prevPlayerPos = gm.player.pos.slice();
         setKeyRepeat(e.key, e.ctrlKey);
     }
-    action(e.key, e.ctrlKey, true);
+    action(e.key, e.ctrlKey, isFirst);
 }
 
 function clickListener(e) {
