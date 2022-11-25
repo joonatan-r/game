@@ -445,7 +445,7 @@ export default class GameManager {
         if (noTransition || !options.OBJ_IMG) {
             table.style.transition = "none";
         } else {
-            if (this.autoTravelStack.length) {
+            if (this.autoTravelStack.indexOf(true) !== -1) {
                 table.style.transition = "margin " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
             } else if (isFirst) {
                 table.style.transition = "margin " + options.TRAVEL_REPEAT_START_DELAY + "ms linear";
@@ -466,7 +466,7 @@ export default class GameManager {
         if (noTransition) {
             playerVisual.style.transition = "none";
         } else {
-            if (this.autoTravelStack.length) {
+            if (this.autoTravelStack.indexOf(true) !== -1) {
                 playerVisual.style.transition = "top " + 
                     options.AUTOTRAVEL_REPEAT_DELAY + "ms linear, left " + 
                     options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
@@ -610,6 +610,7 @@ export default class GameManager {
             // new coord may not be next to player if e.g. a mob blocks the way
             if (!this.autoTravelStack[idx] || this.interruptAutoTravel || this.levels.currentLvl !== lvl || !isNextTo(this.player.pos, coord)) {
                 this.inputType = null;
+                this.autoTravelStack[idx] = false;
                 return;
             }
             this.movePlayer(coord);

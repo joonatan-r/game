@@ -266,7 +266,10 @@ export default class Renderer {
             for (let j = 0; j < level[0].length; j++) {
                 const levelTile = level[i][j];
 
-                if (!isWall(levelTile)) {
+                if (!isWall(levelTile) 
+                    || (options.USE_BG_IMG 
+                        && (levelTile === levelTiles.transparentBgWall || levelTile === levelTiles.seeThroughWall))
+                ) {
                     continue;
                 }
                 const classes = [];

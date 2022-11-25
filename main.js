@@ -292,6 +292,7 @@ function keypressListener(e) {
     if (Object.keys(pressedKeys).indexOf(e.key) !== -1) {
         return;
     }
+    e.preventDefault();
     pressedKeys[e.key] = true;
     const moveKeyList = [
         options.CONTROLS.BOTTOM_LEFT, options.CONTROLS.BOTTOM, options.CONTROLS.BOTTOM_RIGHT,
