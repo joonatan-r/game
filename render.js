@@ -68,6 +68,7 @@ export default class Renderer {
     createImage(src) {
         const img = new Image();
         img.src = src;
+        return img;
     }
 
     getTileToRender(tile) {
