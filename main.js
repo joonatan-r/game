@@ -303,7 +303,7 @@ function keypressListener(e) {
     const isFirst = !Object.keys(keyIntervals).length;
 
     if (moveKeyList.indexOf(e.key) !== -1) {
-        drcPressTimes[inputToDrc(e.key, options)] = Date.now();
+        drcPressTimes[inputToDrc(e.key, options)] = performance.now();
         if (mergeIfOrthogonalKeysPressed(e)) {
             return;
         }
