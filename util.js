@@ -549,6 +549,7 @@ export function getSecondBestDirections(drcs, currentDrc, excluded) {
 
 export function getAdjacentOrthogonalDirections(pos, drc) {
     let alternatives = null;
+    let drcs = null;
 
     if (drc === 1) {
         const first = pos.slice();
@@ -556,26 +557,33 @@ export function getAdjacentOrthogonalDirections(pos, drc) {
         movePosToDrc(first, 4);
         movePosToDrc(second, 2);
         alternatives = [first, second];
+        drcs = [4, 2];
     } else if (drc === 3) {
         const first = pos.slice();
         const second = pos.slice();
         movePosToDrc(first, 6);
         movePosToDrc(second, 2);
         alternatives = [first, second];
+        drcs = [6, 2];
     } else if (drc === 7) {
         const first = pos.slice();
         const second = pos.slice();
         movePosToDrc(first, 4);
         movePosToDrc(second, 8);
         alternatives = [first, second];
+        drcs = [4, 8];
     } else if (drc === 9) {
         const first = pos.slice();
         const second = pos.slice();
         movePosToDrc(first, 6);
         movePosToDrc(second, 8);
         alternatives = [first, second];
+        drcs = [6, 8];
     }
-    return alternatives;
+    return {
+        alternatives: alternatives,
+        drcs: drcs
+    };
 }
 
 export function itemNameWithNumber(item) {

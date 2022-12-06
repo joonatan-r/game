@@ -31,6 +31,7 @@ const keyIntervals = {}; // for key repeats when holding key
 const onNextKeyIntervals = {};
 const mergedKeys = {}; // for replacing two orthogonal inputs with the diagonal
 const pressedKeys = {};
+const drcPressTimes = {}; // for keeping track of when directions were last pressed
 const gm = new GameManager(removeListeners, addListeners, keyIntervals);
 const defaultOptions = localStorage.getItem("gameDefaultOptions");
 let infoForMobileFix = { // use object to pass reference to mobileFix
@@ -302,6 +303,7 @@ function keypressListener(e) {
     const isFirst = !Object.keys(keyIntervals).length;
 
     if (moveKeyList.indexOf(e.key) !== -1) {
+        drcPressTimes[inputToDrc(e.key, options)] = Date.now();
         if (mergeIfOrthogonalKeysPressed(e)) {
             return;
         }
@@ -558,9 +560,17 @@ function action(key, ctrl, isFirst) {
                 prevPos && gm.autoTravel(prevPos); // last ok position
             } else {
                 // "slide" along walls if moving diagonally against them
-                const alternatives = getAdjacentOrthogonalDirections(gm.player.pos, drc);
+                const altInfo = getAdjacentOrthogonalDirections(gm.player.pos, drc);
+
+                // prioritize alternatives based on what direction was more recently pressed, more intuitive
+                // in case of moving against a corner where there are two valid options
+                if (altInfo.drcs && drcPressTimes[altInfo.drcs[1]] > drcPressTimes[altInfo.drcs[0]]) {
+                    const temp = altInfo.alternatives[1];
+                    altInfo.alternatives[1] = altInfo.alternatives[0];
+                    altInfo.alternatives[0] = temp;
+                }
                 movePosToDrc(newPos, drc);
-                gm.movePlayer(newPos, alternatives, isFirst);
+                gm.movePlayer(newPos, altInfo.alternatives, isFirst);
             }
             break;
         case options.CONTROLS.ACT_BOTTOM_LEFT:
