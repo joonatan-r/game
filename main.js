@@ -64,8 +64,10 @@ document.addEventListener("keyup", function(e) {
         // an interval gets stuck without being cleared
         clearKeyRepeat(other);
         delete keyIntervals[other];
-        delete mergedKeys[other];
         delete mergedKeys[e.key];
+        // if other already added as part of another merge, ignore rest
+        if (mergedKeys[other].other !== e.key) return;
+        delete mergedKeys[other];
         if (Object.keys(pressedKeys).indexOf(other) !== -1
             && infoForMobileFix.listenersActive // TODO: refactor a more suitable variable
         ) {
@@ -173,6 +175,16 @@ function mergeIfOrthogonalKeysPressed(e) {
             } else {
                 action(merged, e.ctrlKey);
             }
+            if (Object.keys(mergedKeys).indexOf(other) !== -1) { // if still part of previous merge, clear it
+                const prevMerged = mergedKeys[other].merged;
+                const prevOther = mergedKeys[other].other;
+                clearKeyRepeat(prevMerged);
+                delete keyIntervals[prevMerged];
+                clearKeyRepeat(prevOther);
+                delete keyIntervals[prevOther];
+                delete mergedKeys[other];
+                delete mergedKeys[prevOther];
+            }
             clearKeyRepeat(other);
             delete keyIntervals[other];
             setKeyRepeatImmediate(merged, e.ctrlKey);
@@ -192,6 +204,16 @@ function mergeIfOrthogonalKeysPressed(e) {
                 if (bothMergeKeysPressed(merged)
                     && infoForMobileFix.listenersActive // TODO: refactor a more suitable variable
                 ) {
+                    if (Object.keys(mergedKeys).indexOf(other) !== -1) {
+                        const prevMerged = mergedKeys[other].merged;
+                        const prevOther = mergedKeys[other].other;
+                        clearKeyRepeat(prevMerged);
+                        delete keyIntervals[prevMerged];
+                        clearKeyRepeat(prevOther);
+                        delete keyIntervals[prevOther];
+                        delete mergedKeys[other];
+                        delete mergedKeys[prevOther];
+                    }
                     clearKeyRepeat(other);
                     delete keyIntervals[other];
                     setKeyRepeatImmediate(merged, e.ctrlKey);
@@ -208,10 +230,10 @@ function mergeIfOrthogonalKeysPressed(e) {
         }
     };
     const checkForMerge = (key, firstKeyToCheck, secondKeyToCheck, firstMerge, secondMerge) => {
-        if (Object.keys(keyIntervals).indexOf(firstKeyToCheck) !== -1) {
+        if (Object.keys(pressedKeys).indexOf(firstKeyToCheck) !== -1) {
             mergeKeys(key, firstKeyToCheck, firstMerge);
             return true;
-        } else if (Object.keys(keyIntervals).indexOf(secondKeyToCheck) !== -1) {
+        } else if (Object.keys(pressedKeys).indexOf(secondKeyToCheck) !== -1) {
             mergeKeys(key, secondKeyToCheck, secondMerge);
             return true;
         }
