@@ -1,6 +1,6 @@
 import { levelTiles } from "./levelData.js";
 import {
-    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber, coordsEq
+    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber, coordsEq, addOrReplaceCss
 } from "./util.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
@@ -48,6 +48,8 @@ if (defaultOptions) {
         options[key] = newOptions[key];
     }
     gm.render.changeOptions(options);
+    // use the more specific "body p" to override "p" font size but retain its other attributes
+    addOrReplaceCss("body p", "body p {font-size:" + options.FONT_SIZE + "px;}");
 }
 if (MOBILE) mobileFix(mobileInput, infoForMobileFix);
 

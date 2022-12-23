@@ -1,5 +1,6 @@
 const options = {
     KEEP_PLAYER_CENTERED: true, // keep the player centered on screen like a camera that follows them
+    FONT_SIZE: 23,
     USE_BG_IMG: true, // use the configured background images or colors for levels / always show black background
     USE_DOTS: false, // display dots in empty spaces / display nothing in empty spaces
     OBJ_BG: true, // display black background instead of the configured background in tiles that have a mob/item etc.
@@ -48,6 +49,7 @@ const options = {
 
 export const optionNameMap = {
     KEEP_PLAYER_CENTERED: "Keep the player centered on screen",
+    FONT_SIZE: "User interface font size",
     USE_BG_IMG: "Show background image",
     USE_DOTS: "Display dots on floor tiles",
     OBJ_BG: "Show black background for objects",

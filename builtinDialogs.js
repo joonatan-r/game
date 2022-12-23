@@ -1,7 +1,7 @@
 import { addItems } from "./itemData.js";
 import { addMobs } from "./mobData.js";
 import options, { controlNameMap, optionNameMap } from "./options.js";
-import { load, removeByReference, save } from "./util.js";
+import { addOrReplaceCss, load, removeByReference, save } from "./util.js";
 
 export default class BuiltinDialogs {
     constructor(gm, start, removeListeners, mobileInput) {
@@ -100,6 +100,10 @@ export default class BuiltinDialogs {
     
                         if (val > 10) {
                             options[optKeys[idx]] = val;
+
+                            if (optKeys[idx] === "FONT_SIZE") { // special case to immediately update
+                                addOrReplaceCss("body p", "body p {font-size:" + val + "px;}");
+                            }
                         }
                         input = "";
                         document.removeEventListener("keydown", inputListener);

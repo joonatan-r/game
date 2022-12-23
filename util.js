@@ -622,3 +622,22 @@ export function getClosestTravelPoint(tps, pos, level) {
     }
     return tps.shift();
 }
+
+function getCssRuleIdx(selector) {
+    let idx = -1;
+    Array.from(document.styleSheets[0].cssRules).forEach((rule, i) => {
+        if (rule.selectorText === selector) {
+            idx = i;
+        }
+    });
+    return idx;
+}
+
+export function addOrReplaceCss(selector, newRule) {
+    const oldRuleIndex = getCssRuleIdx(selector);
+
+    if (oldRuleIndex !== -1) {
+        document.styleSheets[0].deleteRule(oldRuleIndex);
+    }
+    document.styleSheets[0].insertRule(newRule);
+}
