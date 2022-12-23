@@ -94,19 +94,33 @@ bd.showStartDialog();
 function start() {
     document.addEventListener("contextmenu", menuListener);
     gm.updateInfo();
-    const levelCenter = [Math.floor(gm.level.length / 2), Math.floor(gm.level[0].length / 2)];
+    const screenCenterX = window.innerWidth / 2;
+    const screenCenterY = window.innerHeight / 2;
+    let posAtScreenCenter;
+    let tdRectAtScreenCenter;
 
+    for (let i = 0; i < gm.level.length; i++) {
+        for (let j = 0; j < gm.level[0].length; j++) {
+            const td = gm.area[i][j];
+            const rect = td.getBoundingClientRect();
+            if (rect.x < screenCenterX && rect.x + rect.width > screenCenterX
+                && rect.y < screenCenterY && rect.y + rect.height > screenCenterY
+            ) {
+                posAtScreenCenter = td.customProps.coords.slice();
+                tdRectAtScreenCenter = td.getBoundingClientRect();
+                break;
+            }
+        }
+    }
     if (options.OBJ_IMG) {
-        const td = Array.from(document.getElementsByTagName("TD")).filter(td => coordsEq(td.customProps.coords, levelCenter))[0];
-        const rect = td.getBoundingClientRect();
-        playerVisual.style.top = rect.top + "px";
-        playerVisual.style.left = rect.left + "px";
+        playerVisual.style.top = tdRectAtScreenCenter.top + "px";
+        playerVisual.style.left = tdRectAtScreenCenter.left + "px";
         playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + gm.player.image + ".png\")";
     }
     if (options.KEEP_PLAYER_CENTERED) {
-        gm.centerPlayer(levelCenter, gm.player.pos, true);
+        gm.centerPlayer(posAtScreenCenter, gm.player.pos, true);
     } else {
-        gm.movePlayerVisual(levelCenter, gm.player.pos, true);
+        gm.movePlayerVisual(posAtScreenCenter, gm.player.pos, true);
     }
     gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
     gm.render.setBg(gm.levels);
