@@ -206,7 +206,7 @@ export default class Renderer {
                 areaPos.customProps.infoKeys.unshift(item.name);
             }
         }
-        if (!player.dead && !options.OBJ_IMG) {
+        if (!player.dead) {
             const playerPos = areaBuffer[player.pos[0]][player.pos[1]];
 
             if (options.OBJ_IMG) {
@@ -312,18 +312,25 @@ export default class Renderer {
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
                 const areaPos = this.area[i][j];
+                const checkPos = this.prevAreaBuffer ? this.prevAreaBuffer[i][j] : areaPos;
                 const buffer = areaBuffer[i][j];
                 const newClassName = buffer.classList.reduce((old, val) => old + " " + val);
-                if (areaPos.className !== newClassName) areaPos.className = newClassName;
-                areaPos.customProps.infoKeys = buffer.customProps.infoKeys;
-                if (buffer.style.backgroundImage && areaPos.style.backgroundImage !== buffer.style.backgroundImage) {
+                if (checkPos.className !== newClassName) areaPos.className = newClassName;
+                if (!checkPos.customProps
+                    || !checkPos.customProps.infoKeys
+                    || !checkPos.customProps.infoKeys.every((item, i) => item === buffer.customProps.infoKeys[i])
+                ) {
+                    areaPos.customProps.infoKeys = buffer.customProps.infoKeys;
+                }
+                if (buffer.style.backgroundImage && checkPos.style.backgroundImage !== buffer.style.backgroundImage) {
                     areaPos.style.backgroundImage = buffer.style.backgroundImage;
                 }
-                if (areaPos.textContent !== buffer.textContent) areaPos.textContent = buffer.textContent;
+                if (checkPos.textContent !== buffer.textContent) areaPos.textContent = buffer.textContent;
                 this.rendered[i][j] = renderedBuffer[i][j];
                 memorized[i][j] = memorizedBuffer[i][j];
             }
         }
+        this.prevAreaBuffer = areaBuffer;
         resolve();
     }
 

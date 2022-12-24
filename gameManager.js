@@ -122,7 +122,9 @@ export default class GameManager {
         this.ui.hideDialog(); // in case player was in a dialog
         this.ui.showMsg(msg);
         !options.TURN_BASED && clearInterval(this.turnInterval);
+        this.pauser.pause();
         this.interruptAutoTravel = true;
+        this.setPause.paused = true;
         this.removeListeners();
         this.player.dead = true;
         this.render.renderAll(this.player, this.levels, this.customRenders);
@@ -439,19 +441,24 @@ export default class GameManager {
     }
 
     // NOTE: no smooth animation if using text symbol for player
-    // TODO: maybe later optimize to not change style if same as before
 
     centerPlayer(startPos, newPos, noTransition, isFirst) {
+        let newTransition = "";
+
         if (noTransition || !options.OBJ_IMG) {
-            table.style.transition = "none";
+            newTransition = "none";
         } else {
             if (this.autoTravelStack.indexOf(true) !== -1) {
-                table.style.transition = "margin " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
+                newTransition = "margin " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
             } else if (isFirst) {
-                table.style.transition = "margin " + options.TRAVEL_REPEAT_START_DELAY + "ms linear";
+                newTransition = "margin " + options.TRAVEL_REPEAT_START_DELAY + "ms linear";
             } else {
-                table.style.transition = "margin " + options.TRAVEL_REPEAT_DELAY + "ms linear";
+                newTransition = "margin " + options.TRAVEL_REPEAT_DELAY + "ms linear";
             }
+        }
+        if (this.prevTransition !== newTransition) {
+            table.style.transition = newTransition;
+            this.prevTransition = newTransition;
         }
         const left = Number(table.style.marginLeft.slice(0, -2));
         const top = Number(table.style.marginTop.slice(0, -2));
@@ -463,22 +470,29 @@ export default class GameManager {
 
     movePlayerVisual(startPos, newPos, noTransition, isFirst) {
         if (!options.OBJ_IMG) return; // handled in render instead
+
+        let newTransition = "";
+
         if (noTransition) {
-            playerVisual.style.transition = "none";
+            newTransition = "none";
         } else {
             if (this.autoTravelStack.indexOf(true) !== -1) {
-                playerVisual.style.transition = "top " + 
+                newTransition = "top " + 
                     options.AUTOTRAVEL_REPEAT_DELAY + "ms linear, left " + 
                     options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
             } else if (isFirst) {
-                playerVisual.style.transition = "top " + 
+                newTransition = "top " + 
                     options.TRAVEL_REPEAT_START_DELAY + "ms linear, left " + 
                     options.TRAVEL_REPEAT_START_DELAY + "ms linear";
             } else {
-                playerVisual.style.transition = "top " + 
+                newTransition = "top " + 
                     options.TRAVEL_REPEAT_DELAY + "ms linear, left " + 
                     options.TRAVEL_REPEAT_DELAY + "ms linear";
             }
+        }
+        if (this.prevTransition !== newTransition) {
+            playerVisual.style.transition = newTransition;
+            this.prevTransition = newTransition;
         }
         const left = Number(playerVisual.style.left.slice(0, -2));
         const top = Number(playerVisual.style.top.slice(0, -2));
