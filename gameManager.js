@@ -449,23 +449,29 @@ export default class GameManager {
             newTransition = "none";
         } else {
             if (this.autoTravelStack.indexOf(true) !== -1) {
-                newTransition = "margin " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
+                newTransition = "top " + 
+                    options.AUTOTRAVEL_REPEAT_DELAY + "ms linear, left " + 
+                    options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
             } else if (isFirst) {
-                newTransition = "margin " + options.TRAVEL_REPEAT_START_DELAY + "ms linear";
+                newTransition = "top " + 
+                    options.TRAVEL_REPEAT_START_DELAY + "ms linear, left " + 
+                    options.TRAVEL_REPEAT_START_DELAY + "ms linear";
             } else {
-                newTransition = "margin " + options.TRAVEL_REPEAT_DELAY + "ms linear";
+                newTransition = "top " + 
+                    options.TRAVEL_REPEAT_DELAY + "ms linear, left " + 
+                    options.TRAVEL_REPEAT_DELAY + "ms linear";
             }
         }
         if (this.prevTransition !== newTransition) {
             table.style.transition = newTransition;
             this.prevTransition = newTransition;
         }
-        const left = Number(table.style.marginLeft.slice(0, -2));
-        const top = Number(table.style.marginTop.slice(0, -2));
+        const left = Number(table.style.left.slice(0, -2));
+        const top = Number(table.style.top.slice(0, -2));
         const pixelsY = 25 * (newPos[0] - startPos[0]);
         const pixelsX = 25 * (newPos[1] - startPos[1]);
-        table.style.marginTop = (top - pixelsY) + "px";
-        table.style.marginLeft = (left - pixelsX) + "px";
+        table.style.top = (top - pixelsY) + "px";
+        table.style.left = (left - pixelsX) + "px";
     }
 
     movePlayerVisual(startPos, newPos, noTransition, isFirst) {
