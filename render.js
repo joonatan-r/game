@@ -19,6 +19,7 @@ export default class Renderer {
 
     constructor(area, rendered) { // NOTE: area has to be initialized before
         this.area = area;
+        this.prevAreaBuffer = [];
         this.rendered = rendered;
         this.edges = [];
         this.imageCache = [];
@@ -28,11 +29,19 @@ export default class Renderer {
             this.tileConversion[levelTiles.floor] = "\u00B7";
         }
         for (let i = 0; i < area.length; i++) {
+            this.prevAreaBuffer.push([]);
           
             for (let j = 0; j < area[0].length; j++) {
                 if (i === 0 || j === 0 || i === area.length - 1 || j === area[0].length - 1) {
                     this.edges.push([i, j]);
                 }
+                this.prevAreaBuffer[i][j] = {
+                    classList: ["hidden"],
+                    style: {},
+                    customProps: {
+                        infoKeys: []
+                    }
+                };
             }
         }
         this.loadImagesToCache();
@@ -112,6 +121,7 @@ export default class Renderer {
             }
             if (coordsEq([y, x], pos)) {
                 this.area[y][x].textContent = symbol;
+                this.prevAreaBuffer[y][x].textContent = symbol;
             }
             return blocksSight(levelTile) ? "stop" : "ok";
         });
@@ -312,7 +322,7 @@ export default class Renderer {
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
                 const areaPos = this.area[i][j];
-                const checkPos = this.prevAreaBuffer ? this.prevAreaBuffer[i][j] : areaPos;
+                const checkPos = this.prevAreaBuffer[i][j];
                 const buffer = areaBuffer[i][j];
                 const newClassName = buffer.classList.reduce((old, val) => old + " " + val);
                 if (checkPos.className !== newClassName) areaPos.className = newClassName;
@@ -352,6 +362,7 @@ export default class Renderer {
 
         if (this.rendered[shotPos[0]][shotPos[1]]) {
             this.area[shotPos[0]][shotPos[1]].textContent = "x";
+            this.prevAreaBuffer[shotPos[0]][shotPos[1]].textContent = "x";
         }
         obj = { symbol: "x", pos: [shotPos[0], shotPos[1]] };
         customRenders.push(obj);
@@ -366,6 +377,7 @@ export default class Renderer {
             && this.rendered[shotPos[0] - 1][shotPos[1] - 1]
         ) {
             this.area[shotPos[0] - 1][shotPos[1] - 1].textContent = "\\";
+            this.prevAreaBuffer[shotPos[0] - 1][shotPos[1] - 1].textContent = "\\";
             obj0 = { symbol: "\\", pos: [shotPos[0] - 1, shotPos[1] - 1] };
             customRenders.push(obj0);
         }
@@ -373,6 +385,7 @@ export default class Renderer {
             && this.rendered[shotPos[0] - 1][shotPos[1] + 1]
         ) {
             this.area[shotPos[0] - 1][shotPos[1] + 1].textContent = "/";
+            this.prevAreaBuffer[shotPos[0] - 1][shotPos[1] + 1].textContent = "/";
             obj1 = { symbol: "/", pos: [shotPos[0] - 1, shotPos[1] + 1] };
             customRenders.push(obj1);
         }
@@ -380,6 +393,7 @@ export default class Renderer {
             && this.rendered[shotPos[0] + 1][shotPos[1] + 1]
         ) {
             this.area[shotPos[0] + 1][shotPos[1] + 1].textContent = "\\";
+            this.prevAreaBuffer[shotPos[0] + 1][shotPos[1] + 1].textContent = "\\";
             obj2 = { symbol: "\\", pos: [shotPos[0] + 1, shotPos[1] + 1] };
             customRenders.push(obj2);
         }
@@ -387,6 +401,7 @@ export default class Renderer {
             && this.rendered[shotPos[0] + 1][shotPos[1] - 1]
         ) {
             this.area[shotPos[0] + 1][shotPos[1] - 1].textContent = "/";
+            this.prevAreaBuffer[shotPos[0] + 1][shotPos[1] - 1].textContent = "/";
             obj3 = { symbol: "/", pos: [shotPos[0] + 1, shotPos[1] - 1] };
             customRenders.push(obj3);
         }

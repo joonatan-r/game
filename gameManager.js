@@ -361,6 +361,7 @@ export default class GameManager {
             }
             if (this.rendered[bulletPos[0]][bulletPos[1]]) {
                 this.area[bulletPos[0]][bulletPos[1]].textContent = icon;
+                this.render.prevAreaBuffer[bulletPos[0]][bulletPos[1]].textContent = icon;
             }
             obj.pos = bulletPos.slice();
             if (checkHits(bulletPos)) break;
