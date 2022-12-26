@@ -30,6 +30,7 @@ export function mobileFix(mobileInput, infoObject) {
     c.appendChild(escD);
     c.appendChild(d);
     document.body.insertBefore(c, table);
+    table.style.top = c.getBoundingClientRect().height + "px";
     mobileInput.addEventListener("input", () => {
         if (!infoObject.listenersActive) return;
         infoObject.action(mobileInput.value.toLowerCase(), false);

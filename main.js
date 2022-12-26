@@ -114,6 +114,15 @@ function start() {
             }
         }
     }
+    if (!posAtScreenCenter || !tdRectAtScreenCenter) {
+        // use level center if no pos at screen center
+        posAtScreenCenter = [Math.floor(gm.level.length / 2), Math.floor(gm.level[0].length / 2)];
+        tdRectAtScreenCenter = Array.from(
+            document.getElementsByTagName("TD")).filter(
+                td => coordsEq(td.customProps.coords, posAtScreenCenter)
+            )[0]
+                .getBoundingClientRect();
+    }
     if (options.OBJ_IMG) {
         playerVisual.style.top = tdRectAtScreenCenter.top + "px";
         playerVisual.style.left = tdRectAtScreenCenter.left + "px";
