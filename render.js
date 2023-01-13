@@ -164,13 +164,13 @@ export default class Renderer {
             }
         }
         for (let coords of this.edges) {
+            visitedTTypeWall = false;
             bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
                 const levelTile = level[y][x];
 
                 if (levelTile === levelTiles.transparentBgWall) {
                     visitedTTypeWall = true;
                 } else if (visitedTTypeWall) {
-                    visitedTTypeWall = false;
                     return "stop";
                 }
                 if (renderedBuffer[y][x]) {
