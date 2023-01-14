@@ -16,6 +16,7 @@ import {
 
 const playerVisual = document.getElementById("playerImg");
 const table = document.getElementById("table");
+const overlayTable = document.getElementById("overlayTable");
 const info = document.getElementById("info");
 const Pauser = (function() {
     let pausePromise = Promise.resolve();
@@ -465,6 +466,7 @@ export default class GameManager {
         }
         if (this.prevTransition !== newTransition) {
             table.style.transition = newTransition;
+            overlayTable.style.transition = newTransition;
             this.prevTransition = newTransition;
         }
         const left = Number(table.style.left.slice(0, -2));
@@ -473,6 +475,8 @@ export default class GameManager {
         const pixelsX = 25 * (newPos[1] - startPos[1]);
         table.style.top = (top - pixelsY) + "px";
         table.style.left = (left - pixelsX) + "px";
+        overlayTable.style.top = (top - pixelsY) + "px";
+        overlayTable.style.left = (left - pixelsX) + "px";
     }
 
     movePlayerVisual(startPos, newPos, noTransition, isFirst) {

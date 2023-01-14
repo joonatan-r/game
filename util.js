@@ -142,6 +142,7 @@ export function initialize() {
             }
         }
     }
+    levels["Woods"].overlayBg = "url(\"bgImages/hutOverlay.png\")";
     return {
         levels: levels,
         area: area,

@@ -3,6 +3,7 @@
 
 export function mobileFix(mobileInput, infoObject) {
     const table = document.getElementById("table");
+    const overlayTable = document.getElementById("overlayTable");
     const c = document.createElement("div");
     const d = document.createElement("div");
     const enterD = document.createElement("div");
@@ -31,6 +32,7 @@ export function mobileFix(mobileInput, infoObject) {
     c.appendChild(d);
     document.body.insertBefore(c, table);
     table.style.top = c.getBoundingClientRect().height + "px";
+    overlayTable.style.top = c.getBoundingClientRect().height + "px";
     mobileInput.addEventListener("input", () => {
         if (!infoObject.listenersActive) return;
         infoObject.action(mobileInput.value.toLowerCase(), false);

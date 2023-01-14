@@ -7,6 +7,7 @@ function blocksSight(tile) {
 }
 
 const table = document.getElementById("table");
+const overlayTable = document.getElementById("overlayTable");
 
 export default class Renderer {
     tileConversion = {
@@ -19,6 +20,7 @@ export default class Renderer {
 
     constructor(area, rendered) { // NOTE: area has to be initialized before
         this.area = area;
+        this.overlayArea = [];
         this.prevAreaBuffer = [];
         this.rendered = rendered;
         this.edges = [];
@@ -30,6 +32,9 @@ export default class Renderer {
         }
         for (let i = 0; i < area.length; i++) {
             this.prevAreaBuffer.push([]);
+            const tr = document.createElement("tr");
+            overlayTable.appendChild(tr);
+            this.overlayArea.push([]);
           
             for (let j = 0; j < area[0].length; j++) {
                 if (i === 0 || j === 0 || i === area.length - 1 || j === area[0].length - 1) {
@@ -42,6 +47,9 @@ export default class Renderer {
                         infoKeys: []
                     }
                 };
+                const td = document.createElement("td");
+                tr.appendChild(td);
+                this.overlayArea[i][j] = td;
             }
         }
         this.loadImagesToCache();
@@ -101,6 +109,11 @@ export default class Renderer {
             } else {
                 table.style.backgroundImage = levels[levels.currentLvl].bg;
                 table.style.backgroundColor = 'none';
+            }
+            if (levels[levels.currentLvl].overlayBg) {
+                overlayTable.style.backgroundImage = levels[levels.currentLvl].overlayBg;
+            } else {
+                overlayTable.style.backgroundImage = 'none';
             }
         } else {
             table.style.backgroundColor = "#000";
@@ -165,9 +178,22 @@ export default class Renderer {
         }
         for (let coords of this.edges) {
             visitedTTypeWall = false;
+            let stopCoordIfAllSeenBefore = [];
+
+            // Draw a line from player's position to all edge positions, stop the line at sight blocking
+            // obstacles. Mark all reached tiles for rendering. More complicated logic is for handling
+            // t-walls. Initially they are hidden like everything, but when seeing them for the first time,
+            // the player should "see" through them until encountering a tile other than t-wall in the line
+            // (to reveal the whole object). After this, for the graying out to look good, the player should
+            // only see past the first t-wall in the line if it encounters a position not seen before 
+            // (Only possible if the whole line is t-walls).
+
             bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
                 const levelTile = level[y][x];
 
+                if (visitedTTypeWall && memorizedBuffer[y][x] !== "" && !stopCoordIfAllSeenBefore.length) {
+                    stopCoordIfAllSeenBefore = [y, x];
+                }
                 if (levelTile === levelTiles.transparentBgWall) {
                     visitedTTypeWall = true;
                 } else if (visitedTTypeWall) {
@@ -175,6 +201,9 @@ export default class Renderer {
                 }
                 if (renderedBuffer[y][x]) {
                     return blocksSight(levelTile) ? "stop" : "ok";
+                }
+                if (stopCoordIfAllSeenBefore.length) {
+                    if (memorizedBuffer[y][x]) return blocksSight(levelTile) ? "stop" : "ok";
                 }
                 const tileToRender = this.getTileToRender(levelTile);
                 areaBuffer[y][x].textContent = tileToRender;
@@ -322,10 +351,20 @@ export default class Renderer {
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
                 const areaPos = this.area[i][j];
+                const overlayAreaPos = this.overlayArea[i][j];
                 const checkPos = this.prevAreaBuffer[i][j];
                 const buffer = areaBuffer[i][j];
                 const newClassName = buffer.classList.reduce((old, val) => old + " " + val);
-                if (checkPos.className !== newClassName) areaPos.className = newClassName;
+                if (checkPos.className !== newClassName) {
+                    areaPos.className = newClassName;
+
+                    // only apply if should hide or remove hiddenness of t-wall
+                    if (level[i][j] === levelTiles.transparentBgWall
+                        && (renderedBuffer[i][j] || !memorizedBuffer[i][j])
+                    ) {
+                        overlayAreaPos.className = newClassName;
+                    }
+                }
                 if (!checkPos.customProps
                     || !checkPos.customProps.infoKeys
                     || !checkPos.customProps.infoKeys.every((item, i) => item === buffer.customProps.infoKeys[i])

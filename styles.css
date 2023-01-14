@@ -30,6 +30,20 @@ table {
     z-index: -1;
 }
 
+#overlayTable {
+    image-rendering: crisp-edges;
+    image-rendering: -moz-crisp-edges;          /* Firefox */
+    image-rendering: -o-crisp-edges;            /* Opera */
+    image-rendering: -webkit-optimize-contrast; /* Webkit (non-standard naming) */
+    -ms-interpolation-mode: nearest-neighbor;   /* IE (non-standard property) */
+    border: solid white 1px;
+    text-align: center;
+    border-spacing: 0;
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+}
+
 #playerImg {
     image-rendering: crisp-edges;
     image-rendering: -moz-crisp-edges;          /* Firefox */
@@ -44,6 +58,7 @@ table {
     margin: 0;
     position: absolute;
     background-size: 25px 25px;
+    z-index: 1;
 }
 
 td {
@@ -79,15 +94,12 @@ p {
     white-space: pre-wrap;
 }
 
-#clickMenu {
-    z-index: 1;
-}
-
 #clickMenu, #dialog, #msgBox {
     display: none;
     position: absolute;
     background-color: #333;
     border: 1px solid white;
+    z-index: 2;
 }
 
 #clickMenu p, #dialog p, #msgBox p {
