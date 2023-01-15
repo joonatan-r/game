@@ -146,6 +146,7 @@ export default class Renderer {
         let items = levels[levels.currentLvl].items;
         let memorized = levels[levels.currentLvl].memorized;
         let visitedTTypeWall = false;
+        let coordsNotToGray = []; // used for logic of whether to gray out hidden memorized t-walls
         let selectionPos = null; // used to not erase selection marker on pos when inspecting
 
         const areaBuffer = [];
@@ -157,6 +158,7 @@ export default class Renderer {
             areaBuffer.push([]);
             renderedBuffer.push([]);
             memorizedBuffer.push([]);
+            coordsNotToGray.push([]);
 
             for (let j = 0; j < level[0].length; j++) {
                 areaBuffer[i][j] = {
@@ -167,6 +169,7 @@ export default class Renderer {
                     }
                 };
                 renderedBuffer[i][j] = false;
+                coordsNotToGray[i][j] = false;
                 memorizedBuffer[i][j] = memorized[i][j];
                 const areaPos = this.area[i][j];
 
@@ -178,7 +181,7 @@ export default class Renderer {
         }
         for (let coords of this.edges) {
             visitedTTypeWall = false;
-            let stopCoordIfAllSeenBefore = [];
+            let stopIfAllSeenBefore = false;
 
             // Draw a line from player's position to all edge positions, stop the line at sight blocking
             // obstacles. Mark all reached tiles for rendering. More complicated logic is for handling
@@ -188,21 +191,29 @@ export default class Renderer {
             // only see past the first t-wall in the line if it encounters a position not seen before 
             // (Only possible if the whole line is t-walls).
 
+            // coordsNotToGray is used so that hidden memorized t-walls are grayed out only if they blocked
+            // by something else than the same group of t-walls they belong to (so continuous t-walls can be 
+            // seen through without graying before another tile is encountered, but they are still grayed
+            // if they are blocked from sight by something else).
+
             bresenham(player.pos[0], player.pos[1], coords[0], coords[1], (y,x) => {
                 const levelTile = level[y][x];
 
-                if (visitedTTypeWall && memorizedBuffer[y][x] !== "" && !stopCoordIfAllSeenBefore.length) {
-                    stopCoordIfAllSeenBefore = [y, x];
+                if (visitedTTypeWall && memorizedBuffer[y][x] !== "") {
+                    stopIfAllSeenBefore = true;
                 }
                 if (levelTile === levelTiles.transparentBgWall) {
                     visitedTTypeWall = true;
-                } else if (visitedTTypeWall) {
+                    if (stopIfAllSeenBefore) coordsNotToGray[y][x] = true;
+                // doorways treated as belonging to a group of t-walls for more intuitive behaviour
+                // of houses etc. where the doorway shouldn't visually form an indent in the wall
+                } else if (visitedTTypeWall && levelTile !== levelTiles.doorWay) {
                     return "stop";
                 }
                 if (renderedBuffer[y][x]) {
                     return blocksSight(levelTile) ? "stop" : "ok";
                 }
-                if (stopCoordIfAllSeenBefore.length) {
+                if (stopIfAllSeenBefore) {
                     if (memorizedBuffer[y][x]) return blocksSight(levelTile) ? "stop" : "ok";
                 }
                 const tileToRender = this.getTileToRender(levelTile);
@@ -358,11 +369,13 @@ export default class Renderer {
                 if (checkPos.className !== newClassName) {
                     areaPos.className = newClassName;
 
-                    // only apply if should hide or remove hiddenness of t-wall
-                    if (level[i][j] === levelTiles.transparentBgWall
-                        && (renderedBuffer[i][j] || !memorizedBuffer[i][j])
-                    ) {
+                    if (level[i][j] === levelTiles.transparentBgWall) {
                         overlayAreaPos.className = newClassName;
+
+                        // TODO: improve by moving this logic to buffers
+
+                        if (coordsNotToGray[i][j]) overlayAreaPos.classList.remove("mem");
+                        else areaPos.classList.remove("mem");
                     }
                 }
                 if (!checkPos.customProps
