@@ -153,6 +153,9 @@ export default class Renderer {
         const renderedBuffer = [];
         const memorizedBuffer = [];
         const imgCoordsToDelete = []; // used to not replace imgs unless necessary
+        const levelChanged = this.prevLevel !== level;
+
+        this.prevLevel = level;
 
         for (let i = 0; i < level.length; i++) {
             areaBuffer.push([]);
@@ -366,6 +369,9 @@ export default class Renderer {
                 const checkPos = this.prevAreaBuffer[i][j];
                 const buffer = areaBuffer[i][j];
                 const newClassName = buffer.classList.reduce((old, val) => old + " " + val);
+                if (levelChanged) {
+                    overlayAreaPos.className = "";
+                }
                 if (checkPos.className !== newClassName) {
                     areaPos.className = newClassName;
 
@@ -375,6 +381,7 @@ export default class Renderer {
                         // TODO: improve by moving this logic to buffers
 
                         if (coordsNotToGray[i][j]) overlayAreaPos.classList.remove("mem");
+                        // graying should only be done once, and already done in overlay in this case
                         else areaPos.classList.remove("mem");
                     }
                 }
