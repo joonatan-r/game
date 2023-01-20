@@ -93,6 +93,20 @@ document.addEventListener("keyup", function(e) {
 const bd = new BuiltinDialogs(gm, start, removeListeners, (MOBILE && mobileInput));
 bd.showStartDialog();
 
+// ----------------------------------------------------------
+
+const socket = new WebSocket('ws://' + window.location.host);
+
+socket.addEventListener('open', (event) => {
+    socket.send('Hello Server!');
+});
+
+socket.addEventListener('message', (event) => {
+    console.log('Message from server ', event.data);
+});
+
+// ----------------------------------------------------------
+
 function start() {
     document.addEventListener("contextmenu", menuListener);
     gm.updateInfo();
