@@ -14,11 +14,9 @@ export default class UI {
     dialogStack = [];
     dialogDisplayed = false;
 
-    constructor(removeListeners, addListeners, pauser, setPause) {
+    constructor(removeListeners, addListeners) {
         this.removeListeners = removeListeners;
         this.addListeners = addListeners;
-        this.pauser = pauser;
-        this.setPause = setPause;
         this.dialogMoveListener = this.dialogMoveListener.bind(this);
         this.msgMoveListener = this.msgMoveListener.bind(this);
         this.infoMoveListener = this.infoMoveListener.bind(this);
@@ -110,7 +108,6 @@ export default class UI {
         this.msgQueue.unshift(msg);
         this.msgTimeOutQueue.unshift(
             setTimeout(async () => {
-                await this.pauser.waitForUnpause();
                 this.msgQueue.pop();
                 this.msgTimeOutQueue.pop();
         
@@ -119,7 +116,7 @@ export default class UI {
                 } else {
                     status.textContent = this.msgQueue.join("\n\n");
                 }
-            }, 5000) // hide each individual message after 5 seconds (unless paused)
+            }, 5000) // hide each individual message after 5 seconds
         );
 
         if (this.msgQueue.length > 7) {
@@ -347,10 +344,8 @@ export default class UI {
 
     showMsgHistory(startPage) {
         if (this.msgHistory.length) {
-            this.setPause(true);
             this.showDialog("Message history:", this.msgHistory, idx => {
                 if (idx < 0) {
-                    this.setPause(false);
                     return;
                 }
                 this.showMsgHistory(this.getPageForIdx(idx));

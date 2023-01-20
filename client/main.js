@@ -97,9 +97,9 @@ bd.showStartDialog();
 
 const socket = new WebSocket('ws://' + window.location.host);
 
-socket.addEventListener('open', (event) => {
-    socket.send('Hello Server!');
-});
+// socket.addEventListener('open', (event) => {
+//     socket.send('Hello Server!');
+// });
 
 socket.addEventListener('message', (event) => {
     console.log('Message from server ', event.data);
@@ -149,8 +149,8 @@ function start() {
     }
     gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
     gm.render.setBg(gm.levels);
-    !options.TURN_BASED && clearInterval(gm.turnInterval); // clear turnInterval in case it was already running
-    !options.TURN_BASED && (gm.turnInterval = setInterval(() => gm.processTurn(), options.TURN_DELAY));
+    // !options.TURN_BASED && clearInterval(gm.turnInterval); // clear turnInterval in case it was already running
+    // !options.TURN_BASED && (gm.turnInterval = setInterval(() => gm.processTurn(), options.TURN_DELAY));
     gm.tryFireEvent("onStart");
 }
 
@@ -544,10 +544,8 @@ function showInventory() {
         contentNames.push(itemNameWithNumber(item));
     }
     if (contentNames.length !== 0) {
-        gm.setPause(true);
         gm.ui.showDialog("Contents of your inventory:", contentNames, itemIdx => {
             if (itemIdx < 0) {
-                gm.setPause(false);
                 return;
             }
             const actionOptions = gm.player.inventory[itemIdx].usable ? ["Drop", "Use"] : ["Drop"];
@@ -559,13 +557,12 @@ function showInventory() {
                         item.pos = gm.player.pos.slice();
                         gm.items.push(item);
                         gm.ui.showMsg("You drop \"" + contentNames[itemIdx] + "\".");
-                        gm.processTurn();
+                        // gm.processTurn();
                         break;
                     case 1:
                         gm.tryFireEvent("onUse", gm.player.inventory[itemIdx]);
                         break;
                 }
-                gm.setPause(false);
             }, true, true, 1);
         }, true, true, 0);
     } else {
@@ -589,6 +586,54 @@ function doActType(actDrc) {
     }
 }
 
+function action(key, ctrl, isFirst) {
+    switch (key) {
+        case options.CONTROLS.BOTTOM_LEFT:
+        case options.CONTROLS.BOTTOM:
+        case options.CONTROLS.BOTTOM_RIGHT:
+        case options.CONTROLS.LEFT:
+        case options.CONTROLS.RIGHT:
+        case options.CONTROLS.TOP_LEFT:
+        case options.CONTROLS.TOP:
+        case options.CONTROLS.TOP_RIGHT:
+            const drc = inputToDrc(key, options);
+            let newPos = gm.player.pos.slice();
+            let prevPos = null;
+
+            if (ctrl) {
+                while (gm.level[newPos[0]] && typeof gm.level[newPos[0]][newPos[1]] !== "undefined"
+                        && (!isWall(gm.level[newPos[0]][newPos[1]]) || gm.level[newPos[0]][newPos[1]] === levelTiles.fakeWall)
+                ) {
+                    prevPos = newPos.slice();
+                    movePosToDrc(newPos, drc);
+                }
+                prevPos && gm.autoTravel(prevPos); // last ok position
+            } else {
+                // "slide" along walls if moving diagonally against them
+                const altInfo = getAdjacentOrthogonalDirections(gm.player.pos, drc);
+
+                // prioritize alternatives based on what direction was more recently pressed, more intuitive
+                // in case of moving against a corner where there are two valid options
+                if (altInfo.drcs && drcPressTimes[altInfo.drcs[1]] > drcPressTimes[altInfo.drcs[0]]) {
+                    const temp = altInfo.alternatives[1];
+                    altInfo.alternatives[1] = altInfo.alternatives[0];
+                    altInfo.alternatives[0] = temp;
+                }
+                movePosToDrc(newPos, drc);
+                const msgInfo = {
+                    type: "move",
+                    args: [newPos, altInfo.alternatives]
+                };
+                socket.send(JSON.stringify(msgInfo));
+                gm.movePlayer(newPos, altInfo.alternatives, isFirst);
+            }
+            break;
+        default:
+            return;
+    }
+}
+
+/*
 function action(key, ctrl, isFirst) {
     switch(gm.inputType) {
         case "autoMove":
@@ -690,3 +735,4 @@ function action(key, ctrl, isFirst) {
     }
     gm.updateAfterAction();
 }
+*/

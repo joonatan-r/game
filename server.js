@@ -3,6 +3,7 @@ import WebSocket, { WebSocketServer } from 'ws';
 import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import GameManager from './server-game/gameManager.js';
 
 
 // --------------------------------------------------------------------
@@ -39,24 +40,34 @@ server.on('upgrade', function upgrade(request, socket, head) {
 });
 
 wss.on('connection', function connection(ws) {
+  ws.send('Connected');
   ws.on('message', function message(data, isBinary) {
     /*wss.clients.forEach(function each(client) {
       if (client.readyState === WebSocket.OPEN) {
         client.send(data, { binary: isBinary });
       }
     });*/
-    console.log(Buffer.from(data).toString('ascii'));
-    ws.send('Hello there!');
+    const msgText = Buffer.from(data).toString('ascii');
+    // console.log(msgText);
+    // ws.send('Hello there!');
+    action(msgText);
   });
 });
 
 
 // --------------------------------------------------------------------
 
-// NOTE: all coords are given as (y,x)
-// NOTE: save and load can handle member functions, currently not needed
-// NOTE: all references within "levels", "player", or "timeTracker" to other objects included
-//       in each other must be done with "refer()" for saving to work properly
+let queuePromise = Promise.resolve();
+
+async function addToQueue() {
+  return new Promise(resolve => {
+      queuePromise = queuePromise.then(() => {
+          return new Promise(queueResolve => {
+              resolve(queueResolve);
+          });
+      });
+  });
+}
 
 const gm = new GameManager();
 
@@ -64,6 +75,14 @@ const gm = new GameManager();
 // init stuff, (gm.turnInterval = setInterval(() => gm.processTurn(), options.TURN_DELAY))
 
 
-function action(msg) {
-  // player action based on client msg
+async function action(msg) {
+  const resolve = await addToQueue();
+  const actionInfo = JSON.parse(msg);
+
+  switch (actionInfo.type) {
+    case "move":
+      gm.movePlayer(...actionInfo.args);
+      break;
+  }
+  resolve();
 }

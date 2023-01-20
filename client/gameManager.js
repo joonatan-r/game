@@ -18,28 +18,6 @@ const playerVisual = document.getElementById("playerImg");
 const table = document.getElementById("table");
 const overlayTable = document.getElementById("overlayTable");
 const info = document.getElementById("info");
-const Pauser = (function() {
-    let pausePromise = Promise.resolve();
-    let resolver;
-
-    return class Pauser {
-        pause() {
-            pausePromise = pausePromise.then(() => {
-                return new Promise(resolve => {
-                    resolver = resolve;
-                });
-            });
-        }
-
-        unpause() {
-            resolver();
-        }
-
-        waitForUnpause() {
-            return pausePromise;
-        }
-    }
-})();
 
 export default class GameManager {
     constructor(removeListeners, addListeners, keyIntervals) {
@@ -50,10 +28,8 @@ export default class GameManager {
         this.area = initialized.area;
         this.rendered = initialized.rendered;
         this.levels = initialized.levels;
-        this.pauser = new Pauser();
         this.render = new Renderer(this.area, this.rendered);
-        // use a new pause function to preserve "this" properly
-        this.ui = new UI(removeListeners, addListeners, this.pauser, val => this.setPause(val));
+        this.ui = new UI(removeListeners, addListeners);
         this.level = this.levels[this.levels.currentLvl].level;
         this.mobs = this.levels[this.levels.currentLvl].mobs;
         this.items = this.levels[this.levels.currentLvl].items;
@@ -123,9 +99,7 @@ export default class GameManager {
         this.ui.hideDialog(); // in case player was in a dialog
         this.ui.showMsg(msg);
         !options.TURN_BASED && clearInterval(this.turnInterval);
-        this.pauser.pause();
         this.interruptAutoTravel = true;
-        this.setPause.paused = true;
         this.removeListeners();
         this.player.dead = true;
         this.render.renderAll(this.player, this.levels, this.customRenders);
@@ -148,115 +122,95 @@ export default class GameManager {
         }
     }
 
-    processTurn() {
-        this.timeTracker.timer++;
-        if (this.timeTracker.turnsUntilShoot > 0) this.timeTracker.turnsUntilShoot--;
-        this.updateInfo();
-        clearTimeout(this.mobVisualTimeout);
-        this.mobVisualTimeout = setTimeout(() => {
-            for (let i = this.mobsUsingVisualTimeout.length - 1; i >= 0; i--) {
-                const mob = this.mobsUsingVisualTimeout[i];
+    // processTurn() {
+    //     this.timeTracker.timer++;
+    //     if (this.timeTracker.turnsUntilShoot > 0) this.timeTracker.turnsUntilShoot--;
+    //     this.updateInfo();
+    //     clearTimeout(this.mobVisualTimeout);
+    //     this.mobVisualTimeout = setTimeout(() => {
+    //         for (let i = this.mobsUsingVisualTimeout.length - 1; i >= 0; i--) {
+    //             const mob = this.mobsUsingVisualTimeout[i];
 
-                if (mob.image && mob.image.length > 1) {
-                    if (mob.image.length < 8) {
-                        mob.image = mob.image.slice(0, -5); // change from "_move" to normal
-                    } else {
-                        mob.image = mob.image.slice(0, -7); // change from "_2_move" to normal
-                    }
-                }
-                this.mobsUsingVisualTimeout.splice(i, 1);
-            }
-            this.render.renderAll(this.player, this.levels, this.customRenders);
-        }, 0.7 * options.TURN_DELAY);
+    //             if (mob.image && mob.image.length > 1) {
+    //                 if (mob.image.length < 8) {
+    //                     mob.image = mob.image.slice(0, -5); // change from "_move" to normal
+    //                 } else {
+    //                     mob.image = mob.image.slice(0, -7); // change from "_2_move" to normal
+    //                 }
+    //             }
+    //             this.mobsUsingVisualTimeout.splice(i, 1);
+    //         }
+    //         this.render.renderAll(this.player, this.levels, this.customRenders);
+    //     }, 0.7 * options.TURN_DELAY);
     
-        for (let mob of this.mobs) {
-            if (!options.TURN_BASED && this.timeTracker.timer % mob.speedModulus < 1) {
-                continue;
-            }
-            if (mob.isHostile && isNextTo(this.player.pos, mob.pos)) {
-                this.render.shotEffect(this.player.pos, this.player, this.levels, this.customRenders, true);
-                this.changePlayerHealth(-3);
-                continue;
-            }
-            if (mob.stayStillForInteract && isNextTo(this.player.pos, mob.pos)) {
-                continue;
-            }
-            movingAIs[mob.movingFunction](mob, this.posIsValid, this.level, this.rendered);
+    //     for (let mob of this.mobs) {
+    //         if (!options.TURN_BASED && this.timeTracker.timer % mob.speedModulus < 1) {
+    //             continue;
+    //         }
+    //         if (mob.isHostile && isNextTo(this.player.pos, mob.pos)) {
+    //             this.render.shotEffect(this.player.pos, this.player, this.levels, this.customRenders, true);
+    //             this.changePlayerHealth(-3);
+    //             continue;
+    //         }
+    //         if (mob.stayStillForInteract && isNextTo(this.player.pos, mob.pos)) {
+    //             continue;
+    //         }
+    //         movingAIs[mob.movingFunction](mob, this.posIsValid, this.level, this.rendered);
     
-            if (mob.isShooter && mob.straightLineToTargetDrc) {
-                this.shoot(mob.pos, mob.straightLineToTargetDrc, true);
-            } else {
-                // also works if new pos not next to current for some reason
-                const facing = relativeCoordsToDrc(mob.target[0] - mob.pos[0], mob.target[1] - mob.pos[1]);
-                const moveImage = facing + "_move";
-                const baseImage = facing;
-                const altMoveImage = facing + "_2_move";
+    //         if (mob.isShooter && mob.straightLineToTargetDrc) {
+    //             this.shoot(mob.pos, mob.straightLineToTargetDrc, true);
+    //         } else {
+    //             // also works if new pos not next to current for some reason
+    //             const facing = relativeCoordsToDrc(mob.target[0] - mob.pos[0], mob.target[1] - mob.pos[1]);
+    //             const moveImage = facing + "_move";
+    //             const baseImage = facing;
+    //             const altMoveImage = facing + "_2_move";
         
-                if (mob.image === moveImage || mob.image === altMoveImage) {
-                    mob.image = baseImage;
-                } else if (mob.prevMoveImage === altMoveImage) {
-                    mob.image = moveImage;
-                    mob.prevMoveImage = moveImage;
-                } else {
-                    mob.image = altMoveImage;
-                    mob.prevMoveImage = altMoveImage;
-                }
-                mob.pos = [mob.target[0], mob.target[1]];
-                this.mobsUsingVisualTimeout.push(mob);
+    //             if (mob.image === moveImage || mob.image === altMoveImage) {
+    //                 mob.image = baseImage;
+    //             } else if (mob.prevMoveImage === altMoveImage) {
+    //                 mob.image = moveImage;
+    //                 mob.prevMoveImage = moveImage;
+    //             } else {
+    //                 mob.image = altMoveImage;
+    //                 mob.prevMoveImage = altMoveImage;
+    //             }
+    //             mob.pos = [mob.target[0], mob.target[1]];
+    //             this.mobsUsingVisualTimeout.push(mob);
     
-                for (let obj of this.customRenders) {
-                    if (coordsEq(mob.pos, obj.pos) && obj.damageMobs) {
-                        this.mobDie(mob);
+    //             for (let obj of this.customRenders) {
+    //                 if (coordsEq(mob.pos, obj.pos) && obj.damageMobs) {
+    //                     this.mobDie(mob);
     
-                        if (obj.disappearOnHit) {
-                            this.hitCustomRenderEffect(obj);
-                        }
-                        break; // NOTE: if mob health implemented, remove this
-                    }
-                }
-            }
-        }
-        this.render.renderAll(this.player, this.levels, this.customRenders);
+    //                     if (obj.disappearOnHit) {
+    //                         this.hitCustomRenderEffect(obj);
+    //                     }
+    //                     break; // NOTE: if mob health implemented, remove this
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     this.render.renderAll(this.player, this.levels, this.customRenders);
     
-        if (options.INTERRUPT_AUTOTRAVEL_IF_MOBS) {
-            for (let mob of this.mobs) {
-                if (mob.isHostile && this.rendered[mob.pos[0]][mob.pos[1]]) {
-                    this.interruptAutoTravel = true;
-                    break;
-                }
-            }
-        }
-        let mob = trySpawnMob(this.levels, this.rendered);
+    //     if (options.INTERRUPT_AUTOTRAVEL_IF_MOBS) {
+    //         for (let mob of this.mobs) {
+    //             if (mob.isHostile && this.rendered[mob.pos[0]][mob.pos[1]]) {
+    //                 this.interruptAutoTravel = true;
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     let mob = trySpawnMob(this.levels, this.rendered);
     
-        if (mob !== null) {
-            mob.huntingTarget = this.refer(this.player);
-            this.mobs.push(mob);
-        }
-        if (this.setPause.pauseNext && !this.setPause.paused) {
-            this.pauser.pause();
-            this.interruptAutoTravel = true;
-            this.setPause.paused = true;
-            this.setPause.pauseNext = false;
-            clearInterval(this.turnInterval);
-        }
-    }
-    
-    setPause(val) {
-        if (options.TURN_BASED) return;
-        if (val && !this.setPause.paused) {
-            this.setPause.pauseNext = true; // pause at the end of next processTurn. done this way to prevent abuse
-        } else if (!val && !this.setPause.paused) {
-            this.setPause.pauseNext = false;
-        } else if (!val && this.setPause.paused) {
-            this.turnInterval = setInterval(() => this.processTurn(), options.TURN_DELAY);
-            this.setPause.paused = false;
-            this.pauser.unpause();
-        }
-    }
+    //     if (mob !== null) {
+    //         mob.huntingTarget = this.refer(this.player);
+    //         this.mobs.push(mob);
+    //     }
+    // }
     
     updateAfterAction() {
         if (options.TURN_BASED) {
-            this.processTurn();
+            // this.processTurn();
         } else {
             this.render.renderAll(this.player, this.levels, this.customRenders);
         }
@@ -326,8 +280,8 @@ export default class GameManager {
                 if (coordsEq(checkPos, mob.pos)) {
                     this.mobDie(mob);
                     this.hitCustomRenderEffect(obj);
-                    !this.player.dead && options.TURN_BASED && this.addListeners();
-                    !mobIsShooting && this.processTurn();
+                    // !this.player.dead && options.TURN_BASED && this.addListeners();
+                    // !mobIsShooting && this.processTurn();
                     return true;
                 }
             }
@@ -356,7 +310,7 @@ export default class GameManager {
                     this.render.renderAll(this.player, this.levels, this.customRenders);
                 } else {
                     !this.player.dead && this.addListeners();
-                    !mobIsShooting && this.processTurn();
+                    // !mobIsShooting && this.processTurn();
                 }       
                 return;
             }
@@ -367,7 +321,6 @@ export default class GameManager {
             obj.pos = bulletPos.slice();
             if (checkHits(bulletPos)) break;
             await new Promise(r => setTimeout(r, 30));
-            await this.pauser.waitForUnpause();
             if (this.levels.currentLvl !== currLvl) break;
             // NOTE: obj can hit something either by it moving into player/mob, or them moving into it.
             // if something moves into it, they handle the extra effects themselves.
@@ -378,27 +331,10 @@ export default class GameManager {
 
     melee(drc) {
         if (options.TURN_BASED) {
-            this.meleeTurnBased(drc);
+            // this.meleeTurnBased(drc);
         } else {
             this.meleeRealTime(drc);
         }
-    }
-    
-    meleeTurnBased(drc) {
-        let meleePos = this.player.pos.slice();
-        movePosToDrc(meleePos, drc);
-        this.processTurn(); // takes an extra turn
-        if (this.player.dead) return;
-    
-        for (let mob of this.mobs) {
-            if (coordsEq(meleePos, mob.pos)) {
-                this.ui.showMsg("You hit " + mob.name + "!");
-                this.render.shotEffect(mob.pos, this.player, this.levels, this.customRenders);
-                this.mobDie(mob);
-                break;
-            }
-        }
-        this.processTurn();
     }
     
     async meleeRealTime(drc) {
@@ -439,7 +375,7 @@ export default class GameManager {
         for (let item of this.items) {
             if (coordsEq(interactPos, item.pos)) this.tryFireEvent("onInteract", item);
         }
-        this.processTurn();
+        // this.processTurn();
     }
 
     // NOTE: no smooth animation if using text symbol for player
@@ -679,11 +615,7 @@ export default class GameManager {
                     }
                 }
                 if (itemsHere.length > 1 || alwaysDialog) {
-                    this.setPause(true);
                     this.ui.showDialog("What do you want to pick up?", itemNames, idx => {
-                        // only unpause if closing the dialog or picking up the last item,
-                        // otherwise one update cycle would trigger before opening the dialog again
-                        if (idx < 0 || itemsHere.length < 2) this.setPause(false);
                         if (idx < 0) return;
                         const removed = this.items.splice(itemIdxs[idx], 1)[0];
                         this.addToInventory(removed);

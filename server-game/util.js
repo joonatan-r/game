@@ -1,7 +1,6 @@
 import { levelData, levelCharMap, levelTiles, infoTable, PLACEHOLDER_TP } from "./levelData.js";
 
 export function initialize() {
-    const table = document.getElementById("table");
     const rendered = [];
     let levels = {};
     let level = [[]];
@@ -115,15 +114,6 @@ export function initialize() {
     levels.currentLvl = Object.keys(levels)[2];
     level = levels[levels.currentLvl].level;
 
-    for (let i = 0; i < level.length; i++) {
-        const tr = document.createElement("tr");
-        table.appendChild(tr);
-      
-        for (let j = 0; j < level[0].length; j++) {
-            const td = document.createElement("td");
-            tr.appendChild(td);
-        }
-    }
     for (let lvl of Object.keys(levels)) {
         if (lvl === "currentLvl" || lvl === "generatedIdx") continue;
     

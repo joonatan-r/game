@@ -197,7 +197,6 @@ export default class BuiltinDialogs {
     }
     
     showPauseMenu() {
-        this.gm.setPause(true);
         this.gm.ui.showDialog("Pause Menu", ["Save", "Load", "Note entries"], idx => {
             switch (idx) {
                 case 0:
@@ -210,14 +209,13 @@ export default class BuiltinDialogs {
                     const noteEntries = this.gm.player.noteEntries;
                     this.gm.ui.showDialog("Note entries", noteEntries, idx => {
                         if (idx === -1) {
-                            this.gm.setPause(false);
+                            
                         } else {
                             this.gm.tryFireEvent("onShowNoteEntry", noteEntries[idx]);
                         }
                     }, true, true, 1);
-                    return; // don't immediately unpause
+                    return;
             }
-            this.gm.setPause(false);
         }, true, true, 0);
     }
 }
