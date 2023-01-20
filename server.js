@@ -53,4 +53,17 @@ wss.on('connection', function connection(ws) {
 
 // --------------------------------------------------------------------
 
+// NOTE: all coords are given as (y,x)
+// NOTE: save and load can handle member functions, currently not needed
+// NOTE: all references within "levels", "player", or "timeTracker" to other objects included
+//       in each other must be done with "refer()" for saving to work properly
 
+const gm = new GameManager();
+
+
+// init stuff, (gm.turnInterval = setInterval(() => gm.processTurn(), options.TURN_DELAY))
+
+
+function action(msg) {
+  // player action based on client msg
+}
