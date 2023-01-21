@@ -26,6 +26,7 @@ export default class GameManager {
         this.player.inventory = [];
         this.player.noteEntries = [];
         this.player.pos = [9, 5];
+        this.player.image = 2;
         this.customRenders = []; // retain "animations", can also be damaging zones
         this.referenced = []; // for retaining object references when saving
         // this.mobsUsingVisualTimeout = []; // store mobs whose img should be updated after moving

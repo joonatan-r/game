@@ -329,23 +329,7 @@ export function load(onLoad) {
     const listener = function() {
         const fr = new FileReader();
         fr.onload = () => {
-            const refs = [];
-            const loadData = JSON.parse(fr.result, function(key, val) {
-                if (typeof val === "string" && val.startsWith("function")) {
-                    // convert string representations of functions back to functions
-                    return eval("(" + val + ")");
-                }
-                if (typeof val === "string" && val.startsWith("refTo ")) {
-                    refs.push({ obj: this, key: key });
-                }
-                return val;
-            });
-    
-            for (let ref of refs) {
-                const idx = ref.obj[ref.key].split(" ")[1];
-                ref.obj[ref.key] = loadData.referenced[idx]; // replace references with actual objects
-            }
-            onLoad(loadData);
+            loadFromText(fr.result, onLoad);
             loadInput.removeEventListener("change", listener);
         };
         fr.readAsText(this.files[0]);
@@ -353,6 +337,26 @@ export function load(onLoad) {
     };
     loadInput.addEventListener("change", listener);
     loadInput.click();
+}
+
+export function loadFromText(text, onLoad) {
+    const refs = [];
+    const loadData = JSON.parse(text, function(key, val) {
+        if (typeof val === "string" && val.startsWith("function")) {
+            // convert string representations of functions back to functions
+            return eval("(" + val + ")");
+        }
+        if (typeof val === "string" && val.startsWith("refTo ")) {
+            refs.push({ obj: this, key: key });
+        }
+        return val;
+    });
+
+    for (let ref of refs) {
+        const idx = ref.obj[ref.key].split(" ")[1];
+        ref.obj[ref.key] = loadData.referenced[idx]; // replace references with actual objects
+    }
+    onLoad(loadData);
 }
 
 export function getRandomInt(min, max) {

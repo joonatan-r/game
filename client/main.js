@@ -1,6 +1,6 @@
 import { levelTiles } from "./levelData.js";
 import {
-    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber, coordsEq, addOrReplaceCss
+    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber, coordsEq, addOrReplaceCss, loadFromText
 } from "./util.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
@@ -90,8 +90,25 @@ document.addEventListener("keyup", function(e) {
 });
 // document.addEventListener("mousemove", mouseStyleListener);
 
-const bd = new BuiltinDialogs(gm, start, removeListeners, (MOBILE && mobileInput));
-bd.showStartDialog();
+// const bd = new BuiltinDialogs(gm, start, removeListeners, (MOBILE && mobileInput));
+// bd.showStartDialog();
+
+
+// TODO: add customRenders to load? what about "referenced", "mobsUsingVisualTimeout"?
+
+fetch(window.location.origin + "/world")
+    .then(r => r.text())
+    .then(r => {
+        loadFromText(r, (loadData) => {
+            gm.levels = loadData.levels;
+            gm.level = gm.levels[gm.levels.currentLvl].level;
+            gm.mobs = gm.levels[gm.levels.currentLvl].mobs;
+            gm.items = gm.levels[gm.levels.currentLvl].items;
+            gm.player = loadData.player;
+            gm.timeTracker = loadData.timeTracker;
+            start();
+        });
+    });
 
 // ----------------------------------------------------------
 
@@ -631,6 +648,7 @@ function action(key, ctrl, isFirst) {
         default:
             return;
     }
+    gm.updateAfterAction();
 }
 
 /*
