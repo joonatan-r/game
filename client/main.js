@@ -93,6 +93,20 @@ document.addEventListener("keyup", function(e) {
 // const bd = new BuiltinDialogs(gm, start, removeListeners, (MOBILE && mobileInput));
 // bd.showStartDialog();
 
+// ----------------------------------------------------------
+
+const socket = new WebSocket('ws://' + window.location.host);
+
+// wait until connected
+
+await new Promise(resolve => {
+    socket.addEventListener('open', (event) => {
+        resolve();
+    });
+    socket.addEventListener('message', (event) => {
+        console.log('Message from server ', event.data);
+    });
+});
 
 // TODO: add customRenders to load? what about "referenced", "mobsUsingVisualTimeout"?
 
@@ -108,19 +122,12 @@ fetch(window.location.origin + "/world")
             gm.timeTracker = loadData.timeTracker;
             start();
         });
+        socket.send(JSON.stringify({ type: "loaded" }));
     });
 
-// ----------------------------------------------------------
-
-const socket = new WebSocket('ws://' + window.location.host);
-
-// socket.addEventListener('open', (event) => {
-//     socket.send('Hello Server!');
-// });
-
-socket.addEventListener('message', (event) => {
-    console.log('Message from server ', event.data);
-});
+// simulate delay
+// await new Promise(r => setTimeout(r, 5000));
+// socket.send(JSON.stringify({ type: "loaded" }));
 
 // ----------------------------------------------------------
 
