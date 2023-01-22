@@ -50,6 +50,17 @@ export default class GameManager {
         }
     }
 
+    createPlayer() {
+        const newPlayer = {};
+        newPlayer.maxHealth = 4;
+        newPlayer.health = this.player.maxHealth;
+        newPlayer.inventory = [];
+        newPlayer.noteEntries = [];
+        newPlayer.pos = [9, 5];
+        newPlayer.image = 2;
+        return newPlayer;
+    }
+
     posIsValid(pos, disallowFakeWalls) {
         if (pos?.length !== 2) return false;
         for (let mob of this.mobs) {
@@ -468,7 +479,7 @@ export default class GameManager {
                     this.mobs = this.levels[lvl].mobs;
                     this.items = this.levels[lvl].items;
                     this.levels.currentLvl = lvl;
-                    // this.customRenders = [];
+                    // this.customRenders = []; // NOTE: actually keep, but move to that player's info
                     this.tryFireEvent("onEnterLevel");
                     return;
                 }

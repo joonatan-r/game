@@ -1,5 +1,5 @@
 
-import WebSocket, { WebSocketServer } from 'ws';
+import { WebSocketServer } from 'ws';
 import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -14,8 +14,8 @@ const server = app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
 const wss = new WebSocketServer({ noServer: true });
-const clients = [];
-let playerLoaded = true; // later for each player
+const clientInfos = [];
+let idCounter = 0;
 
 // --------------------------------------------------------------------
 
@@ -40,13 +40,19 @@ app.get("/", (req, res) => {
 });
 
 app.get("/world", (req, res) => {
-  playerLoaded = false;
+  for (const clientInfo of clientInfos) {
+    if (clientInfo.id === Number(req.query.clientId)) {
+      clientInfo.loaded = false;
+      break;
+    }
+  }
   res.send(JSON.stringify({
     levels: gm.levels,
     player: gm.player,
     timeTracker: gm.timeTracker,
     referenced: gm.referenced
   }));
+  // console.log(req.ip)
 });
 
 app.use("/test", express.static(path.join(__dirname, "client")));
@@ -66,10 +72,22 @@ server.on("upgrade", function upgrade(request, socket, head) {
   //});
 });
 
-wss.on("connection", function connection(ws) {
-  clients.push(ws);
-  ws.send("Connected");
+wss.on("connection", function connection(ws, req) {
+  const newClientInfo = {
+    id: idCounter++,
+    client: ws,
+    loaded: true,
+    updateQueue: [], // store update messages that happen while client still loading initial state
+    player: gm.createPlayer(),
+    level: gm.levels["Start of uncharted"].level,
+    mobs: gm.levels["Start of uncharted"].mobs,
+    items: gm.levels["Start of uncharted"].items,
+    customRenders: gm.levels["Start of uncharted"].customRenders
+  };
+  clientInfos.push(newClientInfo);
+  ws.send(JSON.stringify({ type: "assignId", id: newClientInfo.id }));
   console.log("Connected");
+  // console.log(req.socket.remoteAddress);
   ws.on("message", function message(data, isBinary) {
     /*wss.clients.forEach(function each(client) {
       if (client.readyState === WebSocket.OPEN) {
@@ -77,12 +95,10 @@ wss.on("connection", function connection(ws) {
       }
     });*/
     const msgText = Buffer.from(data).toString('ascii');
-    // console.log(msgText);
-    // ws.send('Hello there!');
-    action(msgText);
+    action(newClientInfo, msgText);
   });
   ws.on("close", function close() {
-    removeByReference(clients, ws);
+    removeByReference(clientInfos, newClientInfo);
     console.log("Disconnected");
   });
 });
@@ -98,8 +114,6 @@ const TICK_INTERVAL = 1000;
 const GAME_INTERVAL = 3000;
 const GAME_PER_TICK = GAME_INTERVAL / TICK_INTERVAL;
 let tickCounter = 0;
-// later for each player, store update messages that happen while client still loading the initial state
-let clientUpdateQueue = []; 
 
 let msgCounter = 0;
 
@@ -116,29 +130,29 @@ setInterval(() => {
 
   const someUpdateMsg = msgCounter++;
 
-  if (!playerLoaded) {
-    clientUpdateQueue.push(someUpdateMsg);
-  } else {
-    // NOTE: would have to make sure msgs are sent in order, if in theory the 
-    // next interval triggers before this finishes
+  for (const clientInfo of clientInfos) {
+    if (!clientInfo.loaded) {
+      clientInfo.updateQueue.push(someUpdateMsg);
+    } else {
+      // NOTE: would have to make sure msgs are sent in order, if in theory the 
+      // next interval triggers before this finishes
 
-    if (clients[0]) {
-      for (const item of clientUpdateQueue) {
-        clients[0].send(item);
+      for (const item of clientInfo.updateQueue) {
+        clientInfo.client.send(JSON.stringify({ value: item }));
       }
-      clientUpdateQueue = [];
-      clients[0].send(someUpdateMsg);
+      clientInfo.updateQueue = [];
+      clientInfo.client.send(JSON.stringify({ value: someUpdateMsg }));
     }
   }
 }, TICK_INTERVAL);
 
-async function action(msg) {
+async function action(clientInfo, msg) {
   const resolve = await addToQueue();
   const actionInfo = JSON.parse(msg);
 
   switch (actionInfo.type) {
     case "loaded":
-      playerLoaded = true;
+      clientInfo.loaded = true;
       break;
     case "move":
       gm.movePlayer(...actionInfo.args);

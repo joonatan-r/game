@@ -96,21 +96,28 @@ document.addEventListener("keyup", function(e) {
 // ----------------------------------------------------------
 
 const socket = new WebSocket('ws://' + window.location.host);
+let clientId = null;
 
 // wait until connected
 
 await new Promise(resolve => {
-    socket.addEventListener('open', (event) => {
-        resolve();
-    });
+    // socket.addEventListener('open', (event) => {
+    //     resolve();
+    // });
     socket.addEventListener('message', (event) => {
-        console.log('Message from server ', event.data);
+        const msg = JSON.parse(event.data);
+        console.log('Message from server ', msg);
+
+        if (msg.type === "assignId") {
+            clientId = msg.id;
+            resolve();
+        }
     });
 });
 
 // TODO: add customRenders to load? what about "referenced", "mobsUsingVisualTimeout"?
 
-fetch(window.location.origin + "/world")
+fetch(window.location.origin + "/world?clientId=" + clientId)
     .then(r => r.text())
     .then(r => {
         loadFromText(r, (loadData) => {
