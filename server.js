@@ -79,10 +79,11 @@ wss.on("connection", function connection(ws, req) {
     loaded: true,
     updateQueue: [], // store update messages that happen while client still loading initial state
     player: gm.createPlayer(),
-    level: gm.levels["Start of uncharted"].level,
-    mobs: gm.levels["Start of uncharted"].mobs,
-    items: gm.levels["Start of uncharted"].items,
-    customRenders: gm.levels["Start of uncharted"].customRenders
+    level: gm.levels["Road's end"].level,
+    mobs: gm.levels["Road's end"].mobs,
+    items: gm.levels["Road's end"].items,
+    customRenders: gm.levels["Road's end"].customRenders || [],
+    currentLvl: "Road's end"
   };
   clientInfos.push(newClientInfo);
   ws.send(JSON.stringify({ type: "assignId", id: newClientInfo.id }));
@@ -110,12 +111,10 @@ wss.on("connection", function connection(ws, req) {
 
 // --------------------------------------------------------------------
 
-const TICK_INTERVAL = 1000;
-const GAME_INTERVAL = 3000;
+const TICK_INTERVAL = 100;
+const GAME_INTERVAL = 300;
 const GAME_PER_TICK = GAME_INTERVAL / TICK_INTERVAL;
 let tickCounter = 0;
-
-let msgCounter = 0;
 
 setInterval(() => {
   tickCounter++;
@@ -128,20 +127,28 @@ setInterval(() => {
   }
   // update tick stuff, send all player movement etc.
 
-  const someUpdateMsg = msgCounter++;
+  const msgs = [];
 
   for (const clientInfo of clientInfos) {
+    msgs.push({
+      type: "move",
+      clientId: clientInfo.id,
+      value: clientInfo.player.pos,
+      level: clientInfo.currentLvl
+    });
+  }
+  for (const clientInfo of clientInfos) {
     if (!clientInfo.loaded) {
-      clientInfo.updateQueue.push(someUpdateMsg);
+      clientInfo.updateQueue.push(...msgs);
     } else {
       // NOTE: would have to make sure msgs are sent in order, if in theory the 
       // next interval triggers before this finishes
 
-      for (const item of clientInfo.updateQueue) {
-        clientInfo.client.send(JSON.stringify({ value: item }));
-      }
+      clientInfo.client.send(JSON.stringify({
+        type: "list",
+        msgs: [...clientInfo.updateQueue, ...msgs]
+      }));
       clientInfo.updateQueue = [];
-      clientInfo.client.send(JSON.stringify({ value: someUpdateMsg }));
     }
   }
 }, TICK_INTERVAL);
@@ -155,7 +162,7 @@ async function action(clientInfo, msg) {
       clientInfo.loaded = true;
       break;
     case "move":
-      gm.movePlayer(...actionInfo.args);
+      gm.movePlayer(clientInfo, ...actionInfo.args);
       break;
   }
   resolve();

@@ -31,6 +31,7 @@ export default class GameManager {
         this.render = new Renderer(this.area, this.rendered);
         this.ui = new UI(removeListeners, addListeners);
         this.level = this.levels[this.levels.currentLvl].level;
+        this.otherPlayers = this.levels[this.levels.currentLvl].otherPlayers;
         this.mobs = this.levels[this.levels.currentLvl].mobs;
         this.items = this.levels[this.levels.currentLvl].items;
         this.turnInterval = null;
@@ -671,6 +672,7 @@ export default class GameManager {
                         this.movePlayerVisual(this.player.pos, newPos, true);
                     }
                     this.player.pos = newPos;
+                    this.otherPlayers = this.levels[lvl].otherPlayers;
                     this.mobs = this.levels[lvl].mobs;
                     this.items = this.levels[lvl].items;
                     this.levels.currentLvl = lvl;

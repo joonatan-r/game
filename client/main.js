@@ -106,11 +106,36 @@ await new Promise(resolve => {
     // });
     socket.addEventListener('message', (event) => {
         const msg = JSON.parse(event.data);
-        console.log('Message from server ', msg);
 
         if (msg.type === "assignId") {
             clientId = msg.id;
+            console.log(msg.id);
             resolve();
+        } else if (msg.type === "list") {
+            for (const subMsg of msg.msgs) {
+                if (subMsg.type === "move" 
+                    && subMsg.clientId !== clientId 
+                    && subMsg.level === gm.levels.currentLvl
+                ) {
+                    let existingPlayer = null;
+
+                    for (const otherPlayer of gm.otherPlayers) {
+                        if (otherPlayer.id === subMsg.clientId) {
+                            existingPlayer = otherPlayer;
+                            break;
+                        }
+                    }
+                    if (!existingPlayer) {
+                        gm.otherPlayers.push({
+                            id: subMsg.clientId,
+                            pos: subMsg.value
+                        });
+                    } else {
+                        existingPlayer.pos = subMsg.value;
+                    }
+                }
+            }
+            gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
         }
     });
 });
@@ -122,7 +147,9 @@ fetch(window.location.origin + "/world?clientId=" + clientId)
     .then(r => {
         loadFromText(r, (loadData) => {
             gm.levels = loadData.levels;
+            gm.levels.currentLvl = "Road's end"; // TODO improve
             gm.level = gm.levels[gm.levels.currentLvl].level;
+            gm.otherPlayers = gm.levels[gm.levels.currentLvl].otherPlayers;
             gm.mobs = gm.levels[gm.levels.currentLvl].mobs;
             gm.items = gm.levels[gm.levels.currentLvl].items;
             gm.player = loadData.player;

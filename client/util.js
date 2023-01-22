@@ -64,6 +64,7 @@ export function initialize() {
                     levels[lvlName] = {
                         level: level,
                         bg: bg,
+                        otherPlayers: [],
                         mobs: [],
                         items: [],
                         memorized: [],

@@ -142,6 +142,7 @@ export default class Renderer {
 
     async renderAll(player, levels, customRenders) {
         let level = levels[levels.currentLvl].level;
+        let otherPlayers = levels[levels.currentLvl].otherPlayers;
         let mobs = levels[levels.currentLvl].mobs;
         let items = levels[levels.currentLvl].items;
         let memorized = levels[levels.currentLvl].memorized;
@@ -304,6 +305,27 @@ export default class Renderer {
                     options.OBJ_BG && (mobPos.classList[0] = "obj-bg");
                 }
                 mobPos.customProps.infoKeys.unshift(mob.name);
+            }
+        }
+        for (let otherPlayer of otherPlayers) {
+            if (renderedBuffer[otherPlayer.pos[0]][otherPlayer.pos[1]]) {
+                const otherPlayerPos = areaBuffer[otherPlayer.pos[0]][otherPlayer.pos[1]];
+
+                if (options.OBJ_IMG) {
+                    const imageToUse = "url(\"./mobImages/mob_" + (otherPlayer.image || 2) + ".png\")";
+
+                    if ( otherPlayerPos.textContent !== "") {
+                        otherPlayerPos.textContent = "";
+                    }
+                    if (otherPlayerPos.style.backgroundImage !== imageToUse) {
+                        otherPlayerPos.style.backgroundImage = imageToUse;
+                    }
+                    removeByReference(imgCoordsToDelete, otherPlayerPos);
+                } else {
+                    otherPlayerPos.textContent = "@";
+                    options.OBJ_BG && (otherPlayerPos.classList[0] = "obj-bg");
+                }
+                // otherPlayerPos.customProps.infoKeys.unshift(otherPlayer.name);
             }
         }
         for (let obj of customRenders) {

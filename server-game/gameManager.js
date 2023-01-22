@@ -61,23 +61,23 @@ export default class GameManager {
         return newPlayer;
     }
 
-    posIsValid(pos, disallowFakeWalls) {
+    posIsValid(clientInfo, pos, disallowFakeWalls) {
         if (pos?.length !== 2) return false;
-        for (let mob of this.mobs) {
+        for (let mob of clientInfo.mobs) {
             if (coordsEq(mob.pos, pos)) return false;
         }
-        for (let item of this.items) {
+        for (let item of clientInfo.items) {
             if (coordsEq(item.pos, pos) && item.blocksTravel) return false;
         }
-        if (coordsEq(this.player.pos, pos) 
-            || pos[0] > this.level.length - 1 
-            || pos[1] > this.level[0].length - 1 
+        if (coordsEq(clientInfo.player.pos, pos) 
+            || pos[0] > clientInfo.level.length - 1 
+            || pos[1] > clientInfo.level[0].length - 1 
             || pos[0] < 0 
             || pos[1] < 0
-            || this.level[pos[0]][pos[1]] === levelTiles.wall
-            || this.level[pos[0]][pos[1]] === levelTiles.seeThroughWall
+            || clientInfo.level[pos[0]][pos[1]] === levelTiles.wall
+            || clientInfo.level[pos[0]][pos[1]] === levelTiles.seeThroughWall
             || this.level[pos[0]][pos[1]] === levelTiles.transparentBgWall
-            || (disallowFakeWalls && this.level[pos[0]][pos[1]] === levelTiles.fakeWall)
+            || (disallowFakeWalls && clientInfo.level[pos[0]][pos[1]] === levelTiles.fakeWall)
         ) {
             return false;
         }
@@ -184,23 +184,23 @@ export default class GameManager {
         removeByReference(this.mobs, mob);
     }
     
-    changePlayerHealth(amount) {
-        let newHealth = this.player.health + amount;
+    changePlayerHealth(clientInfo, amount) {
+        let newHealth = clientInfo.player.health + amount;
         if (newHealth < 1) {
             this.gameOver("You take a fatal hit. You die...");
             return;
         }
-        if (newHealth > this.player.maxHealth) {
-            newHealth = this.player.maxHealth;
+        if (newHealth > clientInfo.player.maxHealth) {
+            newHealth = clientInfo.player.maxHealth;
         }
         if (amount < 0) {
             // this.ui.showMsg("You are hit!");
         } else if (amount > 0) {
-            if (this.player.health !== this.player.maxHealth) {
+            if (clientInfo.player.health !== clientInfo.player.maxHealth) {
                 // this.ui.showMsg("You feel better.");
             }
         }
-        this.player.health = newHealth;
+        clientInfo.player.health = newHealth;
     }
 
     refer(obj) {
@@ -208,9 +208,9 @@ export default class GameManager {
         return obj;
     }
 
-    hitCustomRenderEffect(obj) {
+    hitCustomRenderEffect(clientInfo, obj) {
         obj.deleted = true;
-        removeByReference(this.customRenders, obj);
+        removeByReference(clientInfo.customRenders, obj);
         // this.render.renderAll(this.player, this.levels, this.customRenders);
         // this.render.shotEffect(obj.pos, this.player, this.levels, this.customRenders);
     }
@@ -334,45 +334,45 @@ export default class GameManager {
         this.processTurn(); // ??????
     }
     
-    movePlayer(newPos, alternatives) {
-        if (!this.posIsValid(newPos)) {
+    movePlayer(clientInfo, newPos, alternatives) {
+        if (!this.posIsValid(clientInfo, newPos)) {
             if (!alternatives || !alternatives.length) {
                 return;
             } else {
                 const firstAlternativePos = alternatives.shift();
-                this.movePlayer(firstAlternativePos, alternatives);
+                this.movePlayer(clientInfo, firstAlternativePos, alternatives);
                 return;
             }
         }
-        this.player.pos = newPos;
+        clientInfo.player.pos = newPos;
         this.tryFireEvent("onMove");
     
-        if (this.level[this.player.pos[0]][this.player.pos[1]] === levelTiles.doorWay) {
-            this.tryChangeLvl();
+        if (clientInfo.level[clientInfo.player.pos[0]][clientInfo.player.pos[1]] === levelTiles.doorWay) {
+            this.tryChangeLvl(clientInfo);
         }
-        for (let obj of this.customRenders) {
-            if (coordsEq(this.player.pos, obj.pos) && obj.damagePlayer) {
-                this.changePlayerHealth(-1);
+        for (let obj of clientInfo.customRenders) {
+            if (coordsEq(clientInfo.player.pos, obj.pos) && obj.damagePlayer) {
+                this.changePlayerHealth(clientInfo, -1);
     
                 if (obj.disappearOnHit) {
-                    this.hitCustomRenderEffect(obj);
+                    this.hitCustomRenderEffect(clientInfo, obj);
                 }
             }
         }
-        for (let i = 0; i < this.items.length; i++) {
-            if (coordsEq(this.player.pos, this.items[i].pos)) {
+        for (let i = 0; i < clientInfo.items.length; i++) {
+            if (coordsEq(clientInfo.player.pos, clientInfo.items[i].pos)) {
                 let msg = "";
                 let severalItems = false;
     
                 // NOTE: currently hidden items won't be found if there are other items "on top"
     
-                if (this.items[i].hidden) {
+                if (clientInfo.items[i].hidden) {
                     msg += "You find an item! ";
-                    this.items[i].hidden = false;
+                    clientInfo.items[i].hidden = false;
                 }
-                for (let j = 0; j < this.items.length; j++) {
-                    if (coordsEq(this.items[i].pos, this.items[j].pos) 
-                        && i !== j && !this.items[j].hidden
+                for (let j = 0; j < clientInfo.items.length; j++) {
+                    if (coordsEq(clientInfo.items[i].pos, clientInfo.items[j].pos) 
+                        && i !== j && !clientInfo.items[j].hidden
                     ) {
                         severalItems = true;
                         break;
@@ -381,7 +381,7 @@ export default class GameManager {
                 if (severalItems) {
                     msg += "There are several items here.";
                 } else {
-                    msg += "There's \"" + itemNameWithNumber(this.items[i]) + "\" here.";
+                    msg += "There's \"" + itemNameWithNumber(clientInfo.items[i]) + "\" here.";
                 }
                 // this.ui.showMsg(msg);
                 return;
@@ -455,31 +455,31 @@ export default class GameManager {
         }
     }
     
-    tryChangeLvl() {
-        const tps = this.levels[this.levels.currentLvl].travelPoints;
+    tryChangeLvl(clientInfo) {
+        const tps = this.levels[clientInfo.currentLvl].travelPoints;
     
         for (const lvl of Object.keys(tps)) {
             let idx = 0; // for tracking which point in lvl to travel to if several
     
             for (const coords of tps[lvl]) {
-                if (coordsEq(coords, this.player.pos)) {
+                if (coordsEq(coords, clientInfo.player.pos)) {
                     if (typeof this.levels[lvl] === "undefined") {
-                        createNewLvl(lvl, this.levels, this.level, this.player);
+                        createNewLvl(lvl, this.levels, clientInfo.level, clientInfo.player);
                     }
-                    if (typeof this.levels[lvl].travelPoints[this.levels.currentLvl] === "undefined") {
+                    if (typeof this.levels[lvl].travelPoints[clientInfo.currentLvl] === "undefined") {
                         // if no travelpoint to connect to this level, choose most appropriate placeholder
-                        this.levels[lvl].travelPoints[this.levels.currentLvl] = [
-                            getClosestTravelPoint(this.levels[lvl].tempTravelPoints, this.player.pos, this.level)
+                        this.levels[lvl].travelPoints[clientInfo.currentLvl] = [
+                            getClosestTravelPoint(this.levels[lvl].tempTravelPoints, clientInfo.player.pos, clientInfo.level)
                         ];
                     }
                     this.tryGenerateTravelPoints(lvl);
-                    this.level = this.levels[lvl].level;
-                    const newPos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
-                    this.player.pos = newPos;
-                    this.mobs = this.levels[lvl].mobs;
-                    this.items = this.levels[lvl].items;
-                    this.levels.currentLvl = lvl;
-                    // this.customRenders = []; // NOTE: actually keep, but move to that player's info
+                    clientInfo.level = this.levels[lvl].level;
+                    const newPos = this.levels[lvl].travelPoints[clientInfo.currentLvl][idx].slice();
+                    clientInfo.player.pos = newPos;
+                    clientInfo.mobs = this.levels[lvl].mobs;
+                    clientInfo.items = this.levels[lvl].items;
+                    clientInfo.currentLvl = lvl;
+                    clientInfo.customRenders = this.levels[lvl].customRenders || [];
                     this.tryFireEvent("onEnterLevel");
                     return;
                 }
