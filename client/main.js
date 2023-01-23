@@ -32,7 +32,7 @@ const onNextKeyIntervals = {};
 const mergedKeys = {}; // for replacing two orthogonal inputs with the diagonal
 const pressedKeys = {};
 const drcPressTimes = {}; // for keeping track of when directions were last pressed
-const gm = new GameManager(removeListeners, addListeners, keyIntervals);
+const gm = new GameManager(removeListeners, addListeners, keyIntervals, getLevelFromServer);
 const defaultOptions = localStorage.getItem("gameDefaultOptions");
 let infoForMobileFix = { // use object to pass reference to mobileFix
     listenersActive: false,
@@ -162,6 +162,38 @@ fetch(window.location.origin + "/world?clientId=" + clientId)
 // simulate delay
 // await new Promise(r => setTimeout(r, 5000));
 // socket.send(JSON.stringify({ type: "loaded" }));
+
+function getLevelFromServer(name, currentLvl, pos) {
+    fetch(
+        window.location.origin + 
+        "/level?name=" + name + 
+        "&currentLvl=" + currentLvl + 
+        "&x=" + pos[1] +
+        "&y=" + pos[0] +
+        "&clientId=" + clientId
+    )
+        .then(r => r.text())
+        .then(r => {
+            loadFromText(r, (loadData) => {
+                gm.levels[name] = loadData.level;
+                gm.levels.currentLvl = name;
+                gm.level = gm.levels[gm.levels.currentLvl].level;
+                gm.otherPlayers = gm.levels[gm.levels.currentLvl].otherPlayers;
+                gm.mobs = gm.levels[gm.levels.currentLvl].mobs;
+                gm.items = gm.levels[gm.levels.currentLvl].items;
+                
+                if (options.KEEP_PLAYER_CENTERED) {
+                    gm.centerPlayer(gm.player.pos, loadData.playerPos, true);
+                } else {
+                    gm.movePlayerVisual(gm.player.pos, loadData.playerPos, true);
+                }
+                gm.player.pos = loadData.playerPos;
+                gm.render.setBg(gm.levels);
+                gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
+            });
+            socket.send(JSON.stringify({ type: "loaded" }));
+        });
+}
 
 // ----------------------------------------------------------
 

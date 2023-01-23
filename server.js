@@ -46,6 +46,7 @@ app.get("/world", (req, res) => {
       break;
     }
   }
+  // TODO: also add otherPlayers to starting level
   res.send(JSON.stringify({
     levels: gm.levels,
     player: gm.player,
@@ -53,6 +54,26 @@ app.get("/world", (req, res) => {
     referenced: gm.referenced
   }));
   // console.log(req.ip)
+});
+
+app.get("/level", (req, res) => {
+  let ci = null;
+  for (const clientInfo of clientInfos) {
+    if (clientInfo.id === Number(req.query.clientId)) {
+      clientInfo.loaded = false;
+      ci = clientInfo;
+      break;
+    }
+  }
+  const name = req.query.name;
+  const currentLvl = req.query.currentLvl;
+  const pos = [Number(req.query.y), Number(req.query.x)];
+  const newLevel = gm.getLevelAndChange(ci, name, currentLvl, pos);
+  // TODO: also add otherPlayers to level
+  res.send(JSON.stringify({
+    level: newLevel,
+    playerPos: ci.player.pos // changed while getting the level
+  }));
 });
 
 app.use("/test", express.static(path.join(__dirname, "client")));
@@ -108,6 +129,13 @@ wss.on("connection", function connection(ws, req) {
 // later sending only to clients on the same level + fetch on each level change
 
 // (initially before properly saving players, create/delete for each client while connected)
+
+// don't send player pos if not moved, auto send others lvl change if new lvl different than last sent
+// (maybe eg keep prevMoveMsg for each clientInfo)
+
+// send client disconnect (maybe at first just directly in the close handler)
+
+// animation like mobVisualTimeout for other players
 
 // --------------------------------------------------------------------
 

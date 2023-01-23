@@ -347,9 +347,10 @@ export default class GameManager {
         clientInfo.player.pos = newPos;
         this.tryFireEvent("onMove");
     
-        if (clientInfo.level[clientInfo.player.pos[0]][clientInfo.player.pos[1]] === levelTiles.doorWay) {
-            this.tryChangeLvl(clientInfo);
-        }
+        // NOTE: detect by client requesting the new level
+        // if (clientInfo.level[clientInfo.player.pos[0]][clientInfo.player.pos[1]] === levelTiles.doorWay) {
+        //     this.tryChangeLvl(clientInfo);
+        // }
         for (let obj of clientInfo.customRenders) {
             if (coordsEq(clientInfo.player.pos, obj.pos) && obj.damagePlayer) {
                 this.changePlayerHealth(clientInfo, -1);
@@ -455,36 +456,70 @@ export default class GameManager {
         }
     }
     
-    tryChangeLvl(clientInfo) {
-        const tps = this.levels[clientInfo.currentLvl].travelPoints;
+    // tryChangeLvl(clientInfo) {
+    //     const tps = this.levels[clientInfo.currentLvl].travelPoints;
     
-        for (const lvl of Object.keys(tps)) {
-            let idx = 0; // for tracking which point in lvl to travel to if several
+    //     for (const lvl of Object.keys(tps)) {
+    //         let idx = 0; // for tracking which point in lvl to travel to if several
     
-            for (const coords of tps[lvl]) {
-                if (coordsEq(coords, clientInfo.player.pos)) {
-                    if (typeof this.levels[lvl] === "undefined") {
-                        createNewLvl(lvl, this.levels, clientInfo.level, clientInfo.player);
-                    }
-                    if (typeof this.levels[lvl].travelPoints[clientInfo.currentLvl] === "undefined") {
-                        // if no travelpoint to connect to this level, choose most appropriate placeholder
-                        this.levels[lvl].travelPoints[clientInfo.currentLvl] = [
-                            getClosestTravelPoint(this.levels[lvl].tempTravelPoints, clientInfo.player.pos, clientInfo.level)
-                        ];
-                    }
-                    this.tryGenerateTravelPoints(lvl);
-                    clientInfo.level = this.levels[lvl].level;
-                    const newPos = this.levels[lvl].travelPoints[clientInfo.currentLvl][idx].slice();
-                    clientInfo.player.pos = newPos;
-                    clientInfo.mobs = this.levels[lvl].mobs;
-                    clientInfo.items = this.levels[lvl].items;
-                    clientInfo.currentLvl = lvl;
-                    clientInfo.customRenders = this.levels[lvl].customRenders || [];
-                    this.tryFireEvent("onEnterLevel");
-                    return;
-                }
-                idx++;
+    //         for (const coords of tps[lvl]) {
+    //             if (coordsEq(coords, clientInfo.player.pos)) {
+    //                 if (typeof this.levels[lvl] === "undefined") {
+    //                     createNewLvl(lvl, this.levels, clientInfo.level, clientInfo.player);
+    //                 }
+    //                 if (typeof this.levels[lvl].travelPoints[clientInfo.currentLvl] === "undefined") {
+    //                     // if no travelpoint to connect to this level, choose most appropriate placeholder
+    //                     this.levels[lvl].travelPoints[clientInfo.currentLvl] = [
+    //                         getClosestTravelPoint(this.levels[lvl].tempTravelPoints, clientInfo.player.pos, clientInfo.level)
+    //                     ];
+    //                 }
+    //                 this.tryGenerateTravelPoints(lvl);
+    //                 clientInfo.level = this.levels[lvl].level;
+    //                 const newPos = this.levels[lvl].travelPoints[clientInfo.currentLvl][idx].slice();
+    //                 clientInfo.player.pos = newPos;
+    //                 clientInfo.mobs = this.levels[lvl].mobs;
+    //                 clientInfo.items = this.levels[lvl].items;
+    //                 clientInfo.currentLvl = lvl;
+    //                 clientInfo.customRenders = this.levels[lvl].customRenders || [];
+    //                 this.tryFireEvent("onEnterLevel");
+    //                 return;
+    //             }
+    //             idx++;
+    //         }
+    //     }
+    // }
+
+    // NOTE: use params instead of clientInfo to make absolutely sure to use the latest info
+    getLevelAndChange(clientInfo, name, currentLvl, pos) {
+        let idx = 0;
+        let travelPointIdx = 0;
+
+        for (const coords of this.levels[currentLvl].travelPoints[name]) {
+            if (coordsEq(coords, pos)) {
+                travelPointIdx = idx;
+                break;
             }
+            idx++;
         }
+        if (typeof this.levels[name] === "undefined") {
+            // NOTE: dummy object since only pos from player needed
+            createNewLvl(name, this.levels, this.levels[currentLvl].level, { pos: pos }, currentLvl);
+        }
+        if (typeof this.levels[name].travelPoints[currentLvl] === "undefined") {
+            // if no travelpoint to connect to this level, choose most appropriate placeholder
+            this.levels[name].travelPoints[currentLvl] = [
+                getClosestTravelPoint(this.levels[name].tempTravelPoints, { pos: pos }, this.levels[currentLvl].level)
+            ];
+        }
+        this.tryGenerateTravelPoints(name);
+        clientInfo.level = this.levels[name].level;
+        const newPos = this.levels[name].travelPoints[clientInfo.currentLvl][travelPointIdx].slice();
+        clientInfo.player.pos = newPos;
+        clientInfo.mobs = this.levels[name].mobs;
+        clientInfo.items = this.levels[name].items;
+        clientInfo.currentLvl = name;
+        clientInfo.customRenders = this.levels[name].customRenders || [];
+        this.tryFireEvent("onEnterLevel");
+        return this.levels[name];
     }
 }

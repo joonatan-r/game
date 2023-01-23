@@ -20,11 +20,12 @@ const overlayTable = document.getElementById("overlayTable");
 const info = document.getElementById("info");
 
 export default class GameManager {
-    constructor(removeListeners, addListeners, keyIntervals) {
+    constructor(removeListeners, addListeners, keyIntervals, getLevelFromServer) {
         const initialized = initialize();
         this.keyIntervals = keyIntervals;
         this.removeListeners = removeListeners;
         this.addListeners = addListeners;
+        this.getLevelFromServer = getLevelFromServer;
         this.area = initialized.area;
         this.rendered = initialized.rendered;
         this.levels = initialized.levels;
@@ -653,32 +654,34 @@ export default class GameManager {
     
             for (const coords of tps[lvl]) {
                 if (coordsEq(coords, this.player.pos)) {
-                    if (typeof this.levels[lvl] === "undefined") {
-                        createNewLvl(lvl, this.levels, this.level, this.player);
-                    }
-                    if (typeof this.levels[lvl].travelPoints[this.levels.currentLvl] === "undefined") {
-                        // if no travelpoint to connect to this level, choose most appropriate placeholder
-                        this.levels[lvl].travelPoints[this.levels.currentLvl] = [
-                            getClosestTravelPoint(this.levels[lvl].tempTravelPoints, this.player.pos, this.level)
-                        ];
-                    }
-                    this.tryGenerateTravelPoints(lvl);
-                    this.level = this.levels[lvl].level;
-                    const newPos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
+                    console.log(lvl)
+                    this.getLevelFromServer(lvl, this.levels.currentLvl, this.player.pos);
+                    // if (typeof this.levels[lvl] === "undefined") {
+                    //     createNewLvl(lvl, this.levels, this.level, this.player);
+                    // }
+                    // if (typeof this.levels[lvl].travelPoints[this.levels.currentLvl] === "undefined") {
+                    //     // if no travelpoint to connect to this level, choose most appropriate placeholder
+                    //     this.levels[lvl].travelPoints[this.levels.currentLvl] = [
+                    //         getClosestTravelPoint(this.levels[lvl].tempTravelPoints, this.player.pos, this.level)
+                    //     ];
+                    // }
+                    // this.tryGenerateTravelPoints(lvl);
+                    // this.level = this.levels[lvl].level;
+                    // const newPos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
 
-                    if (options.KEEP_PLAYER_CENTERED) {
-                        this.centerPlayer(this.player.pos, newPos, true);
-                    } else {
-                        this.movePlayerVisual(this.player.pos, newPos, true);
-                    }
-                    this.player.pos = newPos;
-                    this.otherPlayers = this.levels[lvl].otherPlayers;
-                    this.mobs = this.levels[lvl].mobs;
-                    this.items = this.levels[lvl].items;
-                    this.levels.currentLvl = lvl;
-                    this.customRenders = [];
-                    this.render.setBg(this.levels);
-                    this.tryFireEvent("onEnterLevel");
+                    // if (options.KEEP_PLAYER_CENTERED) {
+                    //     this.centerPlayer(this.player.pos, newPos, true);
+                    // } else {
+                    //     this.movePlayerVisual(this.player.pos, newPos, true);
+                    // }
+                    // this.player.pos = newPos;
+                    // this.otherPlayers = this.levels[lvl].otherPlayers;
+                    // this.mobs = this.levels[lvl].mobs;
+                    // this.items = this.levels[lvl].items;
+                    // this.levels.currentLvl = lvl;
+                    // this.customRenders = [];
+                    // this.render.setBg(this.levels);
+                    // this.tryFireEvent("onEnterLevel");
                     return;
                 }
                 idx++;

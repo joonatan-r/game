@@ -462,7 +462,7 @@ function generateLevel(startPoint, version) {
     return level;
 }
 
-export function createNewLvl(name, levels, level, player) {
+export function createNewLvl(name, levels, level, player, currentLvl) {
     const startPos = [];
     const frontOfStartPos = [];
     let newTravelPos = null;
@@ -502,7 +502,7 @@ export function createNewLvl(name, levels, level, player) {
     const newMemorized = [];
     const travelPoints = {};
     const openEdges = [];
-    travelPoints[levels.currentLvl] = [startPos];
+    travelPoints[currentLvl] = [startPos];
 
     if (version === 2) {
         const mins = {
@@ -640,6 +640,7 @@ export function createNewLvl(name, levels, level, player) {
     levels[name] = {
         level: generatedLvl,
         bg: "#282828",
+        otherPlayers: [], // needed in clients
         mobs: [],
         items: [],
         memorized: newMemorized,
