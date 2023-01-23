@@ -1,6 +1,6 @@
 import { levelTiles } from "./levelData.js";
 import {
-    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber, coordsEq, addOrReplaceCss, loadFromText
+    inputToDrc, isWall, movePosToDrc, relativeCoordsToDrc, getPosInfo, getAdjacentOrthogonalDirections, itemNameWithNumber, coordsEq, addOrReplaceCss, loadFromText, removeByReference
 } from "./util.js";
 import options from "./options.js";
 import { mobileFix } from "./mobileFix.js";
@@ -131,7 +131,38 @@ await new Promise(resolve => {
                             pos: subMsg.value
                         });
                     } else {
+                        const prevPos = existingPlayer.pos;
                         existingPlayer.pos = subMsg.value;
+                        if (!coordsEq(prevPos, existingPlayer.pos)) {
+                            // also works if new pos not next to current
+                            const facing = relativeCoordsToDrc(
+                                existingPlayer.pos[0] - prevPos[0],
+                                existingPlayer.pos[1] - prevPos[1]
+                            );
+                            const moveImage = facing + "_move";
+                            const baseImage = facing;
+                            const altMoveImage = facing + "_2_move";
+                    
+                            if (existingPlayer.image === moveImage || existingPlayer.image === altMoveImage) {
+                                existingPlayer.image = baseImage;
+                            } else if (existingPlayer.prevMoveImage === altMoveImage) {
+                                existingPlayer.image = moveImage;
+                                existingPlayer.prevMoveImage = moveImage;
+                            } else {
+                                existingPlayer.image = altMoveImage;
+                                existingPlayer.prevMoveImage = altMoveImage;
+                            }
+                        }
+                    }
+                } else if (subMsg.type === "levelChange"
+                    && subMsg.clientId !== clientId
+                    && subMsg.level !== gm.levels.currentLvl
+                ) {
+                    for (let i = 0; i < gm.otherPlayers.length; i++) {
+                        if (gm.otherPlayers[i].id === subMsg.clientId) {
+                            gm.otherPlayers.splice(i, 1);
+                            break;
+                        }
                     }
                 }
             }
@@ -149,6 +180,7 @@ fetch(window.location.origin + "/world?clientId=" + clientId)
             gm.levels = loadData.levels;
             gm.levels.currentLvl = "Road's end"; // TODO improve
             gm.level = gm.levels[gm.levels.currentLvl].level;
+            gm.levels[gm.levels.currentLvl].otherPlayers = loadData.otherPlayers;
             gm.otherPlayers = gm.levels[gm.levels.currentLvl].otherPlayers;
             gm.mobs = gm.levels[gm.levels.currentLvl].mobs;
             gm.items = gm.levels[gm.levels.currentLvl].items;
@@ -178,6 +210,7 @@ function getLevelFromServer(name, currentLvl, pos) {
                 gm.levels[name] = loadData.level;
                 gm.levels.currentLvl = name;
                 gm.level = gm.levels[gm.levels.currentLvl].level;
+                gm.levels[gm.levels.currentLvl].otherPlayers = loadData.otherPlayers;
                 gm.otherPlayers = gm.levels[gm.levels.currentLvl].otherPlayers;
                 gm.mobs = gm.levels[gm.levels.currentLvl].mobs;
                 gm.items = gm.levels[gm.levels.currentLvl].items;

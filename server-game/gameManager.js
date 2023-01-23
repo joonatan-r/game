@@ -50,8 +50,9 @@ export default class GameManager {
         }
     }
 
-    createPlayer() {
+    createPlayer(id) {
         const newPlayer = {};
+        newPlayer.id = id;
         newPlayer.maxHealth = 4;
         newPlayer.health = this.player.maxHealth;
         newPlayer.inventory = [];

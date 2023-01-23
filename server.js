@@ -4,7 +4,7 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import GameManager from './server-game/gameManager.js';
-import { removeByReference } from './server-game/util.js';
+import { coordsEq, removeByReference } from './server-game/util.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +15,7 @@ const server = app.listen(port, () => {
 });
 const wss = new WebSocketServer({ noServer: true });
 const clientInfos = [];
+const prevMoveByClient = {};
 let idCounter = 0;
 
 // --------------------------------------------------------------------
@@ -40,16 +41,19 @@ app.get("/", (req, res) => {
 });
 
 app.get("/world", (req, res) => {
+  const otherPlayers = [];
+
   for (const clientInfo of clientInfos) {
     if (clientInfo.id === Number(req.query.clientId)) {
       clientInfo.loaded = false;
-      break;
+    } else if (clientInfo.currentLvl === "Road's end") { // TODO improve
+      otherPlayers.push(clientInfo.player);
     }
   }
-  // TODO: also add otherPlayers to starting level
   res.send(JSON.stringify({
     levels: gm.levels,
     player: gm.player,
+    otherPlayers: otherPlayers,
     timeTracker: gm.timeTracker,
     referenced: gm.referenced
   }));
@@ -57,22 +61,25 @@ app.get("/world", (req, res) => {
 });
 
 app.get("/level", (req, res) => {
+  const name = req.query.name;
+  const currentLvl = req.query.currentLvl;
+  const pos = [Number(req.query.y), Number(req.query.x)];
+  const otherPlayers = [];
   let ci = null;
+
   for (const clientInfo of clientInfos) {
     if (clientInfo.id === Number(req.query.clientId)) {
       clientInfo.loaded = false;
       ci = clientInfo;
-      break;
+    } else if (clientInfo.currentLvl === name) {
+      otherPlayers.push(clientInfo.player);
     }
   }
-  const name = req.query.name;
-  const currentLvl = req.query.currentLvl;
-  const pos = [Number(req.query.y), Number(req.query.x)];
   const newLevel = gm.getLevelAndChange(ci, name, currentLvl, pos);
-  // TODO: also add otherPlayers to level
   res.send(JSON.stringify({
     level: newLevel,
-    playerPos: ci.player.pos // changed while getting the level
+    playerPos: ci.player.pos, // changed while getting the level
+    otherPlayers: otherPlayers
   }));
 });
 
@@ -94,12 +101,13 @@ server.on("upgrade", function upgrade(request, socket, head) {
 });
 
 wss.on("connection", function connection(ws, req) {
+  const newId = idCounter++;
   const newClientInfo = {
-    id: idCounter++,
+    id: newId,
     client: ws,
     loaded: true,
     updateQueue: [], // store update messages that happen while client still loading initial state
-    player: gm.createPlayer(),
+    player: gm.createPlayer(newId),
     level: gm.levels["Road's end"].level,
     mobs: gm.levels["Road's end"].mobs,
     items: gm.levels["Road's end"].items,
@@ -126,16 +134,10 @@ wss.on("connection", function connection(ws, req) {
 });
 
 // TODO: processturn events to client, support several clients, mobs etc.,
-// later sending only to clients on the same level + fetch on each level change
+// later sending only to clients on the same level
 
 // (initially before properly saving players, create/delete for each client while connected)
-
-// don't send player pos if not moved, auto send others lvl change if new lvl different than last sent
-// (maybe eg keep prevMoveMsg for each clientInfo)
-
 // send client disconnect (maybe at first just directly in the close handler)
-
-// animation like mobVisualTimeout for other players
 
 // --------------------------------------------------------------------
 
@@ -158,12 +160,26 @@ setInterval(() => {
   const msgs = [];
 
   for (const clientInfo of clientInfos) {
-    msgs.push({
-      type: "move",
-      clientId: clientInfo.id,
-      value: clientInfo.player.pos,
-      level: clientInfo.currentLvl
-    });
+    const prevInfo = prevMoveByClient[clientInfo.id];
+
+    if (!prevInfo || !coordsEq(clientInfo.player.pos, prevInfo.value)) {
+      const newMsg = {
+        type: "move",
+        clientId: clientInfo.id,
+        value: clientInfo.player.pos,
+        level: clientInfo.currentLvl
+      };
+      msgs.push(newMsg);
+      prevMoveByClient[clientInfo.id] = newMsg;
+    }
+    if (prevInfo && prevInfo.level !== clientInfo.currentLvl) {
+      const newMsg = {
+        type: "levelChange",
+        clientId: clientInfo.id,
+        level: clientInfo.currentLvl
+      };
+      msgs.push(newMsg);
+    }
   }
   for (const clientInfo of clientInfos) {
     if (!clientInfo.loaded) {

@@ -654,7 +654,6 @@ export default class GameManager {
     
             for (const coords of tps[lvl]) {
                 if (coordsEq(coords, this.player.pos)) {
-                    console.log(lvl)
                     this.getLevelFromServer(lvl, this.levels.currentLvl, this.player.pos);
                     // if (typeof this.levels[lvl] === "undefined") {
                     //     createNewLvl(lvl, this.levels, this.level, this.player);
