@@ -164,6 +164,47 @@ await new Promise(resolve => {
                             break;
                         }
                     }
+                } else if (subMsg.type === "time") {
+                    gm.timeTracker.timer = subMsg.value;
+                    gm.updateInfo();
+                } else if (subMsg.type === "mobSpawn" && subMsg.level === gm.levels.currentLvl) {
+                    gm.mobs.push(subMsg.mob);
+                } else if (subMsg.type === "mobMove" && subMsg.level === gm.levels.currentLvl) {
+                    let existingMob = null;
+
+                    for (const mob of gm.mobs) {
+                        if (mob.id === subMsg.mobId) {
+                            existingMob = mob;
+                            break;
+                        }
+                    }
+                    if (!existingMob) {
+                        console.log("Error, mob not found, create placeholder")
+                        gm.mobs.push({ id: subMsg.mobId, pos: subMsg.pos });
+                    } else {
+                        const prevPos = existingMob.pos;
+                        existingMob.pos = subMsg.pos;
+                        if (!coordsEq(prevPos, existingMob.pos)) {
+                            // also works if new pos not next to current
+                            const facing = relativeCoordsToDrc(
+                                existingMob.pos[0] - prevPos[0],
+                                existingMob.pos[1] - prevPos[1]
+                            );
+                            const moveImage = facing + "_move";
+                            const baseImage = facing;
+                            const altMoveImage = facing + "_2_move";
+                    
+                            if (existingMob.image === moveImage || existingMob.image === altMoveImage) {
+                                existingMob.image = baseImage;
+                            } else if (existingMob.prevMoveImage === altMoveImage) {
+                                existingMob.image = moveImage;
+                                existingMob.prevMoveImage = moveImage;
+                            } else {
+                                existingMob.image = altMoveImage;
+                                existingMob.prevMoveImage = altMoveImage;
+                            }
+                        }
+                    }
                 }
             }
             gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
@@ -207,7 +248,13 @@ function getLevelFromServer(name, currentLvl, pos) {
         .then(r => r.text())
         .then(r => {
             loadFromText(r, (loadData) => {
+                let existingMemorized = null
+                // retain memorized if exists
+                if (gm.levels[name] && gm.levels[name].memorized) {
+                    existingMemorized = gm.levels[name].memorized
+                }
                 gm.levels[name] = loadData.level;
+                existingMemorized && (gm.levels[name].memorized = existingMemorized);
                 gm.levels.currentLvl = name;
                 gm.level = gm.levels[gm.levels.currentLvl].level;
                 gm.levels[gm.levels.currentLvl].otherPlayers = loadData.otherPlayers;

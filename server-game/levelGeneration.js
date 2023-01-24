@@ -641,6 +641,7 @@ export function createNewLvl(name, levels, level, player, currentLvl) {
         level: generatedLvl,
         bg: "#282828",
         otherPlayers: [], // needed in clients
+        players: [],
         mobs: [],
         items: [],
         memorized: newMemorized,

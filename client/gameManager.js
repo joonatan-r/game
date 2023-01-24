@@ -82,6 +82,9 @@ export default class GameManager {
         for (let item of this.items) {
             if (coordsEq(item.pos, pos) && item.blocksTravel) return false;
         }
+        for (let otherPlayer of this.otherPlayers) {
+            if (coordsEq(otherPlayer.pos, pos)) return false;
+        }
         if (coordsEq(this.player.pos, pos) 
             || pos[0] > this.level.length - 1 
             || pos[1] > this.level[0].length - 1 

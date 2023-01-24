@@ -38,25 +38,26 @@ export function createRandomMobSpawning() {
     };
 }
 
-export function trySpawnMob(levels, rendered) {
+// TODO: maybe something fancier, now just ignore rendered
+export function trySpawnMob(levelInfo/* , rendered */) {
     let spawnPos = null;
     let notRenderedNbr = 1;
-    let level = levels[levels.currentLvl].level;
-    let spawnDistr = levels[levels.currentLvl].spawnDistribution;
+    let level = levelInfo.level;
+    let spawnDistr = levelInfo.spawnDistribution;
 
-    if (levels[levels.currentLvl].spawnRate < Math.random()) return null;
+    if (levelInfo.spawnRate < Math.random()) return null;
     if (Object.keys(spawnDistr).length === 0) return null;
 
     for (let i = 0; i < level.length; i++) {
         for (let j = 0; j < level[0].length; j++) {
-            if (!rendered[i][j] && !isWall(level[i][j])) notRenderedNbr++;
+            if (/* !rendered[i][j] &&  */!isWall(level[i][j])) notRenderedNbr++;
         }
     }
     for (let i = 0; i < level.length; i++) {
         if (spawnPos) break;
 
         for (let j = 0; j < level[0].length; j++) {
-            if (!rendered[i][j] && !isWall(level[i][j]) && Math.random() < (1 / notRenderedNbr)) {
+            if (/* !rendered[i][j] &&  */!isWall(level[i][j]) && Math.random() < (1 / notRenderedNbr)) {
                 spawnPos = [i, j];
                 break;
             }
@@ -93,33 +94,36 @@ function createMobOfType(mobType) {
 
 // Functions set mob.target, which dictates where the mob will move next
 export const movingAIs = {
-    Ukko: (mob, posIsValid) => {
+    Ukko: (mob, posIsValid, levelInfo) => {
         if (Math.random() < 0.5) {
-            movingAIs.random(mob, posIsValid);
+            movingAIs.random(mob, posIsValid, levelInfo);
         } else {
             movingAIs.static(mob);
         }
     },
-    Make: (mob, posIsValid, level, rendered) => {
-        if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget && mob.huntingTarget.pos) { // if player can see mob, mob can see player
-            movingAIs.towardsPos(mob, mob.huntingTarget.pos, posIsValid, level);
-        } else {
-            movingAIs.random(mob, posIsValid);
-        }
+    // TODO: maybe something fancier for certain player, now just ignore rendered
+    Make: (mob, posIsValid, levelInfo/* , rendered */) => {
+        // if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget && mob.huntingTarget.pos) { // if player can see mob, mob can see player
+        //     movingAIs.towardsPos(mob, mob.huntingTarget.pos, posIsValid, level);
+        // } else {
+        //     movingAIs.random(mob, posIsValid);
+        // }
+        movingAIs.towardsPos(mob, mob.huntingTarget.pos, posIsValid, levelInfo);
     },
-    Pekka: (mob, posIsValid, level, rendered) => {
+    Pekka: (mob, posIsValid, levelInfo/* , rendered */) => {
         mob.straightLineToTargetDrc = null;
 
-        if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget && mob.huntingTarget.pos) {
-            movingAIs.towardsStraightLineFromPos(mob, mob.huntingTarget.pos, posIsValid, level);
-        } else {
-            movingAIs.static(mob);
-        }
+        // if (rendered[mob.pos[0]][mob.pos[1]] && mob.huntingTarget && mob.huntingTarget.pos) {
+        //     movingAIs.towardsStraightLineFromPos(mob, mob.huntingTarget.pos, posIsValid, level);
+        // } else {
+        //     movingAIs.static(mob);
+        // }
+        movingAIs.towardsStraightLineFromPos(mob, mob.huntingTarget.pos, posIsValid, levelInfo);
     },
     static: mob => {
         mob.target = [mob.pos[0], mob.pos[1]];
     },
-    random: (mob, posIsValid) => {
+    random: (mob, posIsValid, levelInfo) => {
         let drc;
         let maxIters = 50;
         mob.target = [mob.pos[0], mob.pos[1]];
@@ -133,14 +137,14 @@ export const movingAIs = {
 
             movePosToDrc(mob.target, drc);
 
-            if (!posIsValid(mob.target)) {
+            if (!posIsValid(levelInfo, mob.target)) {
                 mob.target = [prevTarget[0], prevTarget[1]];
                 continue;
             }
             break;
         }
     },
-    towardsPos: (mob, targetPos, posIsValid, level) => {
+    towardsPos: (mob, targetPos, posIsValid, levelInfo) => {
         if (!mob.alreadyVisited) mob.alreadyVisited = [];
         // if already visited twice, moving will be stopped, else would just loop the same cycle
         if (!mob.alreadyVisitedTwice) mob.alreadyVisitedTwice = [];
@@ -164,7 +168,7 @@ export const movingAIs = {
         }
         mob.alreadyVisited.push(mob.pos);
 
-        if (!posIsValid(mob.target)) {
+        if (!posIsValid(levelInfo, mob.target)) {
             const drcs = getCoordsNextTo(mob.pos);
             const drcQueue = [mob.target];
             // better ability to go around obstacles when not backtracking 
@@ -185,8 +189,8 @@ export const movingAIs = {
                 
                 for (let d of newDrcs) {
                     if (d.length === 0) continue;
-                    if (!level[d[0]] || typeof level[d[0]][d[1]] === "undefined") continue;
-                    if (posIsValid(d)) {
+                    if (!levelInfo.level[d[0]] || typeof levelInfo.level[d[0]][d[1]] === "undefined") continue;
+                    if (posIsValid(levelInfo, d)) {
                         for (const coord of mob.alreadyVisitedTwice) {
                             if (coordsEq(coord, d)) {
                                 mob.target = mob.pos;
@@ -213,7 +217,7 @@ export const movingAIs = {
             mob.prevPos = mob.pos;
         }
     },
-    towardsStraightLineFromPos: (mob, fromPos, posIsValid, level) => {
+    towardsStraightLineFromPos: (mob, fromPos, posIsValid, levelInfo) => {
         let min = { pos: null, dist: null };
         mob.straightLineToTargetDrc = null;
 
@@ -227,8 +231,8 @@ export const movingAIs = {
             while (1) {
                 movePosToDrc(lineDrawPos, drc);
 
-                if (!level[lineDrawPos[0]] || typeof level[lineDrawPos[0]][lineDrawPos[1]] === "undefined"
-                    || isWall(level[lineDrawPos[0]][lineDrawPos[1]])) break;
+                if (!levelInfo.level[lineDrawPos[0]] || typeof levelInfo.level[lineDrawPos[0]][lineDrawPos[1]] === "undefined"
+                    || isWall(levelInfo.level[lineDrawPos[0]][lineDrawPos[1]])) break;
                 if (distanceToMob) prevDistance = distanceToMob;
 
                 // actually squared but doesn't matter
@@ -245,7 +249,7 @@ export const movingAIs = {
             }
         }
         if (min.pos && !coordsEq(mob.pos, min.pos)) {
-            movingAIs.towardsPos(mob, min.pos, posIsValid, level);
+            movingAIs.towardsPos(mob, min.pos, posIsValid, levelInfo);
         } else {
             mob.target = [mob.pos[0], mob.pos[1]];
         }

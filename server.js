@@ -147,18 +147,13 @@ const GAME_PER_TICK = GAME_INTERVAL / TICK_INTERVAL;
 let tickCounter = 0;
 
 setInterval(() => {
+  const msgs = [];
   tickCounter++;
 
   if (tickCounter >= GAME_PER_TICK) {
     tickCounter = 0;
-
-    // do game logic stuff
-    // loop updates for each level where there is a player
+    msgs.push(...gm.processTick(clientInfos));
   }
-  // update tick stuff, send all player movement etc.
-
-  const msgs = [];
-
   for (const clientInfo of clientInfos) {
     const prevInfo = prevMoveByClient[clientInfo.id];
 

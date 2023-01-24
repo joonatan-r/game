@@ -30,6 +30,7 @@ export default class GameManager {
         this.customRenders = []; // retain "animations", can also be damaging zones
         this.referenced = []; // for retaining object references when saving
         // this.mobsUsingVisualTimeout = []; // store mobs whose img should be updated after moving
+        this.mobIdCounter = 0; // to identify mobs in clients
 
         for (let obj = this; obj; obj = Object.getPrototypeOf(obj)){
             for (let name of Object.getOwnPropertyNames(obj)){
@@ -59,26 +60,29 @@ export default class GameManager {
         newPlayer.noteEntries = [];
         newPlayer.pos = [9, 5];
         newPlayer.image = 2;
+        this.levels["Road's end"].players.push(newPlayer); // TODO improve
         return newPlayer;
     }
 
-    posIsValid(clientInfo, pos, disallowFakeWalls) {
+    posIsValid(levelInfo, pos, disallowFakeWalls) {
         if (pos?.length !== 2) return false;
-        for (let mob of clientInfo.mobs) {
+        for (let mob of levelInfo.mobs) {
             if (coordsEq(mob.pos, pos)) return false;
         }
-        for (let item of clientInfo.items) {
+        for (let item of levelInfo.items) {
             if (coordsEq(item.pos, pos) && item.blocksTravel) return false;
         }
-        if (coordsEq(clientInfo.player.pos, pos) 
-            || pos[0] > clientInfo.level.length - 1 
-            || pos[1] > clientInfo.level[0].length - 1 
+        for (let player of levelInfo.players) {
+            if (coordsEq(player.pos, pos)) return false;
+        }
+        if (pos[0] > levelInfo.level.length - 1 
+            || pos[1] > levelInfo.level[0].length - 1 
             || pos[0] < 0 
             || pos[1] < 0
-            || clientInfo.level[pos[0]][pos[1]] === levelTiles.wall
-            || clientInfo.level[pos[0]][pos[1]] === levelTiles.seeThroughWall
+            || levelInfo.level[pos[0]][pos[1]] === levelTiles.wall
+            || levelInfo.level[pos[0]][pos[1]] === levelTiles.seeThroughWall
             || this.level[pos[0]][pos[1]] === levelTiles.transparentBgWall
-            || (disallowFakeWalls && clientInfo.level[pos[0]][pos[1]] === levelTiles.fakeWall)
+            || (disallowFakeWalls && levelInfo.level[pos[0]][pos[1]] === levelTiles.fakeWall)
         ) {
             return false;
         }
@@ -101,10 +105,99 @@ export default class GameManager {
         // }
     }
 
-    processTurn() {
+    processTick(clientInfos) {
+        const msgs = [];
+        const clientsByLevel = {};
+
+        for (const clientInfo of clientInfos) {
+            if (!clientsByLevel[clientInfo.currentLvl]) {
+                clientsByLevel[clientInfo.currentLvl] = [];
+            }
+            clientsByLevel[clientInfo.currentLvl].push(clientInfo);
+        }
         this.timeTracker.timer++;
-        if (this.timeTracker.turnsUntilShoot > 0) this.timeTracker.turnsUntilShoot--;
-        this.updateInfo();
+        msgs.push({ type: "time", value: this.timeTracker.timer });
+
+        for (const lvl of Object.keys(clientsByLevel)) {
+            for (const mob of this.levels[lvl].mobs) {
+                if (this.timeTracker.timer % mob.speedModulus < 1) {
+                    continue;
+                }
+                // if (mob.isHostile && isNextTo(this.player.pos, mob.pos)) {
+                //     this.render.shotEffect(this.player.pos, this.player, this.levels, this.customRenders, true);
+                //     this.changePlayerHealth(-3);
+                //     continue;
+                // }
+                // if (mob.stayStillForInteract && isNextTo(this.player.pos, mob.pos)) {
+                //     continue;
+                // }
+                movingAIs[mob.movingFunction](mob, this.posIsValid, this.levels[lvl]/* , this.rendered */);
+                msgs.push({ type: "mobMove", mobId: mob.id, level: lvl, pos: mob.target });
+
+                if (mob.isShooter && mob.straightLineToTargetDrc) {
+                    // this.shoot(mob.pos, mob.straightLineToTargetDrc, true);
+                } else {
+                    // also works if new pos not next to current for some reason
+                    // const facing = relativeCoordsToDrc(mob.target[0] - mob.pos[0], mob.target[1] - mob.pos[1]);
+                    // const moveImage = facing + "_move";
+                    // const baseImage = facing;
+                    // const altMoveImage = facing + "_2_move";
+            
+                    // if (mob.image === moveImage || mob.image === altMoveImage) {
+                    //     mob.image = baseImage;
+                    // } else if (mob.prevMoveImage === altMoveImage) {
+                    //     mob.image = moveImage;
+                    //     mob.prevMoveImage = moveImage;
+                    // } else {
+                    //     mob.image = altMoveImage;
+                    //     mob.prevMoveImage = altMoveImage;
+                    // }
+                    mob.pos = [mob.target[0], mob.target[1]];
+                    // this.mobsUsingVisualTimeout.push(mob);
+
+                    // for (let obj of this.levels[lvl].customRenders) {
+                    //     if (coordsEq(mob.pos, obj.pos) && obj.damageMobs) {
+                    //         this.mobDie(mob, lvl);
+        
+                    //         if (obj.disappearOnHit) {
+                    //             this.hitCustomRenderEffect(obj);
+                    //         }
+                    //         break; // NOTE: if mob health implemented, remove this
+                    //     }
+                    // }
+                }
+            }
+            let mob = trySpawnMob(this.levels[lvl]/* , this.rendered */);
+
+            if (mob !== null) {
+                // try to hunt the closest player
+                let targetPlayer = clientsByLevel[lvl][0].player;
+                let minDistance = (mob.pos[0] - targetPlayer.pos[0])*(mob.pos[0] - targetPlayer.pos[0]) + 
+                                  (mob.pos[1] - targetPlayer.pos[1])*(mob.pos[1] - targetPlayer.pos[1])
+                
+                for (const client of clientsByLevel[lvl]) {
+                    // actually squared but doesn't matter
+                    const distanceToMob = (mob.pos[0] - targetPlayer.pos[0])*(mob.pos[0] - targetPlayer.pos[0]) + 
+                                          (mob.pos[1] - targetPlayer.pos[1])*(mob.pos[1] - targetPlayer.pos[1]);
+                    
+                    if (distanceToMob < minDistance) {
+                        targetPlayer = client.player;
+                        minDistance = distanceToMob;
+                    }
+                }
+                mob.huntingTarget = this.refer(targetPlayer);
+                mob.id = this.mobIdCounter++;
+                this.levels[lvl].mobs.push(mob);
+                msgs.push({ type: "mobSpawn", mob: mob, level: lvl });
+            }
+        }
+        return msgs;
+    }
+
+    processTurn() {
+        // this.timeTracker.timer++;
+        // if (this.timeTracker.turnsUntilShoot > 0) this.timeTracker.turnsUntilShoot--;
+        // this.updateInfo();
         // clearTimeout(this.mobVisualTimeout);
         // this.mobVisualTimeout = setTimeout(() => {
         //     for (let i = this.mobsUsingVisualTimeout.length - 1; i >= 0; i--) {
@@ -178,11 +271,11 @@ export default class GameManager {
         // }
     }
     
-    mobDie(mob) {
+    mobDie(mob, lvl) {
         this.tryFireEvent("onDeath", mob);
         // delete all properties of mob, so all references to it recognize deletion
         for (let prop in mob) if (mob.hasOwnProperty(prop)) delete mob[prop];
-        removeByReference(this.mobs, mob);
+        removeByReference(this.levels[lvl].mobs, mob);
     }
     
     changePlayerHealth(clientInfo, amount) {
@@ -240,7 +333,7 @@ export default class GameManager {
                 if (coordsEq(checkPos, mob.pos)) {
                     this.mobDie(mob);
                     this.hitCustomRenderEffect(obj);
-                    !mobIsShooting && this.processTurn(); // ?????
+                    // !mobIsShooting && this.processTurn(); // ?????
                     return true;
                 }
             }
@@ -332,11 +425,11 @@ export default class GameManager {
         for (let item of this.items) {
             if (coordsEq(interactPos, item.pos)) this.tryFireEvent("onInteract", item);
         }
-        this.processTurn(); // ??????
+        // this.processTurn(); // ??????
     }
     
     movePlayer(clientInfo, newPos, alternatives) {
-        if (!this.posIsValid(clientInfo, newPos)) {
+        if (!this.posIsValid(this.levels[clientInfo.currentLvl], newPos)) {
             if (!alternatives || !alternatives.length) {
                 return;
             } else {
@@ -520,6 +613,8 @@ export default class GameManager {
         clientInfo.items = this.levels[name].items;
         clientInfo.currentLvl = name;
         clientInfo.customRenders = this.levels[name].customRenders || [];
+        this.levels[name].players.push(clientInfo.player);
+        removeByReference(this.levels[currentLvl].players, clientInfo.player);
         this.tryFireEvent("onEnterLevel");
         return this.levels[name];
     }
