@@ -132,7 +132,6 @@ export default class GameManager {
                 //     continue;
                 // }
                 movingAIs[mob.movingFunction](mob, this.posIsValid, this.levels[lvl]/* , this.rendered */);
-                msgs.push({ type: "mobMove", mobId: mob.id, level: lvl, pos: mob.target });
 
                 if (mob.isShooter && mob.straightLineToTargetDrc) {
                     // this.shoot(mob.pos, mob.straightLineToTargetDrc, true);
@@ -153,6 +152,7 @@ export default class GameManager {
                     //     mob.prevMoveImage = altMoveImage;
                     // }
                     mob.pos = [mob.target[0], mob.target[1]];
+                    msgs.push({ type: "mobMove", mobId: mob.id, level: lvl, pos: mob.target });
                     // this.mobsUsingVisualTimeout.push(mob);
 
                     // for (let obj of this.levels[lvl].customRenders) {
