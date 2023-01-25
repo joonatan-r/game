@@ -15,7 +15,8 @@ const server = app.listen(port, () => {
 });
 const wss = new WebSocketServer({ noServer: true });
 const clientInfos = [];
-const prevMoveByClient = {};
+const msgQueue = [];
+const prevPlayerInfoById = {};
 let idCounter = 0;
 
 // --------------------------------------------------------------------
@@ -32,7 +33,7 @@ async function addToQueue() {
   });
 }
 
-const gm = new GameManager();
+const gm = new GameManager(msgQueue);
 
 // --------------------------------------------------------------------
 
@@ -116,7 +117,7 @@ wss.on("connection", function connection(ws, req) {
   };
   clientInfos.push(newClientInfo);
   ws.send(JSON.stringify({ type: "assignId", id: newClientInfo.id }));
-  console.log("Connected");
+  console.log(newClientInfo.id + " connected");
   // console.log(req.socket.remoteAddress);
   ws.on("message", function message(data, isBinary) {
     /*wss.clients.forEach(function each(client) {
@@ -128,8 +129,20 @@ wss.on("connection", function connection(ws, req) {
     action(newClientInfo, msgText);
   });
   ws.on("close", function close() {
+    removeByReference(gm.levels[newClientInfo.currentLvl].players, newClientInfo.player);
     removeByReference(clientInfos, newClientInfo);
-    console.log("Disconnected");
+    console.log(newClientInfo.id + " disconnected");
+
+    for (const clientInfo of clientInfos) {
+      clientInfo.client.send(JSON.stringify({
+        type: "list", // NOTE: use list because current client implementation
+        msgs: [{
+          type: "death",
+          clientId: newClientInfo.id,
+          level: newClientInfo.currentLvl
+        }]
+      }));
+    }
   });
 });
 
@@ -147,7 +160,8 @@ const GAME_PER_TICK = GAME_INTERVAL / TICK_INTERVAL;
 let tickCounter = 0;
 
 setInterval(() => {
-  const msgs = [];
+  // initialize msgs to what is in the queue and empty the queue
+  const msgs = msgQueue.splice(0, msgQueue.length);
   tickCounter++;
 
   if (tickCounter >= GAME_PER_TICK) {
@@ -155,9 +169,9 @@ setInterval(() => {
     msgs.push(...gm.processTick(clientInfos));
   }
   for (const clientInfo of clientInfos) {
-    const prevInfo = prevMoveByClient[clientInfo.id];
+    const prevInfo = prevPlayerInfoById[clientInfo.id];
 
-    if (!prevInfo || !coordsEq(clientInfo.player.pos, prevInfo.value)) {
+    if (!prevInfo || !coordsEq(clientInfo.player.pos, prevInfo.pos)) {
       const newMsg = {
         type: "move",
         clientId: clientInfo.id,
@@ -165,7 +179,6 @@ setInterval(() => {
         level: clientInfo.currentLvl
       };
       msgs.push(newMsg);
-      prevMoveByClient[clientInfo.id] = newMsg;
     }
     if (prevInfo && prevInfo.level !== clientInfo.currentLvl) {
       const newMsg = {
@@ -175,6 +188,31 @@ setInterval(() => {
       };
       msgs.push(newMsg);
     }
+    if (clientInfo.player.health < 1) {
+      const newMsg = {
+        type: "death",
+        clientId: clientInfo.id,
+        level: clientInfo.currentLvl
+      };
+      msgs.push(newMsg);
+      removeByReference(gm.levels[clientInfo.currentLvl].players, clientInfo.player);
+    } else if (prevInfo && prevInfo.health !== clientInfo.player.health) {
+      // NOTE: for now only send player health changes to themselves
+      clientInfo.client.send(JSON.stringify({
+        type: "list", // NOTE: use list because current client implementation
+        msgs: [{
+          type: "healthChange",
+          clientId: clientInfo.id,
+          value: clientInfo.player.health,
+          level: clientInfo.currentLvl
+        }]
+      }));
+    }
+    prevPlayerInfoById[clientInfo.id] = {
+      pos: clientInfo.player.pos.slice(),
+      level: clientInfo.currentLvl,
+      health: clientInfo.player.health
+    };
   }
   for (const clientInfo of clientInfos) {
     if (!clientInfo.loaded) {
@@ -202,6 +240,9 @@ async function action(clientInfo, msg) {
       break;
     case "move":
       gm.movePlayer(clientInfo, ...actionInfo.args);
+      break;
+    case "shoot":
+      gm.shoot(gm.levels[clientInfo.currentLvl], actionInfo.pos, actionInfo.drc, clientInfo.id);
       break;
   }
   resolve();

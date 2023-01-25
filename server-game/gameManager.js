@@ -10,7 +10,8 @@ import {
 } from "./util.js";
 
 export default class GameManager {
-    constructor() {
+    constructor(msgQueue) {
+        this.msgQueue = msgQueue;
         const initialized = initialize();
         this.levels = initialized.levels;
         this.level = this.levels[this.levels.currentLvl].level;
@@ -155,16 +156,16 @@ export default class GameManager {
                     msgs.push({ type: "mobMove", mobId: mob.id, level: lvl, pos: mob.target });
                     // this.mobsUsingVisualTimeout.push(mob);
 
-                    // for (let obj of this.levels[lvl].customRenders) {
-                    //     if (coordsEq(mob.pos, obj.pos) && obj.damageMobs) {
-                    //         this.mobDie(mob, lvl);
+                    for (let obj of this.levels[lvl].customRenders) {
+                        if (coordsEq(mob.pos, obj.pos) && obj.damageMobs) {
+                            this.mobDie(mob, this.levels[lvl]);
         
-                    //         if (obj.disappearOnHit) {
-                    //             this.hitCustomRenderEffect(obj);
-                    //         }
-                    //         break; // NOTE: if mob health implemented, remove this
-                    //     }
-                    // }
+                            if (obj.disappearOnHit) {
+                                this.hitCustomRenderEffect(obj);
+                            }
+                            break; // NOTE: if mob health implemented, remove this
+                        }
+                    }
                 }
             }
             let mob = trySpawnMob(this.levels[lvl]/* , this.rendered */);
@@ -271,19 +272,24 @@ export default class GameManager {
         // }
     }
     
-    mobDie(mob, lvl) {
+    mobDie(mob, levelInfo) {
+        const mobId = mob.id;
         this.tryFireEvent("onDeath", mob);
         // delete all properties of mob, so all references to it recognize deletion
         for (let prop in mob) if (mob.hasOwnProperty(prop)) delete mob[prop];
-        removeByReference(this.levels[lvl].mobs, mob);
+        removeByReference(levelInfo.mobs, mob);
+        // TODO maybe improve
+        const lvlName = Object.keys(this.levels).find(key => this.levels[key] === levelInfo);
+        this.msgQueue.push({ type: "mobDeath", mobId: mobId, level: lvlName });
     }
     
     changePlayerHealth(player, amount) {
         let newHealth = player.health + amount;
-        if (newHealth < 1) {
-            this.gameOver("You take a fatal hit. You die...");
-            return;
-        }
+        // NOTE: now handling waits to when tick to send to clients
+        // if (newHealth < 1) {
+        //     this.gameOver("You take a fatal hit. You die...");
+        //     return;
+        // }
         if (newHealth > player.maxHealth) {
             newHealth = player.maxHealth;
         }
@@ -332,7 +338,7 @@ export default class GameManager {
             }
             for (let mob of levelInfo.mobs) {
                 if (coordsEq(checkPos, mob.pos)) {
-                    this.mobDie(mob);
+                    this.mobDie(mob, levelInfo);
                     this.hitCustomRenderEffect(levelInfo, obj);
                     // !mobIsShooting && this.processTurn(); // ?????
                     return true;

@@ -281,6 +281,15 @@ export default class GameManager {
                 this.hitCustomRenderEffect(obj);
                 return true;
             }
+            for (let otherPlayer of this.otherPlayers) {
+                if (coordsEq(checkPos, otherPlayer.pos)) {
+                    // this.mobDie(mob);
+                    this.hitCustomRenderEffect(obj);
+                    // !this.player.dead && options.TURN_BASED && this.addListeners();
+                    // !mobIsShooting && this.processTurn();
+                    return true;
+                }
+            }
             for (let mob of this.mobs) {
                 if (coordsEq(checkPos, mob.pos)) {
                     // this.mobDie(mob);

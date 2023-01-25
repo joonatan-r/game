@@ -205,6 +205,27 @@ await new Promise(resolve => {
                             }
                         }
                     }
+                } else if (subMsg.type === "healthChange" && subMsg.clientId === clientId) {
+                    gm.player.health = subMsg.value;
+                    gm.updateInfo();
+                } else if (subMsg.type === "death" && subMsg.level === gm.levels.currentLvl) {
+                    if (subMsg.clientId === clientId) {
+                        gm.gameOver("You die...");
+                    } else {
+                        for (let i = 0; i < gm.otherPlayers.length; i++) {
+                            if (gm.otherPlayers[i].id === subMsg.clientId) {
+                                gm.otherPlayers.splice(i, 1);
+                                break;
+                            }
+                        }
+                    }
+                } else if (subMsg.type === "mobDeath" && subMsg.level === gm.levels.currentLvl) {
+                    for (let i = 0; i < gm.mobs.length; i++) {
+                        if (gm.mobs[i].id === subMsg.mobId) {
+                            gm.mobs.splice(i, 1);
+                            break;
+                        }
+                    }
                 }
             }
             gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
@@ -798,6 +819,23 @@ function action(key, ctrl, isFirst) {
                 gm.movePlayer(newPos, altInfo.alternatives, isFirst);
             }
             break;
+        case options.CONTROLS.ACT_BOTTOM_LEFT:
+        case options.CONTROLS.ACT_BOTTOM:
+        case options.CONTROLS.ACT_BOTTOM_RIGHT:
+        case options.CONTROLS.ACT_LEFT:
+        case options.CONTROLS.ACT_RIGHT:
+        case options.CONTROLS.ACT_TOP_LEFT:
+        case options.CONTROLS.ACT_TOP:
+        case options.CONTROLS.ACT_TOP_RIGHT:
+            const actDrc = inputToDrc(key, options);
+            const msgInfo = {
+                type: "shoot",
+                pos: gm.player.pos,
+                drc: actDrc
+            };
+            socket.send(JSON.stringify(msgInfo));
+            gm.shoot(gm.player.pos, actDrc);
+            return;
         default:
             return;
     }
