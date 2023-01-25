@@ -278,23 +278,23 @@ export default class GameManager {
         removeByReference(this.levels[lvl].mobs, mob);
     }
     
-    changePlayerHealth(clientInfo, amount) {
-        let newHealth = clientInfo.player.health + amount;
+    changePlayerHealth(player, amount) {
+        let newHealth = player.health + amount;
         if (newHealth < 1) {
             this.gameOver("You take a fatal hit. You die...");
             return;
         }
-        if (newHealth > clientInfo.player.maxHealth) {
-            newHealth = clientInfo.player.maxHealth;
+        if (newHealth > player.maxHealth) {
+            newHealth = player.maxHealth;
         }
         if (amount < 0) {
             // this.ui.showMsg("You are hit!");
         } else if (amount > 0) {
-            if (clientInfo.player.health !== clientInfo.player.maxHealth) {
+            if (player.health !== player.maxHealth) {
                 // this.ui.showMsg("You feel better.");
             }
         }
-        clientInfo.player.health = newHealth;
+        player.health = newHealth;
     }
 
     refer(obj) {
@@ -302,45 +302,45 @@ export default class GameManager {
         return obj;
     }
 
-    hitCustomRenderEffect(clientInfo, obj) {
+    hitCustomRenderEffect(levelInfo, obj) {
         obj.deleted = true;
-        removeByReference(clientInfo.customRenders, obj);
+        removeByReference(levelInfo.customRenders, obj);
         // this.render.renderAll(this.player, this.levels, this.customRenders);
         // this.render.shotEffect(obj.pos, this.player, this.levels, this.customRenders);
     }
     
-    async shoot(fromPos, drc, mobIsShooting) {
-        const currLvl = this.levels.currentLvl;
+    async shoot(levelInfo, fromPos, drc, shootingPlayerId) {
         const icon = projectileFromDrc[drc];
         let bulletPos = fromPos.slice();
         let obj = {
             symbol: icon,
             pos: bulletPos.slice(),
-            damagePlayer: mobIsShooting,
+            ignorePlayerId: shootingPlayerId,
             damageMobs: true,
             disappearOnHit: true
         };
-        this.customRenders.push(obj);
-        !mobIsShooting && (this.timeTracker.turnsUntilShoot = 10);
+        levelInfo.customRenders.push(obj);
+        // !mobIsShooting && (this.timeTracker.turnsUntilShoot = 10);
     
         const checkHits = (checkPos) => {
-            if (coordsEq(checkPos, this.player.pos) && mobIsShooting) {
-                this.changePlayerHealth(-1);
-                this.hitCustomRenderEffect(obj);
-                return true;
+            for (let player of levelInfo.players) {
+                if (shootingPlayerId !== player.id && coordsEq(checkPos, player.pos)) {
+                    this.changePlayerHealth(player, -1);
+                    this.hitCustomRenderEffect(levelInfo, obj);
+                    return true;
+                }
             }
-            for (let mob of this.mobs) {
+            for (let mob of levelInfo.mobs) {
                 if (coordsEq(checkPos, mob.pos)) {
                     this.mobDie(mob);
-                    this.hitCustomRenderEffect(obj);
+                    this.hitCustomRenderEffect(levelInfo, obj);
                     // !mobIsShooting && this.processTurn(); // ?????
                     return true;
                 }
             }
-            for (const obj2 of this.customRenders) {
+            for (const obj2 of levelInfo.customRenders) {
                 if (obj2.blockShots && coordsEq(checkPos, obj2.pos)) {
-                    this.hitCustomRenderEffect(obj);
-                    // NOTE: no turn based handling as currently only used in realtime version
+                    this.hitCustomRenderEffect(levelInfo, obj);
                     return true;
                 }
             }
@@ -352,11 +352,11 @@ export default class GameManager {
             // this.render.renderAll(this.player, this.levels, this.customRenders);
             movePosToDrc(bulletPos, drc);
     
-            if (!this.level[bulletPos[0]] || typeof this.level[bulletPos[0]][bulletPos[1]] === "undefined" 
-                || this.level[bulletPos[0]][bulletPos[1]] === levelTiles.wall
-                || this.level[bulletPos[0]][bulletPos[1]] === levelTiles.transparentBgWall
+            if (!levelInfo.level[bulletPos[0]] || typeof levelInfo.level[bulletPos[0]][bulletPos[1]] === "undefined" 
+                || levelInfo.level[bulletPos[0]][bulletPos[1]] === levelTiles.wall
+                || levelInfo.level[bulletPos[0]][bulletPos[1]] === levelTiles.transparentBgWall
             ) {
-                removeByReference(this.customRenders, obj);
+                removeByReference(levelInfo.customRenders, obj);
 
                 // if (!options.TURN_BASED) {
                 //     this.render.renderAll(this.player, this.levels, this.customRenders);
@@ -377,7 +377,7 @@ export default class GameManager {
             // if something moves into it, they handle the extra effects themselves.
             if (obj.deleted) break;
         }
-        removeByReference(this.customRenders, obj);
+        removeByReference(levelInfo.customRenders, obj);
     }
 
     melee(drc) {
@@ -446,11 +446,11 @@ export default class GameManager {
         //     this.tryChangeLvl(clientInfo);
         // }
         for (let obj of clientInfo.customRenders) {
-            if (coordsEq(clientInfo.player.pos, obj.pos) && obj.damagePlayer) {
-                this.changePlayerHealth(clientInfo, -1);
+            if (coordsEq(clientInfo.player.pos, obj.pos) && obj.ignorePlayerId !== clientInfo.player.id) {
+                this.changePlayerHealth(clientInfo.player, -1);
     
                 if (obj.disappearOnHit) {
-                    this.hitCustomRenderEffect(clientInfo, obj);
+                    this.hitCustomRenderEffect(this.levels[clientInfo.currentLvl], obj);
                 }
             }
         }
@@ -574,7 +574,7 @@ export default class GameManager {
     //                 clientInfo.mobs = this.levels[lvl].mobs;
     //                 clientInfo.items = this.levels[lvl].items;
     //                 clientInfo.currentLvl = lvl;
-    //                 clientInfo.customRenders = this.levels[lvl].customRenders || [];
+    //                 clientInfo.customRenders = this.levels[lvl].customRenders;
     //                 this.tryFireEvent("onEnterLevel");
     //                 return;
     //             }
@@ -612,7 +612,7 @@ export default class GameManager {
         clientInfo.mobs = this.levels[name].mobs;
         clientInfo.items = this.levels[name].items;
         clientInfo.currentLvl = name;
-        clientInfo.customRenders = this.levels[name].customRenders || [];
+        clientInfo.customRenders = this.levels[name].customRenders;
         this.levels[name].players.push(clientInfo.player);
         removeByReference(this.levels[currentLvl].players, clientInfo.player);
         this.tryFireEvent("onEnterLevel");

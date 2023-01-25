@@ -111,7 +111,7 @@ wss.on("connection", function connection(ws, req) {
     level: gm.levels["Road's end"].level,
     mobs: gm.levels["Road's end"].mobs,
     items: gm.levels["Road's end"].items,
-    customRenders: gm.levels["Road's end"].customRenders || [],
+    customRenders: gm.levels["Road's end"].customRenders,
     currentLvl: "Road's end"
   };
   clientInfos.push(newClientInfo);

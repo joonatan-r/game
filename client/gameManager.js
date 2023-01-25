@@ -271,19 +271,19 @@ export default class GameManager {
             disappearOnHit: true
         };
         this.customRenders.push(obj);
-        options.TURN_BASED && (this.interruptAutoTravel = true);
-        options.TURN_BASED && this.removeListeners();
-        !mobIsShooting && (this.timeTracker.turnsUntilShoot = 10);
+        // options.TURN_BASED && (this.interruptAutoTravel = true);
+        // options.TURN_BASED && this.removeListeners();
+        // !mobIsShooting && (this.timeTracker.turnsUntilShoot = 10);
     
         const checkHits = (checkPos) => {
             if (coordsEq(checkPos, this.player.pos) && mobIsShooting) {
-                this.changePlayerHealth(-1);
+                // this.changePlayerHealth(-1);
                 this.hitCustomRenderEffect(obj);
                 return true;
             }
             for (let mob of this.mobs) {
                 if (coordsEq(checkPos, mob.pos)) {
-                    this.mobDie(mob);
+                    // this.mobDie(mob);
                     this.hitCustomRenderEffect(obj);
                     // !this.player.dead && options.TURN_BASED && this.addListeners();
                     // !mobIsShooting && this.processTurn();
@@ -314,7 +314,7 @@ export default class GameManager {
                 if (!options.TURN_BASED) {
                     this.render.renderAll(this.player, this.levels, this.customRenders);
                 } else {
-                    !this.player.dead && this.addListeners();
+                    // !this.player.dead && this.addListeners();
                     // !mobIsShooting && this.processTurn();
                 }       
                 return;
@@ -521,7 +521,7 @@ export default class GameManager {
         }
         for (let obj of this.customRenders) {
             if (coordsEq(this.player.pos, obj.pos) && obj.damagePlayer) {
-                this.changePlayerHealth(-1);
+                // this.changePlayerHealth(-1);
     
                 if (obj.disappearOnHit) {
                     this.hitCustomRenderEffect(obj);

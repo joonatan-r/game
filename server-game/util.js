@@ -63,6 +63,7 @@ export function initialize() {
                         level: level,
                         bg: bg,
                         otherPlayers: [], // needed in clients
+                        customRenders: [],
                         players: [],
                         mobs: [],
                         items: [],
