@@ -242,6 +242,13 @@ async function action(clientInfo, msg) {
       gm.movePlayer(clientInfo, ...actionInfo.args);
       break;
     case "shoot":
+      msgQueue.push({
+        type: "shoot",
+        clientId: clientInfo.id,
+        level: clientInfo.currentLvl,
+        pos: actionInfo.pos.slice(),
+        drc: actionInfo.drc
+      });
       gm.shoot(gm.levels[clientInfo.currentLvl], actionInfo.pos, actionInfo.drc, clientInfo.id);
       break;
   }

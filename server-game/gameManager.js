@@ -124,6 +124,18 @@ export default class GameManager {
                 if (this.timeTracker.timer % mob.speedModulus < 1) {
                     continue;
                 }
+                if (mob.isHostile) {
+                    let hit = false;
+
+                    for (const client of clientsByLevel[lvl]) {
+                        if (isNextTo(client.player.pos, mob.pos)) {
+                            this.changePlayerHealth(client.player, -3);
+                            hit = true;
+                            break;
+                        }
+                    }
+                    if (hit) continue;
+                }
                 // if (mob.isHostile && isNextTo(this.player.pos, mob.pos)) {
                 //     this.render.shotEffect(this.player.pos, this.player, this.levels, this.customRenders, true);
                 //     this.changePlayerHealth(-3);
@@ -135,7 +147,14 @@ export default class GameManager {
                 movingAIs[mob.movingFunction](mob, this.posIsValid, this.levels[lvl]/* , this.rendered */);
 
                 if (mob.isShooter && mob.straightLineToTargetDrc) {
-                    // this.shoot(mob.pos, mob.straightLineToTargetDrc, true);
+                    this.shoot(this.levels[lvl], mob.pos, mob.straightLineToTargetDrc);
+                    msgs.push({
+                        type: "shoot",
+                        clientId: null,
+                        level: lvl,
+                        pos: mob.pos.slice(),
+                        drc: mob.straightLineToTargetDrc
+                    });
                 } else {
                     // also works if new pos not next to current for some reason
                     // const facing = relativeCoordsToDrc(mob.target[0] - mob.pos[0], mob.target[1] - mob.pos[1]);

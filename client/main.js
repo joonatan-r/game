@@ -226,6 +226,12 @@ await new Promise(resolve => {
                             break;
                         }
                     }
+                } else if (subMsg.type === "shoot"
+                    && subMsg.level === gm.levels.currentLvl
+                    && subMsg.clientId !== clientId
+                ) {
+                    // always from "mob", because not from current player
+                    gm.shoot(subMsg.pos, subMsg.drc, true);
                 }
             }
             gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
