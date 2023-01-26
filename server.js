@@ -47,7 +47,7 @@ app.get("/world", (req, res) => {
   for (const clientInfo of clientInfos) {
     if (clientInfo.id === Number(req.query.clientId)) {
       clientInfo.loaded = false;
-    } else if (clientInfo.currentLvl === "Road's end") { // TODO improve
+    } else if (clientInfo.currentLvl === "Road's end" && !clientInfo.dead) { // TODO improve
       otherPlayers.push(clientInfo.player);
     }
   }
@@ -72,7 +72,7 @@ app.get("/level", (req, res) => {
     if (clientInfo.id === Number(req.query.clientId)) {
       clientInfo.loaded = false;
       ci = clientInfo;
-    } else if (clientInfo.currentLvl === name) {
+    } else if (clientInfo.currentLvl === name && !clientInfo.dead) {
       otherPlayers.push(clientInfo.player);
     }
   }
@@ -169,6 +169,7 @@ setInterval(() => {
     msgs.push(...gm.processTick(clientInfos));
   }
   for (const clientInfo of clientInfos) {
+    if (clientInfo.dead) continue;
     const prevInfo = prevPlayerInfoById[clientInfo.id];
 
     if (!prevInfo || !coordsEq(clientInfo.player.pos, prevInfo.pos)) {
@@ -188,7 +189,8 @@ setInterval(() => {
       };
       msgs.push(newMsg);
     }
-    if (clientInfo.player.health < 1) {
+    if (clientInfo.player.health < 1 && (!prevInfo || prevInfo.health > 0)) {
+      clientInfo.dead = true;
       const newMsg = {
         type: "death",
         clientId: clientInfo.id,
@@ -196,6 +198,11 @@ setInterval(() => {
       };
       msgs.push(newMsg);
       removeByReference(gm.levels[clientInfo.currentLvl].players, clientInfo.player);
+      // delete all properties, so all references to it recognize deletion
+      for (const prop in clientInfo.player) {
+        if (clientInfo.player.hasOwnProperty(prop)) delete clientInfo.player[prop];
+      }
+      continue; // skip updating prevInfo
     } else if (prevInfo && prevInfo.health !== clientInfo.player.health) {
       // NOTE: for now only send player health changes to themselves
       clientInfo.client.send(JSON.stringify({

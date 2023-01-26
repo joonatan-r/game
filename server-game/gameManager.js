@@ -111,6 +111,7 @@ export default class GameManager {
         const clientsByLevel = {};
 
         for (const clientInfo of clientInfos) {
+            if (clientInfo.dead) continue;
             if (!clientsByLevel[clientInfo.currentLvl]) {
                 clientsByLevel[clientInfo.currentLvl] = [];
             }
@@ -135,7 +136,14 @@ export default class GameManager {
                         }
                     }
                     if (hit) continue;
+                    if (!mob.huntingTarget
+                        || !mob.huntingTarget.pos
+                        || this.levels[lvl].players.indexOf(mob.huntingTarget) === -1
+                    ) {
+                        this.mobTryAcquireTarget(mob, clientsByLevel[lvl]);
+                    }
                 }
+                
                 // if (mob.isHostile && isNextTo(this.player.pos, mob.pos)) {
                 //     this.render.shotEffect(this.player.pos, this.player, this.levels, this.customRenders, true);
                 //     this.changePlayerHealth(-3);
@@ -190,28 +198,33 @@ export default class GameManager {
             let mob = trySpawnMob(this.levels[lvl]/* , this.rendered */);
 
             if (mob !== null) {
-                // try to hunt the closest player
-                let targetPlayer = clientsByLevel[lvl][0].player;
-                let minDistance = (mob.pos[0] - targetPlayer.pos[0])*(mob.pos[0] - targetPlayer.pos[0]) + 
-                                  (mob.pos[1] - targetPlayer.pos[1])*(mob.pos[1] - targetPlayer.pos[1])
-                
-                for (const client of clientsByLevel[lvl]) {
-                    // actually squared but doesn't matter
-                    const distanceToMob = (mob.pos[0] - targetPlayer.pos[0])*(mob.pos[0] - targetPlayer.pos[0]) + 
-                                          (mob.pos[1] - targetPlayer.pos[1])*(mob.pos[1] - targetPlayer.pos[1]);
-                    
-                    if (distanceToMob < minDistance) {
-                        targetPlayer = client.player;
-                        minDistance = distanceToMob;
-                    }
-                }
-                mob.huntingTarget = this.refer(targetPlayer);
+                this.mobTryAcquireTarget(mob, clientsByLevel[lvl]);
                 mob.id = this.mobIdCounter++;
                 this.levels[lvl].mobs.push(mob);
                 msgs.push({ type: "mobSpawn", mob: mob, level: lvl });
             }
         }
         return msgs;
+    }
+
+    mobTryAcquireTarget(mob, clientsInLevel) {
+        if (!clientsInLevel?.length) return;
+        // try to hunt the closest player
+        let targetPlayer = clientsInLevel[0].player;
+        let minDistance = (mob.pos[0] - targetPlayer.pos[0])*(mob.pos[0] - targetPlayer.pos[0]) + 
+                          (mob.pos[1] - targetPlayer.pos[1])*(mob.pos[1] - targetPlayer.pos[1])
+        
+        for (const client of clientsInLevel) {
+            // actually squared but doesn't matter
+            const distanceToMob = (mob.pos[0] - targetPlayer.pos[0])*(mob.pos[0] - targetPlayer.pos[0]) + 
+                                  (mob.pos[1] - targetPlayer.pos[1])*(mob.pos[1] - targetPlayer.pos[1]);
+            
+            if (distanceToMob < minDistance) {
+                targetPlayer = client.player;
+                minDistance = distanceToMob;
+            }
+        }
+        mob.huntingTarget = this.refer(targetPlayer);
     }
 
     processTurn() {

@@ -108,7 +108,11 @@ export const movingAIs = {
         // } else {
         //     movingAIs.random(mob, posIsValid);
         // }
-        movingAIs.towardsPos(mob, mob.huntingTarget.pos, posIsValid, levelInfo);
+        if (mob.huntingTarget && mob.huntingTarget.pos) {
+            movingAIs.towardsPos(mob, mob.huntingTarget.pos, posIsValid, levelInfo);
+        } else {
+            movingAIs.random(mob, posIsValid, levelInfo);
+        }
     },
     Pekka: (mob, posIsValid, levelInfo/* , rendered */) => {
         mob.straightLineToTargetDrc = null;
@@ -118,7 +122,11 @@ export const movingAIs = {
         // } else {
         //     movingAIs.static(mob);
         // }
-        movingAIs.towardsStraightLineFromPos(mob, mob.huntingTarget.pos, posIsValid, levelInfo);
+        if (mob.huntingTarget && mob.huntingTarget.pos) {
+            movingAIs.towardsStraightLineFromPos(mob, mob.huntingTarget.pos, posIsValid, levelInfo);
+        } else {
+            movingAIs.random(mob, posIsValid, levelInfo);
+        }
     },
     static: mob => {
         mob.target = [mob.pos[0], mob.pos[1]];
