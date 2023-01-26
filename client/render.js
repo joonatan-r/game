@@ -314,12 +314,13 @@ export default class Renderer {
                 if (options.OBJ_IMG) {
                     const imageToUse = "url(\"./mobImages/mob_" + (otherPlayer.image || 2) + ".png\")";
 
-                    if ( otherPlayerPos.textContent !== "") {
-                        otherPlayerPos.textContent = "";
+                    if (otherPlayerPos.textContent !== "" + otherPlayer.id) {
+                        otherPlayerPos.textContent = "" + otherPlayer.id;
                     }
                     if (otherPlayerPos.style.backgroundImage !== imageToUse) {
                         otherPlayerPos.style.backgroundImage = imageToUse;
                     }
+                    otherPlayerPos.classList[0] = "otherPlayer";
                     removeByReference(imgCoordsToDelete, otherPlayerPos);
                 } else {
                     otherPlayerPos.textContent = "@";
