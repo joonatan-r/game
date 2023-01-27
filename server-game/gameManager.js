@@ -111,7 +111,7 @@ export default class GameManager {
         const clientsByLevel = {};
 
         for (const clientInfo of clientInfos) {
-            if (clientInfo.dead) continue;
+            if (clientInfo.player.dead) continue;
             if (!clientsByLevel[clientInfo.currentLvl]) {
                 clientsByLevel[clientInfo.currentLvl] = [];
             }
@@ -317,11 +317,10 @@ export default class GameManager {
     
     changePlayerHealth(player, amount) {
         let newHealth = player.health + amount;
-        // NOTE: now handling waits to when tick to send to clients
-        // if (newHealth < 1) {
-        //     this.gameOver("You take a fatal hit. You die...");
-        //     return;
-        // }
+
+        if (newHealth < 1) {
+            player.dead = true;
+        }
         if (newHealth > player.maxHealth) {
             newHealth = player.maxHealth;
         }

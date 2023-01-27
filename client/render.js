@@ -410,6 +410,7 @@ export default class Renderer {
                 }
                 if (!checkPos.customProps
                     || !checkPos.customProps.infoKeys
+                    || !checkPos.customProps.infoKeys.length
                     || !checkPos.customProps.infoKeys.every((item, i) => item === buffer.customProps.infoKeys[i])
                 ) {
                     areaPos.customProps.infoKeys = buffer.customProps.infoKeys;

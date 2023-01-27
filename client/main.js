@@ -353,8 +353,8 @@ function start() {
 
 function addListeners() {
     document.addEventListener("keydown", keypressListener);
-    document.addEventListener("mousedown", clickListener);
-    menuListener.allowExtraActions = true;
+    // document.addEventListener("mousedown", clickListener);
+    // menuListener.allowExtraActions = true;
     infoForMobileFix.listenersActive = true;
 }
 
