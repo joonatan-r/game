@@ -259,7 +259,7 @@ export default class GameManager {
         this.render.shotEffect(obj.pos, this.player, this.levels, this.customRenders);
     }
     
-    async shoot(fromPos, drc, mobIsShooting) {
+    async shoot(fromPos, drc, mobIsShooting, ignorePlayerId) {
         const currLvl = this.levels.currentLvl;
         const icon = projectileFromDrc[drc];
         let bulletPos = fromPos.slice();
@@ -267,6 +267,7 @@ export default class GameManager {
             symbol: icon,
             pos: bulletPos.slice(),
             damagePlayer: mobIsShooting,
+            ignorePlayerId: ignorePlayerId,
             damageMobs: true,
             disappearOnHit: true
         };
@@ -282,7 +283,7 @@ export default class GameManager {
                 return true;
             }
             for (let otherPlayer of this.otherPlayers) {
-                if (coordsEq(checkPos, otherPlayer.pos)) {
+                if (ignorePlayerId !== otherPlayer.id && coordsEq(checkPos, otherPlayer.pos)) {
                     // this.mobDie(mob);
                     this.hitCustomRenderEffect(obj);
                     // !this.player.dead && options.TURN_BASED && this.addListeners();

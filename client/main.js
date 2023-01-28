@@ -231,7 +231,7 @@ await new Promise(resolve => {
                     && subMsg.clientId !== clientId
                 ) {
                     // always from "mob", because not from current player
-                    gm.shoot(subMsg.pos, subMsg.drc, true);
+                    gm.shoot(subMsg.pos, subMsg.drc, true, subMsg.clientId);
                 }
             }
             gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
