@@ -118,7 +118,8 @@ function start() {
         // use level center if no pos at screen center
         posAtScreenCenter = [Math.floor(gm.level.length / 2), Math.floor(gm.level[0].length / 2)];
         tdRectAtScreenCenter = Array.from(
-            document.getElementsByTagName("TD")).filter(
+            // flatten are tds
+            Array.prototype.concat.apply([], gm.area)).filter(
                 td => coordsEq(td.customProps.coords, posAtScreenCenter)
             )[0]
                 .getBoundingClientRect();
@@ -128,10 +129,11 @@ function start() {
         playerVisual.style.left = tdRectAtScreenCenter.left + "px";
         playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + gm.player.image + ".png\")";
     }
+    const visualPos = [gm.player.pos[0] - 1, gm.player.pos[1] - 0.5];
     if (options.KEEP_PLAYER_CENTERED) {
-        gm.centerPlayer(posAtScreenCenter, gm.player.pos, true);
+        gm.centerPlayer(posAtScreenCenter, visualPos, true);
     } else {
-        gm.movePlayerVisual(posAtScreenCenter, gm.player.pos, true);
+        gm.movePlayerVisual(posAtScreenCenter, visualPos, true);
     }
     gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
     gm.render.setBg(gm.levels);

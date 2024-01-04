@@ -15,7 +15,8 @@ export default class Renderer {
         [levelTiles.wall]: "",
         [levelTiles.fakeWall]: "",
         [levelTiles.seeThroughWall]: "",
-        [levelTiles.transparentBgWall]: ""
+        [levelTiles.transparentBgWall]: "",
+        [levelTiles.doorWay]: ""
     };
 
     constructor(area, rendered) { // NOTE: area has to be initialized before
@@ -73,11 +74,11 @@ export default class Renderer {
         for (let i = 1; i <= 9; i++) {
             if (i === 5) continue;
             const img = this.createImage("./playerImages/player_" + i + ".png");
-            const img2 = this.createImage("./mobImages/mob_" + i + ".png");
+            const img2 = this.createImage("./mobImagesAlt/mob_" + i + ".png");
             const moveImg = this.createImage("./playerImages/player_" + i + "_move.png");
-            const moveImg2 = this.createImage("./mobImages/mob_" + i + "_move.png");
+            const moveImg2 = this.createImage("./mobImagesAlt/mob_" + i + "_move.png");
             const moveImg3 = this.createImage("./playerImages/player_" + i + "_2_move.png");
-            const moveImg4 = this.createImage("./mobImages/mob_" + i + "_2_move.png");
+            const moveImg4 = this.createImage("./mobImagesAlt/mob_" + i + "_2_move.png");
             this.imageCache.push(img, img2, moveImg, moveImg2, moveImg3, moveImg4);
         }
     }
@@ -138,6 +139,22 @@ export default class Renderer {
             }
             return blocksSight(levelTile) ? "stop" : "ok";
         });
+    }
+
+    async updateMobVisibilities(mobs) {
+        if (!options.OBJ_IMG) {
+            for (const mob of mobs) {
+                if (mob.divElement.style.visibility !== "hidden") mob.divElement.style.visibility = "hidden";
+            }
+            return;
+        }
+        for (const mob of mobs) {
+            if (this.rendered[mob.pos[0]][mob.pos[1]]) {
+                if (mob.divElement.style.visibility !== "visible") mob.divElement.style.visibility = "visible";
+            } else {
+                if (mob.divElement.style.visibility !== "hidden") mob.divElement.style.visibility = "hidden";
+            }
+        }
     }
 
     async renderAll(player, levels, customRenders) {
@@ -290,14 +307,14 @@ export default class Renderer {
                 const mobPos = areaBuffer[mob.pos[0]][mob.pos[1]];
 
                 if (options.OBJ_IMG) {
-                    const imageToUse = "url(\"./mobImages/mob_" + (mob.image || 2) + ".png\")";
+                    // const imageToUse = "url(\"./mobImagesAlt/mob_" + (mob.image || 2) + ".png\")";
 
-                    if ( mobPos.textContent !== "") {
+                    if (mobPos.textContent !== "") {
                         mobPos.textContent = "";
                     }
-                    if (mobPos.style.backgroundImage !== imageToUse) {
-                        mobPos.style.backgroundImage = imageToUse;
-                    }
+                    // if (mobPos.style.backgroundImage !== imageToUse) {
+                    //     mobPos.style.backgroundImage = imageToUse;
+                    // }
                     removeByReference(imgCoordsToDelete, mobPos);
                 } else {
                     mobPos.textContent = mob.symbol;
@@ -319,6 +336,10 @@ export default class Renderer {
         for (let i = 0; i < level.length; i++) {
             for (let j = 0; j < level[0].length; j++) {
                 const levelTile = level[i][j];
+
+                // if (levelTile === levelTiles.doorWay && renderedBuffer[i][j]) {
+                //     areaBuffer[i][j].classList.push("door");
+                // }
 
                 if (!isWall(levelTile) 
                     || (options.USE_BG_IMG 
@@ -399,6 +420,7 @@ export default class Renderer {
                 memorized[i][j] = memorizedBuffer[i][j];
             }
         }
+        this.updateMobVisibilities(mobs);
         this.prevAreaBuffer = areaBuffer;
         resolve();
     }

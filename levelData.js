@@ -44,7 +44,7 @@ export const PLACEHOLDER_TP = 'PLACEHOLDER_TP';
 export const levelData = `
 
 Road's end
-#282828
+url("bgImages/bg.png")
 Start of uncharted
 Woods
 

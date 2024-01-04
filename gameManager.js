@@ -15,8 +15,7 @@ import {
 //       in each other must be done with "refer()" for saving to work properly
 
 const playerVisual = document.getElementById("playerImg");
-const table = document.getElementById("table");
-const overlayTable = document.getElementById("overlayTable");
+const tableHolder = document.getElementById("tableHolder");
 const info = document.getElementById("info");
 const Pauser = (function() {
     let pausePromise = Promise.resolve();
@@ -40,6 +39,23 @@ const Pauser = (function() {
         }
     }
 })();
+
+function createMobDiv(mob) {
+    const mobDiv = document.createElement("div");
+    const pixelsY = 25 * (mob.pos[0] - 1);
+    const pixelsX = 25 * (mob.pos[1] - 0.5);
+    mobDiv.style.width = "50px";
+    mobDiv.style.height = "50px";
+    mobDiv.style.position = "absolute";
+    mobDiv.style.backgroundImage = "url(\"./mobImagesAlt/mob_" + (mob.image || 2) + ".png\")";
+    mobDiv.style.backgroundSize = "50px 50px";
+    mobDiv.style.transition = "all 100ms linear, visibility 0";
+    mobDiv.style.zIndex = mob.pos[0] + 1;
+    mobDiv.style.top = pixelsY + "px";
+    mobDiv.style.left = pixelsX + "px";
+    tableHolder.appendChild(mobDiv);
+    mob.divElement = mobDiv;
+}
 
 export default class GameManager {
     constructor(removeListeners, addListeners, keyIntervals) {
@@ -164,9 +180,12 @@ export default class GameManager {
                         mob.image = mob.image.slice(0, -7); // change from "_2_move" to normal
                     }
                 }
+                if (mob.divElement) {
+                    mob.divElement.style.backgroundImage = "url(\"./mobImagesAlt/mob_" + (mob.image || 2) + ".png\")";
+                }
                 this.mobsUsingVisualTimeout.splice(i, 1);
             }
-            this.render.renderAll(this.player, this.levels, this.customRenders);
+            this.render.updateMobVisibilities(this.mobs);
         }, 0.7 * options.TURN_DELAY);
     
         for (let mob of this.mobs) {
@@ -201,7 +220,15 @@ export default class GameManager {
                     mob.image = altMoveImage;
                     mob.prevMoveImage = altMoveImage;
                 }
+                const pixelsY = 25 * (mob.target[0] - mob.pos[0]);
+                const pixelsX = 25 * (mob.target[1] - mob.pos[1]);
                 mob.pos = [mob.target[0], mob.target[1]];
+                mob.divElement.style.zIndex = mob.pos[0] + 1;
+                mob.divElement.style.backgroundImage = "url(\"./mobImagesAlt/mob_" + (mob.image || 2) + ".png\")";
+                const left = Number(mob.divElement.style.left.slice(0, -2));
+                const top = Number(mob.divElement.style.top.slice(0, -2));
+                mob.divElement.style.top = (top + pixelsY) + "px";
+                mob.divElement.style.left = (left + pixelsX) + "px";
                 this.mobsUsingVisualTimeout.push(mob);
     
                 for (let obj of this.customRenders) {
@@ -231,6 +258,7 @@ export default class GameManager {
         if (mob !== null) {
             mob.huntingTarget = this.refer(this.player);
             this.mobs.push(mob);
+            createMobDiv(mob);
         }
         if (this.setPause.pauseNext && !this.setPause.paused) {
             this.pauser.pause();
@@ -264,6 +292,7 @@ export default class GameManager {
     
     mobDie(mob) {
         this.tryFireEvent("onDeath", mob);
+        tableHolder.removeChild(mob.divElement);
         // delete all properties of mob, so all references to it recognize deletion
         for (let prop in mob) if (mob.hasOwnProperty(prop)) delete mob[prop];
         removeByReference(this.mobs, mob);
@@ -444,39 +473,37 @@ export default class GameManager {
 
     // NOTE: no smooth animation if using text symbol for player
 
-    centerPlayer(startPos, newPos, noTransition, isFirst) {
+    async centerPlayer(startPos, newPos, noTransition, isFirst) {
         let newTransition = "";
 
         if (noTransition || !options.OBJ_IMG) {
             newTransition = "none";
         } else {
             if (this.autoTravelStack.indexOf(true) !== -1) {
-                newTransition = "top " + 
-                    options.AUTOTRAVEL_REPEAT_DELAY + "ms linear, left " + 
-                    options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
+                newTransition = "all " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
             } else if (isFirst) {
-                newTransition = "top " + 
-                    options.TRAVEL_REPEAT_START_DELAY + "ms linear, left " + 
-                    options.TRAVEL_REPEAT_START_DELAY + "ms linear";
+                newTransition = "all " + options.TRAVEL_REPEAT_START_DELAY + "ms linear";
             } else {
-                newTransition = "top " + 
-                    options.TRAVEL_REPEAT_DELAY + "ms linear, left " + 
-                    options.TRAVEL_REPEAT_DELAY + "ms linear";
+                newTransition = "all " + options.TRAVEL_REPEAT_DELAY + "ms linear";
             }
         }
         if (this.prevTransition !== newTransition) {
-            table.style.transition = newTransition;
-            overlayTable.style.transition = newTransition;
+            tableHolder.style.transition = newTransition;
             this.prevTransition = newTransition;
         }
-        const left = Number(table.style.left.slice(0, -2));
-        const top = Number(table.style.top.slice(0, -2));
+        const left = Number(tableHolder.style.left.slice(0, -2));
+        const top = Number(tableHolder.style.top.slice(0, -2));
         const pixelsY = 25 * (newPos[0] - startPos[0]);
         const pixelsX = 25 * (newPos[1] - startPos[1]);
-        table.style.top = (top - pixelsY) + "px";
-        table.style.left = (left - pixelsX) + "px";
-        overlayTable.style.top = (top - pixelsY) + "px";
-        overlayTable.style.left = (left - pixelsX) + "px";
+        tableHolder.style.top = (top - pixelsY) + "px";
+        tableHolder.style.left = (left - pixelsX) + "px";
+        playerVisual.style.transition = newTransition;
+        const playerLeft = Number(playerVisual.style.left.slice(0, -2));
+        const playerTop = Number(playerVisual.style.top.slice(0, -2));
+        const playerPixelsY = 25 * (newPos[0] - startPos[0]);
+        const playerPixelsX = 25 * (newPos[1] - startPos[1]);
+        playerVisual.style.top = (playerTop + playerPixelsY) + "px";
+        playerVisual.style.left = (playerLeft + playerPixelsX) + "px";
     }
 
     movePlayerVisual(startPos, newPos, noTransition, isFirst) {
@@ -488,17 +515,11 @@ export default class GameManager {
             newTransition = "none";
         } else {
             if (this.autoTravelStack.indexOf(true) !== -1) {
-                newTransition = "top " + 
-                    options.AUTOTRAVEL_REPEAT_DELAY + "ms linear, left " + 
-                    options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
+                newTransition = "all " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
             } else if (isFirst) {
-                newTransition = "top " + 
-                    options.TRAVEL_REPEAT_START_DELAY + "ms linear, left " + 
-                    options.TRAVEL_REPEAT_START_DELAY + "ms linear";
+                newTransition = "all " + options.TRAVEL_REPEAT_START_DELAY + "ms linear";
             } else {
-                newTransition = "top " + 
-                    options.TRAVEL_REPEAT_DELAY + "ms linear, left " + 
-                    options.TRAVEL_REPEAT_DELAY + "ms linear";
+                newTransition = "all " + options.TRAVEL_REPEAT_DELAY + "ms linear";
             }
         }
         if (this.prevTransition !== newTransition) {
@@ -541,6 +562,7 @@ export default class GameManager {
                 return;
             }
         }
+        playerVisual.style.zIndex = newPos[0] + 1;
         clearTimeout(this.player.moveVisualResetTimeout);
         this.player.moveVisualResetTimeout = setTimeout(this.resetMoveVisual, options.TRAVEL_REPEAT_DELAY * 3);
         // also works if new pos not next to current for some reason
@@ -739,7 +761,9 @@ export default class GameManager {
                         this.movePlayerVisual(this.player.pos, newPos, true);
                     }
                     this.player.pos = newPos;
+                    for (const mob of this.mobs) { tableHolder.removeChild(mob.divElement); }
                     this.mobs = this.levels[lvl].mobs;
+                    for (const mob of this.mobs) { createMobDiv(mob); }
                     this.items = this.levels[lvl].items;
                     this.levels.currentLvl = lvl;
                     this.customRenders = [];
