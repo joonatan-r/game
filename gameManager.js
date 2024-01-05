@@ -269,6 +269,7 @@ export default class GameManager {
         }
     }
     
+    // NOTE: doesn't remove key listeners! (though always done when showing dialog)
     setPause(val) {
         if (options.TURN_BASED) return;
         if (val && !this.setPause.paused) {

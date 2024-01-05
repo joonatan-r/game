@@ -305,6 +305,13 @@ function mergeIfOrthogonalKeysPressed(e) {
 
 function addToKeyIntervals(key, ctrlKey) {
     keyIntervals[key] = setInterval(() => {
+        // clear if listeners were removed, clearing there doesn't seem to be always enough
+        if (!infoForMobileFix.listenersActive) { // TODO: refactor a more suitable variable
+            // NOTE: not using clearKeyRepeat to not execute any callbacks
+            clearInterval(keyIntervals[key]);
+            delete keyIntervals[key];
+            return;
+        }
         if (onNextKeyIntervals[key]) {
             onNextKeyIntervals[key]();
         } else {
