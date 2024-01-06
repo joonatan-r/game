@@ -45,6 +45,7 @@ export const levelData = `
 
 Road's end
 url("bgImages/bg.png")
+
 Start of uncharted
 Woods
 
@@ -76,6 +77,7 @@ wwwwwww.................................
 
 Woods
 url("bgImages/hut.png")
+url("bgImages/hutOverlay.png")
 Hut
 Road's end
 
@@ -107,6 +109,7 @@ tttttttttttttttttttttttttttttttttttttttt;
 
 Hut
 #282828
+
 Woods
 
 ........................................
@@ -137,6 +140,7 @@ Woods
 
 Start of uncharted
 #282828
+
 Guard house
 Road's end
 PLACEHOLDER_TP
@@ -170,6 +174,7 @@ wwwwwwwwwww.w..........w.wwwwwwwwww...ww;
 
 Guard house
 #282828
+
 Start of uncharted
 
 ........................................
@@ -200,6 +205,7 @@ Start of uncharted
 
 Secret room
 #282828
+
 Start of uncharted
 
 ........................................
@@ -230,6 +236,7 @@ Start of uncharted
 
 Crossroads
 #282828
+
 PLACEHOLDER_TP
 PLACEHOLDER_TP
 PLACEHOLDER_TP
@@ -263,6 +270,7 @@ PLACEHOLDER_TP
 
 Strange cavern
 #282828
+
 PLACEHOLDER_TP
 
 ..wwwwwww...............................
@@ -293,6 +301,7 @@ wwwwwww.................................
 
 The Beginning
 #282828
+
 PLACEHOLDER_TP
 
 ........................................

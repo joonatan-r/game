@@ -11,6 +11,7 @@ export function initialize() {
     let parseStatus = "";
     let lvlName = "";
     let bg = "";
+    let overlay = "";
     let travelNames = [];
     let travelName = "";
     let travelCoords = [];
@@ -36,9 +37,16 @@ export function initialize() {
                 break;
             case "bg":
                 if (c === "\n") {
-                    parseStatus = "travel";
+                    parseStatus = "overlay";
                 } else {
                     bg += c;
+                }
+                break;
+            case "overlay":
+                if (c === "\n") {
+                    parseStatus = "travel";
+                } else {
+                    overlay += c;
                 }
                 break;
             case "travel":
@@ -64,6 +72,7 @@ export function initialize() {
                     levels[lvlName] = {
                         level: level,
                         bg: bg,
+                        overlayBg: overlay,
                         mobs: [],
                         items: [],
                         memorized: [],
@@ -91,6 +100,7 @@ export function initialize() {
                     parseStatus = "";
                     lvlName = "";
                     bg = "";
+                    overlay = "";
                     travelName = "";
                     travelNames = [];
                     travelCoords = [];
@@ -142,7 +152,6 @@ export function initialize() {
             }
         }
     }
-    levels["Woods"].overlayBg = "url(\"bgImages/hutOverlay.png\")";
     return {
         levels: levels,
         area: area,

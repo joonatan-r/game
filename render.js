@@ -25,7 +25,6 @@ export default class Renderer {
         this.prevAreaBuffer = [];
         this.rendered = rendered;
         this.edges = [];
-        this.imageCache = [];
         this.queuePromise = Promise.resolve();
 
         if (options.USE_DOTS) {
@@ -54,6 +53,8 @@ export default class Renderer {
             }
         }
         this.loadImagesToCache();
+        // reload cache every 9 min, current max age is 10 min
+        setInterval(() => this.loadImagesToCache(), 9 * 60 * 1000 );
     }
 
     // Can be used as a semaphore to execute changes in an async task. All other async tasks
@@ -71,6 +72,7 @@ export default class Renderer {
     }
 
     loadImagesToCache() {
+        this.imageCache = [];
         for (let i = 1; i <= 9; i++) {
             if (i === 5) continue;
             const img = this.createImage("./playerImages/player_" + i + ".png");
@@ -81,6 +83,10 @@ export default class Renderer {
             const moveImg4 = this.createImage("./mobImagesAlt/mob_" + i + "_2_move.png");
             this.imageCache.push(img, img2, moveImg, moveImg2, moveImg3, moveImg4);
         }
+        const bg1 = this.createImage("./bgImages/bg.png");
+        const bg2 = this.createImage("./bgImages/hut.png");
+        const bg3 = this.createImage("./bgImages/hutOverlay.png");
+        this.imageCache.push(bg1, bg2, bg3);
     }
 
     createImage(src) {
