@@ -41,24 +41,6 @@ const Pauser = (function() {
     }
 })();
 
-function createMobDiv(mob) {
-    const mobDiv = document.createElement("div");
-    const pixelsY = 25 * (mob.pos[0] - 1);
-    const pixelsX = 25 * (mob.pos[1] - 0.5);
-    const imageBase = mob.imageBase || mobDefaultImageBase;
-    mobDiv.style.width = "50px";
-    mobDiv.style.height = "50px";
-    mobDiv.style.position = "absolute";
-    mobDiv.style.backgroundImage = imageBase.start + (mob.image || 2) + imageBase.end;
-    mobDiv.style.backgroundSize = "50px 50px";
-    mobDiv.style.transition = "all 100ms linear, visibility 0";
-    mobDiv.style.zIndex = mob.pos[0] + 1;
-    mobDiv.style.top = pixelsY + "px";
-    mobDiv.style.left = pixelsX + "px";
-    tableHolder.appendChild(mobDiv);
-    mob.divElement = mobDiv;
-}
-
 export default class GameManager {
     constructor(removeListeners, addListeners, keyIntervals) {
         const initialized = initialize();
@@ -263,7 +245,7 @@ export default class GameManager {
         if (mob !== null) {
             mob.huntingTarget = this.refer(this.player);
             this.mobs.push(mob);
-            createMobDiv(mob);
+            this.createMobDiv(mob);
         }
         if (this.setPause.pauseNext && !this.setPause.paused) {
             this.pauser.pause();
@@ -299,8 +281,9 @@ export default class GameManager {
     mobDie(mob) {
         this.tryFireEvent("onDeath", mob);
         tableHolder.removeChild(mob.divElement);
+        // NOTE: no clue what the rationale for this was, seems bad so commented out for now
         // delete all properties of mob, so all references to it recognize deletion
-        for (let prop in mob) if (mob.hasOwnProperty(prop)) delete mob[prop];
+        // for (let prop in mob) if (mob.hasOwnProperty(prop)) delete mob[prop];
         removeByReference(this.mobs, mob);
     }
     
@@ -506,10 +489,38 @@ export default class GameManager {
         playerVisual.style.transition = newTransition;
         const playerLeft = Number(playerVisual.style.left.slice(0, -2));
         const playerTop = Number(playerVisual.style.top.slice(0, -2));
-        const playerPixelsY = 25 * (newPos[0] - startPos[0]);
-        const playerPixelsX = 25 * (newPos[1] - startPos[1]);
-        playerVisual.style.top = (playerTop + playerPixelsY) + "px";
-        playerVisual.style.left = (playerLeft + playerPixelsX) + "px";
+        playerVisual.style.top = (playerTop + pixelsY) + "px";
+        playerVisual.style.left = (playerLeft + pixelsX) + "px";
+    }
+
+    async centerPlayerInitial() {
+        const newTransition = "none";
+        if (this.prevTransition !== newTransition) {
+            tableHolder.style.transition = newTransition;
+            this.prevTransition = newTransition;
+        }
+        let pixelsY = 0;
+        let pixelsX = 0;
+        const screenX = window.innerWidth / 2;
+        const screenY = window.innerHeight / 2;
+        for (let i = 0; i < this.level.length; i++) {
+            for (let j = 0; j < this.level[0].length; j++) {
+                const td = this.area[i][j];
+                if (coordsEq([i, j], this.player.pos)) {
+                    tableHolder.style.top = "0px";
+                    tableHolder.style.left = "0px";
+                    const rect = td.getBoundingClientRect();
+                    pixelsY = rect.top - 25;
+                    pixelsX = rect.left - 12; // offset for "perspective"
+                    break;
+                }
+            }
+        }
+        tableHolder.style.top = (screenY - pixelsY) + "px";
+        tableHolder.style.left = (screenX - pixelsX) + "px";
+        playerVisual.style.transition = newTransition;
+        playerVisual.style.top = pixelsY + "px";
+        playerVisual.style.left = pixelsX + "px";
     }
 
     movePlayerVisual(startPos, newPos, noTransition, isFirst) {
@@ -540,6 +551,31 @@ export default class GameManager {
         playerVisual.style.left = (left + pixelsX) + "px";
     }
 
+    movePlayerVisualInitial() {
+        if (!options.OBJ_IMG) return; // handled in render instead
+
+        let newTransition = "none";
+        if (this.prevTransition !== newTransition) {
+            playerVisual.style.transition = newTransition;
+            this.prevTransition = newTransition;
+        }
+        let pixelsY = 0;
+        let pixelsX = 0;
+        for (let i = 0; i < this.level.length; i++) {
+            for (let j = 0; j < this.level[0].length; j++) {
+                const td = this.area[i][j];
+                if (coordsEq([i, j], this.player.pos)) {
+                    const rect = td.getBoundingClientRect();
+                    pixelsY = rect.top - 25;
+                    pixelsX = rect.left - 12; // offset for "perspective"
+                    break;
+                }
+            }
+        }
+        playerVisual.style.top = pixelsY + "px";
+        playerVisual.style.left = pixelsX + "px";
+    }
+
     resetMoveVisual() {
         if (this.player.image.length > 1) {
             if (this.player.image.length < 8) {
@@ -553,6 +589,24 @@ export default class GameManager {
                 this.player.imageBase.start + this.player.image + this.player.imageBase.end;
         }
         this.player.prevMoveDrc = null;
+    }
+
+    createMobDiv(mob) {
+        const mobDiv = document.createElement("div");
+        const pixelsY = 25 * (mob.pos[0] - 1);
+        const pixelsX = 25 * (mob.pos[1] - 0.5);
+        const imageBase = mob.imageBase || mobDefaultImageBase;
+        mobDiv.style.width = "50px";
+        mobDiv.style.height = "50px";
+        mobDiv.style.position = "absolute";
+        mobDiv.style.backgroundImage = imageBase.start + (mob.image || 2) + imageBase.end;
+        mobDiv.style.backgroundSize = "50px 50px";
+        mobDiv.style.transition = "all 100ms linear, visibility 0";
+        mobDiv.style.zIndex = mob.pos[0] + 1;
+        mobDiv.style.top = pixelsY + "px";
+        mobDiv.style.left = pixelsX + "px";
+        tableHolder.appendChild(mobDiv);
+        mob.divElement = mobDiv;
     }
 
     moveCounterTimer() {
@@ -771,7 +825,7 @@ export default class GameManager {
                     this.player.pos = newPos;
                     for (const mob of this.mobs) { tableHolder.removeChild(mob.divElement); }
                     this.mobs = this.levels[lvl].mobs;
-                    for (const mob of this.mobs) { createMobDiv(mob); }
+                    for (const mob of this.mobs) { this.createMobDiv(mob); }
                     this.items = this.levels[lvl].items;
                     this.levels.currentLvl = lvl;
                     this.customRenders = [];

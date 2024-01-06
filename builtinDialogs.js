@@ -3,6 +3,8 @@ import { addMobs } from "./mobData.js";
 import options, { controlNameMap, optionNameMap } from "./options.js";
 import { addOrReplaceCss, load, removeByReference, save } from "./util.js";
 
+const tableHolder = document.getElementById("tableHolder");
+
 export default class BuiltinDialogs {
     constructor(gm, start, removeListeners, mobileInput) {
         this.gm = gm;
@@ -24,7 +26,9 @@ export default class BuiltinDialogs {
         load((loadData) => {
             this.gm.levels = loadData.levels;
             this.gm.level = this.gm.levels[this.gm.levels.currentLvl].level;
+            for (const mob of this.gm.mobs) { tableHolder.removeChild(mob.divElement); }
             this.gm.mobs = this.gm.levels[this.gm.levels.currentLvl].mobs;
+            for (const mob of this.gm.mobs) this.gm.createMobDiv(mob);
             this.gm.items = this.gm.levels[this.gm.levels.currentLvl].items;
             this.gm.player = loadData.player;
             this.gm.timeTracker = loadData.timeTracker;

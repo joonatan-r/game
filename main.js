@@ -96,45 +96,14 @@ bd.showStartDialog();
 function start() {
     document.addEventListener("contextmenu", menuListener);
     gm.updateInfo();
-    const screenCenterX = window.innerWidth / 2;
-    const screenCenterY = window.innerHeight / 2;
-    let posAtScreenCenter;
-    let tdRectAtScreenCenter;
-
-    for (let i = 0; i < gm.level.length; i++) {
-        for (let j = 0; j < gm.level[0].length; j++) {
-            const td = gm.area[i][j];
-            const rect = td.getBoundingClientRect();
-            if (rect.x < screenCenterX && rect.x + rect.width > screenCenterX
-                && rect.y < screenCenterY && rect.y + rect.height > screenCenterY
-            ) {
-                posAtScreenCenter = td.customProps.coords.slice();
-                tdRectAtScreenCenter = td.getBoundingClientRect();
-                break;
-            }
-        }
-    }
-    if (!posAtScreenCenter || !tdRectAtScreenCenter) {
-        // use level center if no pos at screen center
-        posAtScreenCenter = [Math.floor(gm.level.length / 2), Math.floor(gm.level[0].length / 2)];
-        tdRectAtScreenCenter = Array.from(
-            // flatten are tds
-            Array.prototype.concat.apply([], gm.area)).filter(
-                td => coordsEq(td.customProps.coords, posAtScreenCenter)
-            )[0]
-                .getBoundingClientRect();
-    }
     if (options.OBJ_IMG) {
-        playerVisual.style.top = tdRectAtScreenCenter.top + "px";
-        playerVisual.style.left = tdRectAtScreenCenter.left + "px";
         playerVisual.style.backgroundImage =
             gm.player.imageBase.start + gm.player.image + gm.player.imageBase.end;
     }
-    const visualPos = [gm.player.pos[0] - 1, gm.player.pos[1] - 0.5];
     if (options.KEEP_PLAYER_CENTERED) {
-        gm.centerPlayer(posAtScreenCenter, visualPos, true);
+        gm.centerPlayerInitial();
     } else {
-        gm.movePlayerVisual(posAtScreenCenter, visualPos, true);
+        gm.movePlayerVisualInitial();
     }
     gm.render.renderAll(gm.player, gm.levels, gm.customRenders);
     gm.render.setBg(gm.levels);
