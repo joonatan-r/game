@@ -1,6 +1,7 @@
 import { levelTiles } from "./levelData.js";
 import { bresenham, coordsEq, isWall, removeByReference } from "./util.js";
 import options from "./options.js";
+import { itemDefaultImage } from "./itemData.js";
 
 function blocksSight(tile) {
     return tile === levelTiles.wall || tile === levelTiles.fakeWall;
@@ -54,6 +55,8 @@ export default class Renderer {
         }
         this.loadImagesToCache();
         // reload cache every 9 min, current max age is 10 min
+        // TODO might not actually work? since would use cache for this still,
+        // maybe fetch with cache reload option is enough, otherwise need to wait if can't change headers
         setInterval(() => this.loadImagesToCache(), 9 * 60 * 1000 );
     }
 
@@ -277,8 +280,21 @@ export default class Renderer {
         for (let item of items) {
             if (renderedBuffer[item.pos[0]][item.pos[1]] && !item.hidden) {
                 const areaPos = areaBuffer[item.pos[0]][item.pos[1]];
-                areaPos.textContent = item.symbol;
-                options.OBJ_BG && (areaPos.classList[0] = "obj-bg");
+
+                if (options.OBJ_IMG) {
+                    const imageToUse = item.image || itemDefaultImage;
+
+                    if (areaPos.textContent !== "") {
+                        areaPos.textContent = "";
+                    }
+                    if (areaPos.style.backgroundImage !== imageToUse) {
+                        areaPos.style.backgroundImage = imageToUse;
+                    }
+                    removeByReference(imgCoordsToDelete, areaPos);
+                } else {
+                    areaPos.textContent = item.symbol;
+                    options.OBJ_BG && (areaPos.classList[0] = "obj-bg");
+                }
                 areaPos.customProps.infoKeys.unshift(item.name);
             }
         }

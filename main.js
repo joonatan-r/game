@@ -127,7 +127,8 @@ function start() {
     if (options.OBJ_IMG) {
         playerVisual.style.top = tdRectAtScreenCenter.top + "px";
         playerVisual.style.left = tdRectAtScreenCenter.left + "px";
-        playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + gm.player.image + ".png\")";
+        playerVisual.style.backgroundImage =
+            gm.player.imageBase.start + gm.player.image + gm.player.imageBase.end;
     }
     const visualPos = [gm.player.pos[0] - 1, gm.player.pos[1] - 0.5];
     if (options.KEEP_PLAYER_CENTERED) {

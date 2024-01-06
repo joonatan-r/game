@@ -174,6 +174,7 @@ const events = {
             Math.random() < 0.15 && gm.levels[gm.levels.currentLvl].items.push({
                 name: "strange potion",
                 symbol: "!",
+                image: "url(\"./itemImages/potion.png\")",
                 usable: "true",
                 pos: mob.pos.slice()
             });
@@ -187,6 +188,7 @@ const events = {
             Math.random() < 0.33 && gm.levels[gm.levels.currentLvl].items.push({
                 name: "strange potion",
                 symbol: "!",
+                image: "url(\"./itemImages/potion.png\")",
                 usable: "true",
                 pos: mob.pos.slice()
             });
@@ -200,6 +202,7 @@ const events = {
             Math.random() < 0.33 && gm.levels[gm.levels.currentLvl].items.push({
                 name: "strange potion",
                 symbol: "!",
+                image: "url(\"./itemImages/potion.png\")",
                 usable: "true",
                 pos: mob.pos.slice()
             });

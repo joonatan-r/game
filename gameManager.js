@@ -1,6 +1,7 @@
 import events from "./eventData.js";
 import { levelTiles } from "./levelData.js";
 import { createNewLvl } from "./levelGeneration.js";
+import { mobDefaultImageBase } from "./mobData.js";
 import { movingAIs, trySpawnMob } from "./mobs.js";
 import options from "./options.js";
 import Renderer from "./render.js";
@@ -44,10 +45,11 @@ function createMobDiv(mob) {
     const mobDiv = document.createElement("div");
     const pixelsY = 25 * (mob.pos[0] - 1);
     const pixelsX = 25 * (mob.pos[1] - 0.5);
+    const imageBase = mob.imageBase || mobDefaultImageBase;
     mobDiv.style.width = "50px";
     mobDiv.style.height = "50px";
     mobDiv.style.position = "absolute";
-    mobDiv.style.backgroundImage = "url(\"./mobImagesAlt/mob_" + (mob.image || 2) + ".png\")";
+    mobDiv.style.backgroundImage = imageBase.start + (mob.image || 2) + imageBase.end;
     mobDiv.style.backgroundSize = "50px 50px";
     mobDiv.style.transition = "all 100ms linear, visibility 0";
     mobDiv.style.zIndex = mob.pos[0] + 1;
@@ -83,6 +85,7 @@ export default class GameManager {
         this.player.inventory = [];
         this.player.noteEntries = [];
         this.player.pos = [9, 5];
+        this.player.imageBase = { start: "url(\"./playerImages/player_", end: ".png\")" };
         this.player.image = 2;
         this.player.moveCounter = 0;
         this.customRenders = []; // retain "animations", can also be damaging zones
@@ -181,7 +184,8 @@ export default class GameManager {
                     }
                 }
                 if (mob.divElement) {
-                    mob.divElement.style.backgroundImage = "url(\"./mobImagesAlt/mob_" + (mob.image || 2) + ".png\")";
+                    const imageBase = mob.imageBase || mobDefaultImageBase;
+                    mob.divElement.style.backgroundImage = imageBase.start + (mob.image || 2) + imageBase.end;
                 }
                 this.mobsUsingVisualTimeout.splice(i, 1);
             }
@@ -222,9 +226,10 @@ export default class GameManager {
                 }
                 const pixelsY = 25 * (mob.target[0] - mob.pos[0]);
                 const pixelsX = 25 * (mob.target[1] - mob.pos[1]);
+                const imageBase = mob.imageBase || mobDefaultImageBase;
                 mob.pos = [mob.target[0], mob.target[1]];
                 mob.divElement.style.zIndex = mob.pos[0] + 1;
-                mob.divElement.style.backgroundImage = "url(\"./mobImagesAlt/mob_" + (mob.image || 2) + ".png\")";
+                mob.divElement.style.backgroundImage = imageBase.start + (mob.image || 2) + imageBase.end;
                 const left = Number(mob.divElement.style.left.slice(0, -2));
                 const top = Number(mob.divElement.style.top.slice(0, -2));
                 mob.divElement.style.top = (top + pixelsY) + "px";
@@ -544,7 +549,8 @@ export default class GameManager {
             }
         }
         if (options.OBJ_IMG && !this.player.dead) {
-            playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + this.player.image + ".png\")";
+            playerVisual.style.backgroundImage =
+                this.player.imageBase.start + this.player.image + this.player.imageBase.end;
         }
         this.player.prevMoveDrc = null;
     }
@@ -592,7 +598,8 @@ export default class GameManager {
             this.movePlayerVisual(this.player.pos, newPos, false, isFirst);
         }
         if (options.OBJ_IMG) {
-            playerVisual.style.backgroundImage = "url(\"./playerImages/player_" + this.player.image + ".png\")";
+            playerVisual.style.backgroundImage =
+                this.player.imageBase.start + this.player.image + this.player.imageBase.end;
         }
         this.player.prevMoveDrc = facing;
         this.player.pos = newPos;

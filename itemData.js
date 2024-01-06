@@ -1,3 +1,6 @@
+
+export const itemDefaultImage = "url(\"./itemImages/item.png\")";
+
 export function addItems(levels) {
     levels["Guard house"].items.push({
         name: "chest",
@@ -19,6 +22,7 @@ export function addItems(levels) {
     }, {
         name: "gate",
         symbol: "|",
+        image: "url(\"./itemImages/gate.png\")",
         blocksTravel: true,
         pos: [11, 17]
     });

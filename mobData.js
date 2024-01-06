@@ -2,9 +2,12 @@ export function addMobs(levels) {
     levels["Start of uncharted"].mobs.push(Scared_Traveller);
 }
 
+export const mobDefaultImageBase = { start: "url(\"./mobImagesAlt/mob_", end: ".png\")" };
+
 const Scared_Traveller = {
     name: "Scared Traveller",
     symbol: "@",
+    // imageBase: { start: "url(\"./mobImages/mob_", end: ".png\")" },
     isHostile: false,
     stayStillForInteract: true,
     state: 0,
