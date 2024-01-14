@@ -33,7 +33,7 @@ export function createRandomMobSpawning() {
         };
     }
     return {
-        rate: spawningMobs.length === 0 ? 0 : Math.random() * 0.2,
+        rate: spawningMobs.length === 0 ? 0 : Math.random() * 0.5,
         distribution: distribution
     };
 }

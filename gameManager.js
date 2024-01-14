@@ -332,7 +332,7 @@ export default class GameManager {
         this.customRenders.push(obj);
         options.TURN_BASED && (this.interruptAutoTravel = true);
         options.TURN_BASED && this.removeListeners();
-        !mobIsShooting && (this.timeTracker.turnsUntilShoot = 10);
+        !mobIsShooting && (this.timeTracker.turnsUntilShoot = 1);
     
         const checkHits = (checkPos) => {
             if (coordsEq(checkPos, this.player.pos) && mobIsShooting) {
@@ -371,6 +371,7 @@ export default class GameManager {
                 removeByReference(this.customRenders, obj);
 
                 if (!options.TURN_BASED) {
+                    await new Promise(r => setTimeout(r, 30));
                     this.render.renderAll(this.player, this.levels, this.customRenders);
                 } else {
                     !this.player.dead && this.addListeners();

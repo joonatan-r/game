@@ -55,6 +55,8 @@ export default class BuiltinDialogs {
                         this.gm.items = this.gm.levels["The Beginning"].items;
                         this.gm.levels.currentLvl = "The Beginning";
                         this.gm.tryGenerateTravelPoints("The Beginning");
+                        addMobs(this.gm.levels);
+                        addItems(this.gm.levels);
                         this.start();
                         break;
                     case 2:
