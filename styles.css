@@ -162,19 +162,23 @@ p {
 }
 
 .wall.l {
-    border-left: solid white 1px;
+    border-left: solid gray 1px;
 }
 
 .wall.r {
-    border-right: solid white 1px;
+    border-right: solid gray 1px;
 }
 
 .wall.t {
-    border-top: solid white 1px;
+    border-top: solid gray 1px;
 }
 
-.wall.b {
+/* .wall.b {
     border-bottom: solid white 1px;
+} */
+
+.wall.b {
+    background-color: gray;
 }
 
 .wall-s.l {
