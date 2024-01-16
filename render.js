@@ -205,7 +205,12 @@ export default class Renderer {
                 if (areaPos.classList.contains("selected")) {
                     selectionPos = [i, j];
                 }
-                areaPos.style.backgroundImage !== "none" && (imgCoordsToDelete.push(areaBuffer[i][j]));
+                if (areaPos.style.backgroundImage
+                    && areaPos.style.backgroundImage !== "none"
+                    && (!areaPos.classList.contains("b") || !areaPos.classList.contains("wall"))
+                ) {
+                    imgCoordsToDelete.push(areaBuffer[i][j]);
+                }
             }
         }
         for (let coords of this.edges) {

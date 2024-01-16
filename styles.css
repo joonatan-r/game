@@ -178,7 +178,7 @@ p {
 } */
 
 .wall.b {
-    background-color: gray;
+    background-image: linear-gradient(to bottom, black 0%, black 30%, gray 30%, gray 100%);
 }
 
 .wall-s.l {
