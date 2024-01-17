@@ -356,7 +356,7 @@ export default class Renderer {
             }
         }
         for (const pos of imgCoordsToDelete) {
-            pos.style.backgroundImage = "none";
+            pos.style.backgroundImage = "";
         }
         // add walls last to check where to put them by what tiles are rendered
     
@@ -439,7 +439,9 @@ export default class Renderer {
                 ) {
                     areaPos.customProps.infoKeys = buffer.customProps.infoKeys;
                 }
-                if (buffer.style.backgroundImage && checkPos.style.backgroundImage !== buffer.style.backgroundImage) {
+                if (typeof buffer.style.backgroundImage !== "undefined"
+                    && checkPos.style.backgroundImage !== buffer.style.backgroundImage
+                ) {
                     areaPos.style.backgroundImage = buffer.style.backgroundImage;
                 }
                 if (checkPos.textContent !== buffer.textContent) areaPos.textContent = buffer.textContent;

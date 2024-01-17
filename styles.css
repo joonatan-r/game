@@ -178,7 +178,11 @@ p {
 } */
 
 .wall.b {
-    background-image: linear-gradient(to bottom, black 0%, black 30%, gray 30%, gray 100%);
+    background-image: linear-gradient(to bottom, black 0%, black 8px, gray 8px, gray 100%);
+}
+.wall.b.t {
+    /* adjust due to the border that will be added on top (since box-sizing: border-box) */
+    background-image: linear-gradient(to bottom, black 0%, black 7px, gray 7px, gray 100%);
 }
 
 .wall-s.l {
