@@ -45,7 +45,7 @@ export function trySpawnMob(levels, rendered) {
     const spawnDistr = levels[levels.currentLvl].spawnDistribution;
     // linearily decrease chance based on currently existing mobs until 0 at 20 mobs
     const hostileMobsNbr = levels[levels.currentLvl].mobs.filter(mob => mob.isHostile).length;
-    const spawnChance = levels[levels.currentLvl].spawnRate * (1 - hostileMobsNbr / 20);
+    const spawnChance = levels[levels.currentLvl].spawnRate * (1 - (hostileMobsNbr / 20));
 
     if (spawnChance < Math.random()) return null;
     if (Object.keys(spawnDistr).length === 0) return null;

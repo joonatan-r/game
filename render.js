@@ -283,25 +283,26 @@ export default class Renderer {
             }
         }
         for (let item of items) {
-            if (renderedBuffer[item.pos[0]][item.pos[1]] && !item.hidden) {
-                const areaPos = areaBuffer[item.pos[0]][item.pos[1]];
+            if (item.hidden) continue;
+            if (renderedBuffer[item.pos[0]][item.pos[1]]) item.memorizedPos = item.pos.slice();
+            if (!item.memorizedPos) continue;
+            const areaPos = areaBuffer[item.memorizedPos[0]][item.memorizedPos[1]];
 
-                if (options.OBJ_IMG) {
-                    const imageToUse = item.image || itemDefaultImage;
+            if (options.OBJ_IMG) {
+                const imageToUse = item.image || itemDefaultImage;
 
-                    if (areaPos.textContent !== "") {
-                        areaPos.textContent = "";
-                    }
-                    if (areaPos.style.backgroundImage !== imageToUse) {
-                        areaPos.style.backgroundImage = imageToUse;
-                    }
-                    removeByReference(imgCoordsToDelete, areaPos);
-                } else {
-                    areaPos.textContent = item.symbol;
-                    options.OBJ_BG && (areaPos.classList[0] = "obj-bg");
+                if (areaPos.textContent !== "") {
+                    areaPos.textContent = "";
                 }
-                areaPos.customProps.infoKeys.unshift(item.name);
+                if (areaPos.style.backgroundImage !== imageToUse) {
+                    areaPos.style.backgroundImage = imageToUse;
+                }
+                removeByReference(imgCoordsToDelete, areaPos);
+            } else {
+                areaPos.textContent = item.symbol;
+                options.OBJ_BG && (areaPos.classList[0] = "obj-bg");
             }
+            areaPos.customProps.infoKeys.unshift(item.name);
         }
         if (!player.dead) {
             const playerPos = areaBuffer[player.pos[0]][player.pos[1]];
