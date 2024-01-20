@@ -62,7 +62,7 @@ export default class GameManager {
         this.timeTracker.timer = 0;
         this.timeTracker.turnsUntilShoot = 0;
         this.player = {};
-        this.player.maxHealth = 4;
+        this.player.maxHealth = 5;
         this.player.health = this.player.maxHealth;
         this.player.inventory = [];
         this.player.noteEntries = [];

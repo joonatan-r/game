@@ -225,8 +225,12 @@ const events = {
 
                 if (gm.player.health < 1) gm.gameOver("You die..."); 
             } else {
-                gm.player.maxHealth++;
-                gm.player.health++;
+                if (gm.player.maxHealth < 10) {
+                    gm.player.maxHealth++;
+                }
+                if (gm.player.health < gm.player.maxHealth) {
+                    gm.player.health++;
+                }
                 gm.ui.showMsg("You feel great!");
             }
             for (const invItem of gm.player.inventory) {

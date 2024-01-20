@@ -29,12 +29,14 @@ export function addItems(levels) {
     levels["Secret room"].items.push({
         name: "strange device",
         symbol: "+",
+        image: "url(\"./itemImages/device.png\")",
         blocksTravel: true,
         pos: [13, 16]
     });
     levels["Strange cavern"].items.push({
         name: "strange device",
         symbol: "+",
+        image: "url(\"./itemImages/device.png\")",
         blocksTravel: true,
         pos: [12, 15]
     });

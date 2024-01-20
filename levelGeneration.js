@@ -597,7 +597,7 @@ export function createNewLvl(name, levels, level, player) {
         const candidates = [];
         
         // TODO refactor for reusability
-        for (let i = 0; i < level.length; i++) {
+        for (let i = 1; i < level.length; i++) {
             candidates.push([i, 0]);
         }
         while (extraTravelPos === null) extraTravelPos = tryAddExtraTravelPoint(candidates, startPos, newTravelPos);
@@ -637,11 +637,12 @@ export function createNewLvl(name, levels, level, player) {
     generatedLvl[frontOfStartPos[0]][frontOfStartPos[1]] = levelTiles.floor;
 
     const spawns = createRandomMobSpawning();
+    const items = tryCreateItems(generatedLvl);
     levels[name] = {
         level: generatedLvl,
         bg: "#282828",
         mobs: [],
-        items: [],
+        items: items,
         memorized: newMemorized,
         spawnRate: spawns.rate,
         spawnDistribution: spawns.distribution,
@@ -666,6 +667,45 @@ function tryAddExtraTravelPoint(candidates, startPos, exitPos) {
         }
     }
     return null;
+}
+
+function tryCreateItems(generatedLvl) {
+    for (let i = 0; i < generatedLvl.length; i++) {
+        for (let j = 0; j < generatedLvl[0].length; j++) {
+            if (generatedLvl[i][j] === levelTiles.floor
+                && Math.random() < (1 / (generatedLvl.length * generatedLvl[0].length))
+            ) {
+                // if next to wall, replace that since otherwise might block path
+                for (const pos of getCoordsNextTo([i, j])) {
+                    if (generatedLvl[pos[0]]
+                        && typeof generatedLvl[pos[0]][pos[1]] !== "undefined"
+                        && generatedLvl[pos[0]][pos[1]] === levelTiles.wall
+                    ) {
+                        generatedLvl[pos[0]][pos[1]] = levelTiles.floor;
+                        return [
+                            {
+                                name: "strange device",
+                                symbol: "+",
+                                image: "url(\"./itemImages/device.png\")",
+                                blocksTravel: true,
+                                pos: [pos[0], pos[1]]
+                            }
+                        ];
+                    }
+                }
+                return [
+                    {
+                        name: "strange device",
+                        symbol: "+",
+                        image: "url(\"./itemImages/device.png\")",
+                        blocksTravel: true,
+                        pos: [i, j]
+                    }
+                ];
+            }
+        }
+    }
+    return [];
 }
 
 function isLevelTooOpen(level) {
