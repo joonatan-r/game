@@ -345,8 +345,12 @@ export default class GameManager {
                 if (coordsEq(checkPos, mob.pos)) {
                     this.mobDie(mob);
                     this.hitCustomRenderEffect(obj);
-                    !this.player.dead && options.TURN_BASED && this.addListeners();
-                    !mobIsShooting && this.processTurn();
+                    if (options.TURN_BASED) {
+                        !this.player.dead && this.addListeners();
+                        !mobIsShooting && this.processTurn();
+                    } else {
+                        this.render.renderAll(this.player, this.levels, this.customRenders);
+                    }
                     return true;
                 }
             }
@@ -459,7 +463,7 @@ export default class GameManager {
         for (let item of this.items) {
             if (coordsEq(interactPos, item.pos)) this.tryFireEvent("onInteract", item);
         }
-        this.processTurn();
+        this.updateAfterAction();
     }
 
     // NOTE: no smooth animation if using text symbol for player

@@ -524,7 +524,7 @@ function showInventory() {
                         item.pos = gm.player.pos.slice();
                         gm.items.push(item);
                         gm.ui.showMsg("You drop \"" + contentNames[itemIdx] + "\".");
-                        gm.processTurn();
+                        gm.updateAfterAction();
                         break;
                     case 1:
                         gm.tryFireEvent("onUse", gm.player.inventory[itemIdx]);
