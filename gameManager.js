@@ -142,7 +142,8 @@ export default class GameManager {
     updateInfo() {
         const timeWord = options.TURN_BASED ? "\nTurn: " : "\nTime: ";
         info.textContent = "Level: " + this.levels.currentLvl + timeWord + this.timeTracker.timer 
-                           + "\nHealth: " + this.player.health + "\nSelected action: " + this.actType + "\n";
+                           + "\nHealth: " + this.player.health + " / " + this.player.maxHealth
+                           + "\nSelected action: " + this.actType + "\n";
     
         if (this.timeTracker.turnsUntilShoot > 0 && this.actType === "shoot") {
             info.textContent += "Cooldown: " + this.timeTracker.turnsUntilShoot;

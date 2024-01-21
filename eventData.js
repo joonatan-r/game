@@ -219,7 +219,9 @@ const events = {
         },
         "strange potion": function(item, gm) {
             if (Math.random() < 0.2) {
-                gm.player.maxHealth--;
+                if (gm.player.maxHealth > 5) {
+                    gm.player.maxHealth--;
+                }
                 gm.player.health--;
                 gm.ui.showMsg("You feel really bad.");
 
