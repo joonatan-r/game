@@ -3,7 +3,7 @@ import { levelTiles } from "./levelData.js";
 import { createNewLvl } from "./levelGeneration.js";
 import { mobDefaultImageBase } from "./mobData.js";
 import { movingAIs, trySpawnMob } from "./mobs.js";
-import options from "./options.js";
+import options, { constants } from "./options.js";
 import Renderer from "./render.js";
 import UI from "./UI.js";
 import {
@@ -68,8 +68,8 @@ export default class GameManager {
         this.player.noteEntries = [];
         this.player.pos = [9, 5];
         this.player.visualPos = this.player.pos.slice();
-        this.player.visualPos[0] *= 25;
-        this.player.visualPos[1] *= 25;
+        this.player.visualPos[0] *= constants.CELL_SIZE;
+        this.player.visualPos[1] *= constants.CELL_SIZE;
         this.player.imageBase = { start: "url(\"./playerImages/player_", end: ".png\")" };
         this.player.image = 2;
         this.player.moveCounter = 0;
@@ -210,8 +210,8 @@ export default class GameManager {
                     mob.image = altMoveImage;
                     mob.prevMoveImage = altMoveImage;
                 }
-                const pixelsY = 25 * (mob.target[0] - mob.pos[0]);
-                const pixelsX = 25 * (mob.target[1] - mob.pos[1]);
+                const pixelsY = constants.CELL_SIZE * (mob.target[0] - mob.pos[0]);
+                const pixelsX = constants.CELL_SIZE * (mob.target[1] - mob.pos[1]);
                 const imageBase = mob.imageBase || mobDefaultImageBase;
                 mob.pos = [mob.target[0], mob.target[1]];
                 mob.divElement.style.zIndex = mob.pos[0] + 1;
@@ -491,8 +491,8 @@ export default class GameManager {
         }
         const left = Number(tableHolder.style.left.slice(0, -2));
         const top = Number(tableHolder.style.top.slice(0, -2));
-        const pixelsY = 25 * (newPos[0] - startPos[0]);
-        const pixelsX = 25 * (newPos[1] - startPos[1]);
+        const pixelsY = constants.CELL_SIZE * (newPos[0] - startPos[0]);
+        const pixelsX = constants.CELL_SIZE * (newPos[1] - startPos[1]);
         tableHolder.style.top = (top - pixelsY) + "px";
         tableHolder.style.left = (left - pixelsX) + "px";
         playerVisual.style.transition = newTransition;
@@ -542,7 +542,7 @@ export default class GameManager {
                     tableHolder.style.top = "0px";
                     tableHolder.style.left = "0px";
                     const rect = td.getBoundingClientRect();
-                    pixelsY = rect.top - 25;
+                    pixelsY = rect.top - constants.CELL_SIZE;
                     pixelsX = rect.left - 12; // offset for "perspective"
                     break;
                 }
@@ -577,8 +577,8 @@ export default class GameManager {
         }
         const left = Number(playerVisual.style.left.slice(0, -2));
         const top = Number(playerVisual.style.top.slice(0, -2));
-        const pixelsY = 25 * (newPos[0] - startPos[0]);
-        const pixelsX = 25 * (newPos[1] - startPos[1]);
+        const pixelsY = constants.CELL_SIZE * (newPos[0] - startPos[0]);
+        const pixelsX = constants.CELL_SIZE * (newPos[1] - startPos[1]);
         playerVisual.style.top = (top + pixelsY) + "px";
         playerVisual.style.left = (left + pixelsX) + "px";
     }
@@ -598,7 +598,7 @@ export default class GameManager {
                 const td = this.area[i][j];
                 if (coordsEq([i, j], this.player.pos)) {
                     const rect = td.getBoundingClientRect();
-                    pixelsY = rect.top - 25;
+                    pixelsY = rect.top - constants.CELL_SIZE;
                     pixelsX = rect.left - 12; // offset for "perspective"
                     break;
                 }
@@ -625,8 +625,8 @@ export default class GameManager {
 
     createMobDiv(mob) {
         const mobDiv = document.createElement("div");
-        const pixelsY = 25 * (mob.pos[0] - 1);
-        const pixelsX = 25 * (mob.pos[1] - 0.5);
+        const pixelsY = constants.CELL_SIZE * (mob.pos[0] - 1);
+        const pixelsX = constants.CELL_SIZE * (mob.pos[1] - 0.5);
         const imageBase = mob.imageBase || mobDefaultImageBase;
         mobDiv.style.width = "50px";
         mobDiv.style.height = "50px";
@@ -647,10 +647,10 @@ export default class GameManager {
 
     getChangedPosition(visualPos) {
         const pos = visualPos.slice();
-        pos[0] /= 25;
+        pos[0] /= constants.CELL_SIZE;
         pos[0] += 0.8;
         pos[0] = Math.floor(pos[0]);
-        pos[1] /= 25;
+        pos[1] /= constants.CELL_SIZE;
         pos[1] += 0.5;
         pos[1] = Math.floor(pos[1]);
         return pos;
@@ -658,15 +658,15 @@ export default class GameManager {
 
     moveVisual(drc, altDrcs) {
         const newVisualPos = this.player.visualPos.slice();
-        movePosToDrc(newVisualPos, drc, 5);
+        movePosToDrc(newVisualPos, drc, options.TRAVEL_MOVE_PIXELS);
         let newPos = this.getChangedPosition(newVisualPos);
         const originalNewPos = newPos.slice();
         // only move actual position diagonally if moving visually diagonally, prefents visual flicker
         if (!coordsEq(newPos, this.player.pos) && [1, 3, 7, 9].includes(this.player.prevMoveDrc)) {
             const preferredPos = this.player.pos.slice();
             movePosToDrc(preferredPos, this.player.prevMoveDrc);
-            const prefPosToVisual = [preferredPos[0] * 25, preferredPos[1] * 25];
-            const playerPosToVisual = [this.player.pos[0] * 25, this.player.pos[1] * 25];
+            const prefPosToVisual = [preferredPos[0] * constants.CELL_SIZE, preferredPos[1] * constants.CELL_SIZE];
+            const playerPosToVisual = [this.player.pos[0] * constants.CELL_SIZE, this.player.pos[1] * constants.CELL_SIZE];
             const distanceToPref = (this.player.visualPos[0] - prefPosToVisual[0])*(this.player.visualPos[0] - prefPosToVisual[0]) + 
                                         (this.player.visualPos[1] - prefPosToVisual[1])*(this.player.visualPos[1] - prefPosToVisual[1]);
             const distanceToCurrent = (this.player.visualPos[0] - playerPosToVisual[0])*(this.player.visualPos[0] - playerPosToVisual[0]) + 
@@ -691,7 +691,7 @@ export default class GameManager {
         this.centerPlayerPixels(this.player.visualPos, newVisualPos, false, false);
         playerVisual.style.zIndex = newPos[0] + 1;
         clearTimeout(this.player.moveVisualResetTimeout);
-        this.player.moveVisualResetTimeout = setTimeout(this.resetMoveVisual, 300);
+        this.player.moveVisualResetTimeout = setTimeout(this.resetMoveVisual, constants.MOVE_VISUAL_DELAY * 2);
         // also works if new pos not next to current for some reason
         const facing = relativeCoordsToDrc(
             newVisualPos[0] - this.player.visualPos[0],
@@ -713,7 +713,7 @@ export default class GameManager {
             }
             this.player.moveCounter = 0;
             clearTimeout(this.player.moveVisualTimeout);
-            this.player.moveVisualTimeout = setTimeout(this.moveCounterTimer, 150);
+            this.player.moveVisualTimeout = setTimeout(this.moveCounterTimer, constants.MOVE_VISUAL_DELAY);
         }
         if (options.OBJ_IMG) {
             playerVisual.style.backgroundImage =
@@ -757,7 +757,7 @@ export default class GameManager {
                 }
                 this.player.moveCounter = 0;
                 clearTimeout(this.player.moveVisualTimeout);
-                this.player.moveVisualTimeout = setTimeout(this.moveCounterTimer, 150);
+                this.player.moveVisualTimeout = setTimeout(this.moveCounterTimer, MOVE_VISUAL_constants.MOVE_VISUAL_DELAYDELAY);
             }
             this.movePlayerVisual(this.player.pos, newPos, false, isFirst);
 
@@ -928,8 +928,8 @@ export default class GameManager {
                     this.level = this.levels[lvl].level;
                     const newPos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
                     const newVisualPos = newPos.slice();
-                    newVisualPos[0] *= 25;
-                    newVisualPos[1] *= 25;
+                    newVisualPos[0] *= constants.CELL_SIZE;
+                    newVisualPos[1] *= constants.CELL_SIZE;
 
                     if (options.KEEP_PLAYER_CENTERED) {
                         this.centerPlayerPixels(this.player.visualPos, newVisualPos, true);

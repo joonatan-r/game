@@ -12,6 +12,7 @@ const options = {
     INTERRUPT_AUTOTRAVEL_IF_MOBS: true, // interrupt autotravel if any hostile mobs are displayed / not
     TRAVEL_REPEAT_START_DELAY: 60, // milliseconds for the delay before holding a key to move starts repeating
     TRAVEL_REPEAT_DELAY: 12, // milliseconds between each move when holding a moving key
+    TRAVEL_MOVE_PIXELS: 5, // pixels in one movement
     AUTOTRAVEL_REPEAT_DELAY: 50, // milliseconds between each move when autotraveling
     CONVERT_ORTHOG_INPUTS_TO_DIAG: true, // convert two orthogonal move inputs to the diagonal direction between them
     IMMEDIATE_DIAG_MOVE_WHEN_CONVERTING_ORTHOG: false, // when orthogonal inputs are converted, make a move immediately instead of keeping speed constant
@@ -61,6 +62,7 @@ export const optionNameMap = {
     INTERRUPT_AUTOTRAVEL_IF_MOBS: "Interrupt autotravel if a hostile mob is seen",
     TRAVEL_REPEAT_START_DELAY: "Delay before holding direction starts repeating (ms)",
     TRAVEL_REPEAT_DELAY: "Delay between moves when holding direction (ms)",
+    TRAVEL_MOVE_PIXELS: "Pixels to go in one movement",
     AUTOTRAVEL_REPEAT_DELAY: "Delay between autotravel moves (ms)",
     CONVERT_ORTHOG_INPUTS_TO_DIAG: "Convert two orthogonal move inputs to the diagonal direction between them",
     IMMEDIATE_DIAG_MOVE_WHEN_CONVERTING_ORTHOG: "When orthogonal move inputs are converted, move immediately"
@@ -95,6 +97,11 @@ export const controlNameMap = {
     ACT_TOP_LEFT: "Action top left",
     ACT_TOP: "Action top",
     ACT_TOP_RIGHT: "Action top right"
+};
+
+export const constants = {
+    MOVE_VISUAL_DELAY: 150,
+    CELL_SIZE: 25
 };
 
 export default options;
