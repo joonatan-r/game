@@ -67,6 +67,9 @@ export default class GameManager {
         this.player.inventory = [];
         this.player.noteEntries = [];
         this.player.pos = [9, 5];
+        this.player.visualPos = this.player.pos.slice();
+        this.player.visualPos[0] *= 25;
+        this.player.visualPos[1] *= 25;
         this.player.imageBase = { start: "url(\"./playerImages/player_", end: ".png\")" };
         this.player.image = 2;
         this.player.moveCounter = 0;
@@ -493,10 +496,33 @@ export default class GameManager {
         tableHolder.style.top = (top - pixelsY) + "px";
         tableHolder.style.left = (left - pixelsX) + "px";
         playerVisual.style.transition = newTransition;
-        const playerLeft = Number(playerVisual.style.left.slice(0, -2));
-        const playerTop = Number(playerVisual.style.top.slice(0, -2));
-        playerVisual.style.top = (playerTop + pixelsY) + "px";
-        playerVisual.style.left = (playerLeft + pixelsX) + "px";
+    }
+
+    async centerPlayerPixels(startPos, newPos, noTransition, isFirst) {
+        let newTransition = "";
+
+        if (noTransition || !options.OBJ_IMG) {
+            newTransition = "none";
+        } else {
+            if (this.autoTravelStack.indexOf(true) !== -1) {
+                newTransition = "all " + options.AUTOTRAVEL_REPEAT_DELAY + "ms linear";
+            } else if (isFirst) {
+                newTransition = "all " + options.TRAVEL_REPEAT_START_DELAY + "ms linear";
+            } else {
+                newTransition = "all " + options.TRAVEL_REPEAT_DELAY + "ms linear";
+            }
+        }
+        if (this.prevTransition !== newTransition) {
+            tableHolder.style.transition = newTransition;
+            this.prevTransition = newTransition;
+        }
+        const left = Number(tableHolder.style.left.slice(0, -2));
+        const top = Number(tableHolder.style.top.slice(0, -2));
+        const pixelsY = newPos[0] - startPos[0];
+        const pixelsX = newPos[1] - startPos[1];
+        tableHolder.style.top = (top - pixelsY) + "px";
+        tableHolder.style.left = (left - pixelsX) + "px";
+        playerVisual.style.transition = newTransition;
     }
 
     async centerPlayerInitial() {
@@ -525,8 +551,8 @@ export default class GameManager {
         tableHolder.style.top = (screenY - pixelsY) + "px";
         tableHolder.style.left = (screenX - pixelsX) + "px";
         playerVisual.style.transition = newTransition;
-        playerVisual.style.top = pixelsY + "px";
-        playerVisual.style.left = pixelsX + "px";
+        playerVisual.style.top = screenY + "px";
+        playerVisual.style.left = screenX + "px";
     }
 
     movePlayerVisual(startPos, newPos, noTransition, isFirst) {
@@ -618,22 +644,59 @@ export default class GameManager {
     moveCounterTimer() {
         this.player.moveCounter = 1;
     }
-    
-    movePlayer(newPos, alternatives, isFirst) {
-        if (!this.posIsValid(newPos)) {
-            if (!alternatives || !alternatives.length) {
-                return;
+
+    getChangedPosition(visualPos) {
+        const pos = visualPos.slice();
+        pos[0] /= 25;
+        pos[0] += 0.8;
+        pos[0] = Math.floor(pos[0]);
+        pos[1] /= 25;
+        pos[1] += 0.5;
+        pos[1] = Math.floor(pos[1]);
+        return pos;
+    }
+
+    moveVisual(drc, altDrcs) {
+        const newVisualPos = this.player.visualPos.slice();
+        movePosToDrc(newVisualPos, drc, 5);
+        let newPos = this.getChangedPosition(newVisualPos);
+        const originalNewPos = newPos.slice();
+        // only move actual position diagonally if moving visually diagonally, prefents visual flicker
+        if (!coordsEq(newPos, this.player.pos) && [1, 3, 7, 9].includes(this.player.prevMoveDrc)) {
+            const preferredPos = this.player.pos.slice();
+            movePosToDrc(preferredPos, this.player.prevMoveDrc);
+            const prefPosToVisual = [preferredPos[0] * 25, preferredPos[1] * 25];
+            const playerPosToVisual = [this.player.pos[0] * 25, this.player.pos[1] * 25];
+            const distanceToPref = (this.player.visualPos[0] - prefPosToVisual[0])*(this.player.visualPos[0] - prefPosToVisual[0]) + 
+                                        (this.player.visualPos[1] - prefPosToVisual[1])*(this.player.visualPos[1] - prefPosToVisual[1]);
+            const distanceToCurrent = (this.player.visualPos[0] - playerPosToVisual[0])*(this.player.visualPos[0] - playerPosToVisual[0]) + 
+                                        (this.player.visualPos[1] - playerPosToVisual[1])*(this.player.visualPos[1] - playerPosToVisual[1]);
+            if (distanceToPref < distanceToCurrent) {
+                if (this.posIsValid(preferredPos)) {
+                    newPos = preferredPos
+                }
             } else {
-                const firstAlternativePos = alternatives.shift();
-                this.movePlayer(firstAlternativePos, alternatives);
-                return;
+                newPos = this.player.pos;
             }
         }
+        // need to check against the original new pos, else could get stuck in walls
+        if (!this.posIsValid(originalNewPos) && !coordsEq(originalNewPos, this.player.pos)) {
+            if (!altDrcs || !altDrcs.length) {
+                return this.player.pos.slice();
+            } else {
+                const firstAlternativeDrc = altDrcs.shift();
+                return this.moveVisual(firstAlternativeDrc, altDrcs);
+            }
+        }
+        this.centerPlayerPixels(this.player.visualPos, newVisualPos, false, false);
         playerVisual.style.zIndex = newPos[0] + 1;
         clearTimeout(this.player.moveVisualResetTimeout);
-        this.player.moveVisualResetTimeout = setTimeout(this.resetMoveVisual, options.TRAVEL_REPEAT_DELAY * 3);
+        this.player.moveVisualResetTimeout = setTimeout(this.resetMoveVisual, 300);
         // also works if new pos not next to current for some reason
-        const facing = relativeCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
+        const facing = relativeCoordsToDrc(
+            newVisualPos[0] - this.player.visualPos[0],
+            newVisualPos[1] - this.player.visualPos[1],
+        );
         const moveImage = facing + "_move";
         const baseImage = facing;
         const altMoveImage = facing + "_2_move";
@@ -652,16 +715,58 @@ export default class GameManager {
             clearTimeout(this.player.moveVisualTimeout);
             this.player.moveVisualTimeout = setTimeout(this.moveCounterTimer, 150);
         }
-        if (options.KEEP_PLAYER_CENTERED) {
-            this.centerPlayer(this.player.pos, newPos, false, isFirst);
-        } else {
-            this.movePlayerVisual(this.player.pos, newPos, false, isFirst);
-        }
         if (options.OBJ_IMG) {
             playerVisual.style.backgroundImage =
                 this.player.imageBase.start + this.player.image + this.player.imageBase.end;
         }
         this.player.prevMoveDrc = facing;
+        this.player.visualPos = newVisualPos;
+
+        return newPos;
+    }
+    
+    movePlayer(newPos, alternatives, isFirst) {
+        if (!this.posIsValid(newPos)) {
+            if (!alternatives || !alternatives.length) {
+                return;
+            } else {
+                const firstAlternativePos = alternatives.shift();
+                this.movePlayer(firstAlternativePos, alternatives);
+                return;
+            }
+        }
+        if (!options.KEEP_PLAYER_CENTERED) {
+            playerVisual.style.zIndex = newPos[0] + 1;
+            clearTimeout(this.player.moveVisualResetTimeout);
+            this.player.moveVisualResetTimeout = setTimeout(this.resetMoveVisual, options.TRAVEL_REPEAT_DELAY * 3);
+            // also works if new pos not next to current for some reason
+            const facing = relativeCoordsToDrc(newPos[0] - this.player.pos[0], newPos[1] - this.player.pos[1]);
+            const moveImage = facing + "_move";
+            const baseImage = facing;
+            const altMoveImage = facing + "_2_move";
+
+            if (this.player.prevMoveDrc !== facing || this.player.moveCounter > 0) {
+                if (this.player.image === moveImage || this.player.image === altMoveImage) {
+                    this.player.image = baseImage;
+                } else if (this.player.prevMoveImage === altMoveImage) {
+                    this.player.image = moveImage;
+                    this.player.prevMoveImage = moveImage;
+                } else {
+                    this.player.image = altMoveImage;
+                    this.player.prevMoveImage = altMoveImage;
+                }
+                this.player.moveCounter = 0;
+                clearTimeout(this.player.moveVisualTimeout);
+                this.player.moveVisualTimeout = setTimeout(this.moveCounterTimer, 150);
+            }
+            this.movePlayerVisual(this.player.pos, newPos, false, isFirst);
+
+            if (options.OBJ_IMG) {
+                playerVisual.style.backgroundImage =
+                    this.player.imageBase.start + this.player.image + this.player.imageBase.end;
+            }
+            this.player.prevMoveDrc = facing;
+        }
         this.player.pos = newPos;
         this.tryFireEvent("onMove");
     
@@ -822,13 +927,17 @@ export default class GameManager {
                     this.tryGenerateTravelPoints(lvl);
                     this.level = this.levels[lvl].level;
                     const newPos = this.levels[lvl].travelPoints[this.levels.currentLvl][idx].slice();
+                    const newVisualPos = newPos.slice();
+                    newVisualPos[0] *= 25;
+                    newVisualPos[1] *= 25;
 
                     if (options.KEEP_PLAYER_CENTERED) {
-                        this.centerPlayer(this.player.pos, newPos, true);
+                        this.centerPlayerPixels(this.player.visualPos, newVisualPos, true);
                     } else {
                         this.movePlayerVisual(this.player.pos, newPos, true);
                     }
                     this.player.pos = newPos;
+                    this.player.visualPos = newVisualPos;
                     for (const mob of this.mobs) { tableHolder.removeChild(mob.divElement); }
                     this.mobs = this.levels[lvl].mobs;
                     for (const mob of this.mobs) { this.createMobDiv(mob); }

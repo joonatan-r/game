@@ -51,6 +51,9 @@ export default class BuiltinDialogs {
                     case 1:
                         this.gm.level = this.gm.levels["The Beginning"].level;
                         this.gm.player.pos = [14, 15];
+                        this.gm.player.visualPos = this.gm.player.pos.slice();
+                        this.gm.player.visualPos[0] *= 25;
+                        this.gm.player.visualPos[1] *= 25;
                         this.gm.mobs = this.gm.levels["The Beginning"].mobs;
                         this.gm.items = this.gm.levels["The Beginning"].items;
                         this.gm.levels.currentLvl = "The Beginning";

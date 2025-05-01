@@ -595,8 +595,15 @@ function action(key, ctrl, isFirst) {
                     altInfo.alternatives[1] = altInfo.alternatives[0];
                     altInfo.alternatives[0] = temp;
                 }
-                movePosToDrc(newPos, drc);
-                gm.movePlayer(newPos, altInfo.alternatives, isFirst);
+                if (options.KEEP_PLAYER_CENTERED) {
+                    newPos = gm.moveVisual(drc, altInfo.drcs);
+                    if (!coordsEq(gm.player.pos, newPos)) {
+                        gm.movePlayer(newPos, altInfo.alternatives, isFirst);
+                    }
+                } else {
+                    movePosToDrc(newPos, drc);
+                    gm.movePlayer(newPos, altInfo.alternatives, isFirst);
+                }
             }
             break;
         case options.CONTROLS.ACT_BOTTOM_LEFT:

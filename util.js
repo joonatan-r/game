@@ -456,35 +456,38 @@ export function coordsEq(coord1, coord2) {
     return false;
 }
 
-export function movePosToDrc(posToMove, drc) {
+export function movePosToDrc(posToMove, drc, times) {
+    if (!times) {
+        times = 1;
+    }
     switch (drc) {
         case 4:
-            posToMove[1]--;
+            posToMove[1] -= times;
             break;
         case 6:
-            posToMove[1]++;
+            posToMove[1] += times;
             break;
         case 8:
-            posToMove[0]--;
+            posToMove[0] -= times;
             break;
         case 2:
-            posToMove[0]++;
+            posToMove[0] += times;
             break;
         case 7:
-            posToMove[1]--;
-            posToMove[0]--;
+            posToMove[1] -= times;
+            posToMove[0] -= times;
             break;
         case 1:
-            posToMove[1]--;
-            posToMove[0]++;
+            posToMove[1] -= times;
+            posToMove[0] += times;
             break;
         case 9:
-            posToMove[1]++;
-            posToMove[0]--;
+            posToMove[1] += times;
+            posToMove[0] -= times;
             break;
         case 3:
-            posToMove[1]++;
-            posToMove[0]++;
+            posToMove[1] += times;
+            posToMove[0] += times;
             break;
     }
 }
