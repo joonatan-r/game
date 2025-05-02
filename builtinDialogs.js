@@ -107,7 +107,7 @@ export default class BuiltinDialogs {
                     } else if (e.key === "Enter") {
                         const val = Number(input);
     
-                        if (val > 10) {
+                        if (val > 0) {
                             options[optKeys[idx]] = val;
 
                             if (optKeys[idx] === "FONT_SIZE") { // special case to immediately update
