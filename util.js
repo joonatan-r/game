@@ -637,7 +637,8 @@ export function getClosestTravelPoint(tps, pos, level) {
 }
 
 export function getMobTransition(options, mob) {
-    return "all " + Math.floor(options.TURN_DELAY * (mob.speedModulus || 1)) + "ms linear";
+    const delay = Math.floor(options.TURN_DELAY * (mob.speedModulus || 1));
+    return "top " + delay + "ms linear, left " + delay + "ms linear, backgroundImage 0ms linear";
 }
 
 function getCssRuleIdx(selector) {
