@@ -1,5 +1,5 @@
 import { levelTiles } from "./levelData.js";
-import { bresenham, coordsEq, isWall, removeByReference } from "./util.js";
+import { bresenham, coordsEq, getMobTransition, isWall, removeByReference } from "./util.js";
 import options from "./options.js";
 import { itemDefaultImage } from "./itemData.js";
 
@@ -153,15 +153,25 @@ export default class Renderer {
     async updateMobVisibilities(mobs) {
         if (!options.OBJ_IMG) {
             for (const mob of mobs) {
-                if (mob.divElement.style.visibility !== "hidden") mob.divElement.style.visibility = "hidden";
+                if (mob.divElement.style.visibility !== "hidden") {
+                    mob.divElement.style.transition = "all 0ms linear";
+                    mob.divElement.style.visibility = "hidden";
+                }
             }
             return;
         }
         for (const mob of mobs) {
             if (this.rendered[mob.pos[0]][mob.pos[1]]) {
-                if (mob.divElement.style.visibility !== "visible") mob.divElement.style.visibility = "visible";
+                if (mob.divElement.style.visibility !== "visible") {
+                    console.log(getMobTransition(options, mob));
+                    mob.divElement.style.transition = getMobTransition(options, mob);
+                    mob.divElement.style.visibility = "visible";
+                }
             } else {
-                if (mob.divElement.style.visibility !== "hidden") mob.divElement.style.visibility = "hidden";
+                if (mob.divElement.style.visibility !== "hidden") {
+                    mob.divElement.style.transition = "all 0ms linear";
+                    mob.divElement.style.visibility = "hidden";
+                }
             }
         }
     }

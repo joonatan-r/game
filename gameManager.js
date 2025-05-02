@@ -9,7 +9,8 @@ import UI from "./UI.js";
 import {
     coordsEq, getPosInfo, initialize, isNextTo, movePosToDrc, 
     relativeCoordsToDrc, 
-    projectileFromDrc, removeByReference, itemNameWithNumber, getClosestTravelPoint, dijkstra 
+    projectileFromDrc, removeByReference, itemNameWithNumber, getClosestTravelPoint, dijkstra, 
+    getMobTransition
 } from "./util.js";
 
 // NOTE: all references within "levels", "player", or "timeTracker" to other objects included
@@ -633,7 +634,7 @@ export default class GameManager {
         mobDiv.style.position = "absolute";
         mobDiv.style.backgroundImage = imageBase.start + (mob.image || 2) + imageBase.end;
         mobDiv.style.backgroundSize = "50px 50px";
-        mobDiv.style.transition = "all 100ms linear, visibility 0";
+        mobDiv.style.transition = getMobTransition(options, mob);
         mobDiv.style.zIndex = mob.pos[0] + 1;
         mobDiv.style.top = pixelsY + "px";
         mobDiv.style.left = pixelsX + "px";

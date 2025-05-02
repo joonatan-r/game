@@ -636,6 +636,10 @@ export function getClosestTravelPoint(tps, pos, level) {
     return tps.shift();
 }
 
+export function getMobTransition(options, mob) {
+    return "all " + Math.floor(options.TURN_DELAY * (mob.speedModulus || 1)) + "ms linear";
+}
+
 function getCssRuleIdx(selector) {
     let idx = -1;
     Array.from(document.styleSheets[0].cssRules).forEach((rule, i) => {
